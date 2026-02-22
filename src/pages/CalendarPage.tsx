@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ProgressBar';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMonthlyRuns, useCurrentMonthProgress } from '@/hooks/useRuns';
+import { useMonthlyCoffees, useCurrentMonthProgress } from '@/hooks/useCoffees';
 import { useMonthlyEvents, groupEventsByDate, type RunClubEvent } from '@/hooks/useEvents';
 import { useUserEventRegistrations } from '@/hooks/useEventRegistrations';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
@@ -22,7 +22,7 @@ export default function CalendarPage() {
   const [modalOpen, setModalOpen] = useState(false);
   
   const { data: progress } = useCurrentMonthProgress();
-  const { data: runs = [] } = useMonthlyRuns(viewDate.getFullYear(), viewDate.getMonth());
+  const { data: coffees = [] } = useMonthlyCoffees(viewDate.getFullYear(), viewDate.getMonth());
   const { data: events = [] } = useMonthlyEvents(viewDate.getFullYear(), viewDate.getMonth());
   const { data: registrations = [] } = useUserEventRegistrations();
 
@@ -35,8 +35,8 @@ export default function CalendarPage() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Create run dates set for quick lookup (only if user is logged in)
-  const runDates = user ? new Set(runs.map(r => new Date(r.run_date).getDate())) : new Set<number>();
+  // Create coffee dates set for quick lookup (only if user is logged in)
+  const coffeeDates = user ? new Set(coffees.map(c => new Date(c.coffee_date).getDate())) : new Set<number>();
   
   // Group events by date
   const eventsByDate = groupEventsByDate(events);
@@ -121,7 +121,7 @@ export default function CalendarPage() {
           {/* Days of month */}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const hasRun = runDates.has(day);
+            const hasCoffee = coffeeDates.has(day);
             const isToday = isCurrentMonth && today.getDate() === day;
             const dayEvents = eventsByDate.get(day) || [];
 
@@ -129,7 +129,7 @@ export default function CalendarPage() {
               <CalendarDayCell
                 key={day}
                 day={day}
-                hasRun={hasRun}
+                hasRun={hasCoffee}
                 isToday={isToday}
                 events={dayEvents}
                 registeredEventIds={registeredEventIds}
@@ -145,7 +145,7 @@ export default function CalendarPage() {
             <div className="w-6 h-6 bg-foreground flex items-center justify-center text-background text-xs">
               ✓
             </div>
-            <span className="text-muted-foreground">Run day</span>
+            <span className="text-muted-foreground">Coffee day</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-foreground" />

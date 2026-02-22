@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ProgressBar';
-import { RunModal } from '@/components/RunModal';
-import { RunDetailsSheet, RunDetails } from '@/components/RunDetailsSheet';
+import { CoffeeModal } from '@/components/CoffeeModal';
+import { CoffeeDetailsSheet, CoffeeDetails } from '@/components/CoffeeDetailsSheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCurrentMonthProgress, useTodayRun, useCheckIn, useTodayPercentage } from '@/hooks/useRuns';
+import { useCurrentMonthProgress, useTodayCoffee, useCoffeeCheckIn, useTodayPercentage } from '@/hooks/useCoffees';
 import { useNavigate } from 'react-router-dom';
 
 export default function CheckPage() {
   const { user, loading } = useAuth();
   const { data: progress, isLoading: progressLoading } = useCurrentMonthProgress();
-  const { data: todayRun, isLoading: todayLoading } = useTodayRun();
+  const { data: todayCoffee, isLoading: todayLoading } = useTodayCoffee();
   const { data: percentage } = useTodayPercentage();
-  const checkIn = useCheckIn();
+  const coffeeCheckIn = useCoffeeCheckIn();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [showNo, setShowNo] = useState(false);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
 
-  const hasCheckedToday = user ? !!todayRun : false;
+  const hasCheckedToday = user ? !!todayCoffee : false;
   const isLoading = loading || (user && (progressLoading || todayLoading));
 
   const handleYes = () => {
@@ -34,12 +34,14 @@ export default function CheckPage() {
     setShowDetailsSheet(true);
   };
 
-  const handleDetailsSave = async (details: RunDetails) => {
+  const handleDetailsSave = async (details: CoffeeDetails) => {
     try {
-      await checkIn.mutateAsync({
-        duration_minutes: details.duration_minutes,
-        run_type: details.run_type,
-        tiredness_score: details.tiredness_score,
+      await coffeeCheckIn.mutateAsync({
+        rating: details.rating,
+        coffee_type: details.coffee_type,
+        coffee_type_other: details.coffee_type_other,
+        place: details.place,
+        diary: details.diary,
       });
       setShowDetailsSheet(false);
       setShowNo(false);
@@ -69,25 +71,25 @@ export default function CheckPage() {
           <div className="text-center animate-fade-in">
             <div className="text-6xl mb-6">✓</div>
             <h1 className="text-2xl font-black uppercase tracking-tight mb-2">
-              You checked already today
+              You checked in already today
             </h1>
             <p className="text-lg font-semibold text-muted-foreground">
-              Nice work!
+              Nice sip!
             </p>
           </div>
         ) : (
           <>
             <h1 className="text-3xl font-black uppercase tracking-tight text-center mb-12">
-              Have you run today?
+              Have you coffee today?
             </h1>
 
             <div className="w-full max-w-sm space-y-4">
               <Button
                 onClick={handleYes}
                 className="btn-run btn-run-yes"
-                disabled={checkIn.isPending}
+                disabled={coffeeCheckIn.isPending}
               >
-                {checkIn.isPending ? 'Checking...' : 'Yes'}
+                {coffeeCheckIn.isPending ? 'Checking...' : 'Yes'}
               </Button>
 
               <Button
@@ -103,7 +105,7 @@ export default function CheckPage() {
               <div className="mt-8 text-center animate-fade-in">
                 <p className="text-xl font-bold mb-2">You got this.</p>
                 <p className="text-muted-foreground">
-                  {percentage || 0}% of users have already run today
+                  {percentage || 0}% of users have already had coffee today
                 </p>
               </div>
             )}
@@ -111,14 +113,14 @@ export default function CheckPage() {
         )}
       </div>
 
-      <RunDetailsSheet
+      <CoffeeDetailsSheet
         open={showDetailsSheet}
         onOpenChange={setShowDetailsSheet}
         onSave={handleDetailsSave}
-        isPending={checkIn.isPending}
+        isPending={coffeeCheckIn.isPending}
       />
 
-      <RunModal
+      <CoffeeModal
         open={showModal}
         onOpenChange={setShowModal}
         percentBeat={percentBeat}

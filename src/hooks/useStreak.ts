@@ -11,15 +11,15 @@ export function useMaxStreak() {
       if (!user) return 0;
 
       const { data, error } = await supabase
-        .from('daily_runs')
-        .select('run_date')
+        .from('daily_coffees')
+        .select('coffee_date')
         .eq('user_id', user.id)
-        .order('run_date', { ascending: true });
+        .order('coffee_date', { ascending: true });
 
       if (error) throw error;
       if (!data || data.length === 0) return 0;
 
-      const dates = data.map(d => new Date(d.run_date));
+      const dates = data.map(d => new Date(d.coffee_date));
       let maxStreak = 1;
       let currentStreak = 1;
 

@@ -34,8 +34,8 @@ export default function UserCalendarPage() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Create run dates set for quick lookup
-  const runDates = new Set(runs.map(r => new Date(r.run_date).getDate()));
+  // Create coffee dates set for quick lookup
+  const coffeeDates = new Set(runs.map(r => new Date(r.coffee_date).getDate()));
 
   const goToPrevMonth = () => {
     setViewDate(new Date(year, month - 1, 1));
@@ -141,15 +141,15 @@ export default function UserCalendarPage() {
           {/* Days of month */}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const hasRun = runDates.has(day);
+            const hasCoffee = coffeeDates.has(day);
             const isToday = isCurrentMonth && today.getDate() === day;
 
             return (
               <div
                 key={day}
-                className={`calendar-day ${hasRun ? 'calendar-day-run' : ''} ${isToday ? 'calendar-day-today' : ''}`}
+                className={`calendar-day ${hasCoffee ? 'calendar-day-run' : ''} ${isToday ? 'calendar-day-today' : ''}`}
               >
-                {hasRun ? '✓' : day}
+                {hasCoffee ? '✓' : day}
               </div>
             );
           })}
@@ -161,7 +161,7 @@ export default function UserCalendarPage() {
             <div className="w-6 h-6 bg-foreground flex items-center justify-center text-background text-xs">
               ✓
             </div>
-            <span className="text-muted-foreground">Run day</span>
+            <span className="text-muted-foreground">Coffee day</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-foreground" />

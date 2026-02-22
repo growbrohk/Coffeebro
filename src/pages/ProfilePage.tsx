@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useMaxStreak } from '@/hooks/useStreak';
-import { useCurrentMonthProgress } from '@/hooks/useRuns';
+import { useCurrentMonthProgress } from '@/hooks/useCoffees';
  import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
  import { useToast } from '@/hooks/use-toast';
@@ -18,13 +18,13 @@ export default function ProfilePage() {
   const getMessage = () => {
     switch (msgParam) {
       case 'tracking':
-        return 'Sign-up/log in to start tracking your run!';
+        return 'Sign-up/log in to start tracking your coffee!';
       case 'view-calendar':
-        return 'Log in to view other runners\' calendars.';
+        return 'Log in to view other coffee drinkers\' calendars.';
       case 'search':
-        return 'Log in to search and view other runners.';
+        return 'Log in to search and view other coffee drinkers.';
       case 'messages':
-        return 'Log in to message other runners.';
+        return 'Log in to message other coffee drinkers.';
       default:
         return null;
     }

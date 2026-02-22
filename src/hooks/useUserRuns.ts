@@ -3,14 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
- * Fetch another user's runs for a specific month (authenticated users only)
- * Uses the daily_runs_authed_read view which only allows authenticated access
+ * Fetch another user's coffees for a specific month (authenticated users only)
+ * Uses the daily_coffees_authed_read view which only allows authenticated access
  */
 export function useUserMonthlyRuns(userId: string | undefined, year: number, month: number) {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['user-runs', userId, year, month],
+    queryKey: ['user-coffees', userId, year, month],
     queryFn: async () => {
       if (!userId) return [];
 
@@ -19,11 +19,11 @@ export function useUserMonthlyRuns(userId: string | undefined, year: number, mon
 
       // Use the authenticated-only view
       const { data, error } = await supabase
-        .from('daily_runs_authed_read')
-        .select('user_id, run_date')
+        .from('daily_coffees_authed_read')
+        .select('user_id, coffee_date')
         .eq('user_id', userId)
-        .gte('run_date', startDate)
-        .lte('run_date', endDate);
+        .gte('coffee_date', startDate)
+        .lte('coffee_date', endDate);
 
       if (error) throw error;
       return data || [];
