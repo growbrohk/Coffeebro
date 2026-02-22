@@ -23,15 +23,15 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<RunClubEvent | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   
-  const monthCount = useMonthCoffeeCount();
-  const { data: coffeeDayCounts = {} } = useMonthCoffeeDayCounts(year, month);
-  const { data: events = [] } = useMonthlyEvents(viewDate.getFullYear(), viewDate.getMonth());
-  const { data: registrations = [] } = useUserEventRegistrations();
-
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  
+  const monthCount = useMonthCoffeeCount();
+  const { data: coffeeDayCounts = {}, isLoading: coffeeCountsLoading } = useMonthCoffeeDayCounts(year, month);
+  const { data: events = [] } = useMonthlyEvents(year, month);
+  const { data: registrations = [] } = useUserEventRegistrations();
 
   // Get first day of month and total days
   const firstDay = new Date(year, month, 1).getDay();
