@@ -1,17 +1,26 @@
 import type { RunClubEvent } from '@/hooks/useEvents';
+import { cn } from '@/lib/utils';
 
 interface CalendarDayCellProps {
   day: number;
-  hasRun: boolean;
+  coffeeCount: number;
   isToday: boolean;
   events: RunClubEvent[];
   registeredEventIds: Set<string>;
   onEventClick: (event: RunClubEvent) => void;
 }
 
+// Helper function to get coffee day class based on count
+export function getCoffeeDayClass(count: number): string {
+  if (count === 0) return '';
+  if (count === 1) return 'calendar-day-coffee-1';
+  if (count === 2) return 'calendar-day-coffee-2';
+  return 'calendar-day-coffee-3';
+}
+
 export function CalendarDayCell({ 
   day, 
-  hasRun, 
+  coffeeCount, 
   isToday, 
   events,
   registeredEventIds,
@@ -23,11 +32,23 @@ export function CalendarDayCell({
 
   return (
     <div
-      className={`calendar-day-cell ${hasRun ? 'calendar-day-run' : ''} ${isToday ? 'calendar-day-today' : ''}`}
+      className={cn(
+        'calendar-day-cell',
+        getCoffeeDayClass(coffeeCount),
+        isToday && 'calendar-day-today'
+      )}
     >
-      {/* Day number or checkmark */}
-      <div className="calendar-day-number">
-        {hasRun ? '✓' : day}
+      {/* Day number with coffee count badge */}
+      <div className="calendar-day-number relative">
+        {day}
+        {coffeeCount > 0 && (
+          <span className={cn(
+            'absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center',
+            coffeeCount >= 3 ? 'bg-foreground text-background' : 'bg-muted text-foreground'
+          )}>
+            {coffeeCount}
+          </span>
+        )}
       </div>
       
       {/* Events */}

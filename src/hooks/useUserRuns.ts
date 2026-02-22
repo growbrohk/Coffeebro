@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 /**
  * Fetch another user's coffees for a specific month (authenticated users only)
  * Uses the daily_coffees_authed_read view which only allows authenticated access
+ * Returns all coffee entries (multi-entry per day supported)
  */
-export function useUserMonthlyRuns(userId: string | undefined, year: number, month: number) {
+export function useUserMonthlyCoffees(userId: string | undefined, year: number, month: number) {
   const { user } = useAuth();
 
   return useQuery({
@@ -31,6 +32,9 @@ export function useUserMonthlyRuns(userId: string | undefined, year: number, mon
     enabled: !!user && !!userId, // Only fetch if viewer is authenticated
   });
 }
+
+// Legacy alias for backward compatibility
+export const useUserMonthlyRuns = useUserMonthlyCoffees;
 
 /**
  * Fetch a user profile by user_id

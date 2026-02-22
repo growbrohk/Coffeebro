@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useMaxStreak } from '@/hooks/useStreak';
-import { useCurrentMonthProgress } from '@/hooks/useCoffees';
+import { useMonthCoffeeCount } from '@/hooks/useCoffees';
  import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
  import { useToast } from '@/hooks/use-toast';
@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
   const { data: leaderboard } = useLeaderboard();
   const { data: maxStreak } = useMaxStreak();
-  const { data: progress } = useCurrentMonthProgress();
+  const { data: monthCount = 0 } = useMonthCoffeeCount();
    const { canHostEvent, role, isLoading: roleLoading } = useUserRole();
    const { toast } = useToast();
   const navigate = useNavigate();
@@ -136,7 +136,7 @@ export default function ProfilePage() {
             </div>
             <div className="text-center p-4 bg-muted">
               <div className="text-3xl font-black">
-                {progress?.completed || 0}/{progress?.total || 30}
+                {monthCount}
               </div>
               <div className="text-xs font-semibold uppercase text-muted-foreground mt-1">
                 This Month

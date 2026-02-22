@@ -4,39 +4,49 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { CoffeeModal } from '@/components/CoffeeModal';
 import { CoffeeDetailsSheet, CoffeeDetails } from '@/components/CoffeeDetailsSheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCurrentMonthProgress, useTodayCoffee, useCoffeeCheckIn, useTodayPercentage } from '@/hooks/useCoffees';
+import { useMonthCoffeeCount, useTodayCoffees, useAddCoffee, useTodayPercentage } from '@/hooks/useCoffees';
 import { useNavigate } from 'react-router-dom';
+
+// Temporary type until database types are regenerated
+type CoffeeRow = {
+  id: string;
+  user_id: string;
+  coffee_date: string;
+  rating: number | null;
+  coffee_type: string | null;
+  coffee_type_other: string | null;
+  place: string | null;
+  diary: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 export default function CheckPage() {
   const { user, loading } = useAuth();
-  const { data: progress, isLoading: progressLoading } = useCurrentMonthProgress();
-  const { data: todayCoffee, isLoading: todayLoading } = useTodayCoffee();
+  const { data: monthCount = 0, isLoading: countLoading } = useMonthCoffeeCount();
+  const { data: todayCoffees = [], isLoading: todayLoading } = useTodayCoffees();
   const { data: percentage } = useTodayPercentage();
-  const coffeeCheckIn = useCoffeeCheckIn();
+  const addCoffee = useAddCoffee();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  const [showNo, setShowNo] = useState(false);
   const [showDetailsSheet, setShowDetailsSheet] = useState(false);
 
-  const hasCheckedToday = user ? !!todayCoffee : false;
-  const isLoading = loading || (user && (progressLoading || todayLoading));
+  const isLoading = loading || (user && (countLoading || todayLoading));
 
-  const handleYes = () => {
+  const handleAddCoffee = () => {
     // If not logged in, redirect to profile with message
     if (!user) {
       navigate('/profile?msg=tracking');
       return;
     }
-
-    if (hasCheckedToday) return;
     
-    // Open the details sheet instead of immediately checking in
+    // Open the details sheet
     setShowDetailsSheet(true);
   };
 
   const handleDetailsSave = async (details: CoffeeDetails) => {
     try {
-      await coffeeCheckIn.mutateAsync({
+      await addCoffee.mutateAsync({
         rating: details.rating,
         coffee_type: details.coffee_type,
         coffee_type_other: details.coffee_type_other,
@@ -44,71 +54,72 @@ export default function CheckPage() {
         diary: details.diary,
       });
       setShowDetailsSheet(false);
-      setShowNo(false);
       setShowModal(true);
     } catch (error) {
-      console.error('Error checking in:', error);
+      console.error('Error adding coffee:', error);
     }
-  };
-
-  const handleNo = () => {
-    setShowNo(true);
   };
 
   const percentBeat = 100 - (percentage || 0);
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <ProgressBar 
-        current={user ? (progress?.completed || 0) : 0} 
-        total={progress?.total || 30} 
-      />
+      <ProgressBar monthCount={monthCount} />
 
       <div className="container flex flex-col items-center justify-center px-4 pt-16">
         {isLoading ? (
           <div className="animate-pulse text-lg font-semibold">Loading...</div>
-        ) : hasCheckedToday ? (
-          <div className="text-center animate-fade-in">
-            <div className="text-6xl mb-6">✓</div>
-            <h1 className="text-2xl font-black uppercase tracking-tight mb-2">
-              You checked in already today
-            </h1>
-            <p className="text-lg font-semibold text-muted-foreground">
-              Nice sip!
-            </p>
-          </div>
         ) : (
           <>
             <h1 className="text-3xl font-black uppercase tracking-tight text-center mb-12">
-              Have you coffee today?
+              Log a coffee ☕
             </h1>
 
-            <div className="w-full max-w-sm space-y-4">
+            <div className="w-full max-w-sm space-y-6">
               <Button
-                onClick={handleYes}
-                className="btn-run btn-run-yes"
-                disabled={coffeeCheckIn.isPending}
+                onClick={handleAddCoffee}
+                className="btn-run btn-run-yes w-full"
+                disabled={addCoffee.isPending}
+                size="lg"
               >
-                {coffeeCheckIn.isPending ? 'Checking...' : 'Yes'}
+                {addCoffee.isPending ? 'Saving...' : '+ Add Coffee'}
               </Button>
 
-              <Button
-                onClick={handleNo}
-                className="btn-run btn-run-no"
-                variant="outline"
-              >
-                No
-              </Button>
+              {/* Today's coffees list */}
+              {todayCoffees.length > 0 && (
+                <div className="mt-8 space-y-3 animate-fade-in">
+                  <p className="text-sm font-semibold text-muted-foreground text-center">
+                    Today: {todayCoffees.length} {todayCoffees.length === 1 ? 'coffee' : 'coffees'}
+                  </p>
+                  <div className="space-y-2">
+                    {todayCoffees.slice(0, 3).map((coffee: any) => (
+                      <div
+                        key={coffee.id}
+                        className="bg-muted/50 rounded-lg p-3 text-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">
+                            {coffee.coffee_type === 'Other' 
+                              ? coffee.coffee_type_other || 'Coffee'
+                              : coffee.coffee_type || 'Coffee'}
+                          </span>
+                          {coffee.rating && (
+                            <span className="text-muted-foreground">
+                              {coffee.rating}/10
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {todayCoffees.length > 3 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        +{todayCoffees.length - 3} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-
-            {showNo && (
-              <div className="mt-8 text-center animate-fade-in">
-                <p className="text-xl font-bold mb-2">You got this.</p>
-                <p className="text-muted-foreground">
-                  {percentage || 0}% of users have already had coffee today
-                </p>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -117,7 +128,7 @@ export default function CheckPage() {
         open={showDetailsSheet}
         onOpenChange={setShowDetailsSheet}
         onSave={handleDetailsSave}
-        isPending={coffeeCheckIn.isPending}
+        isPending={addCoffee.isPending}
       />
 
       <CoffeeModal

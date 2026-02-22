@@ -3,7 +3,8 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserMonthlyRuns, useUserProfile } from '@/hooks/useUserRuns';
+import { useUserMonthlyCoffees, useUserProfile } from '@/hooks/useUserRuns';
+import { localYMD } from '@/lib/date';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -19,7 +20,7 @@ export default function UserCalendarPage() {
   const [viewDate, setViewDate] = useState(new Date());
   
   const { data: profile, isLoading: profileLoading } = useUserProfile(userId);
-  const { data: runs = [], isLoading: runsLoading } = useUserMonthlyRuns(
+  const { data: coffees = [], isLoading: coffeesLoading } = useUserMonthlyCoffees(
     userId,
     viewDate.getFullYear(),
     viewDate.getMonth()
@@ -34,8 +35,12 @@ export default function UserCalendarPage() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Create coffee dates set for quick lookup
-  const coffeeDates = new Set(runs.map(r => new Date(r.coffee_date).getDate()));
+  // Create coffee counts map: date -> count
+  const coffeeCounts: Record<string, number> = {};
+  coffees.forEach((c: { coffee_date: string }) => {
+    const date = c.coffee_date;
+    coffeeCounts[date] = (coffeeCounts[date] || 0) + 1;
+  });
 
   const goToPrevMonth = () => {
     setViewDate(new Date(year, month - 1, 1));
@@ -54,7 +59,7 @@ export default function UserCalendarPage() {
     return <Navigate to="/profile?msg=view-calendar" replace />;
   }
 
-  const isLoading = loading || profileLoading || runsLoading;
+  const isLoading = loading || profileLoading || coffeesLoading;
 
   if (isLoading) {
     return (
@@ -141,27 +146,53 @@ export default function UserCalendarPage() {
           {/* Days of month */}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const hasCoffee = coffeeDates.has(day);
+            const dateKey = localYMD(new Date(year, month, day));
+            const coffeeCount = coffeeCounts[dateKey] || 0;
             const isToday = isCurrentMonth && today.getDate() === day;
+            
+            // Get coffee intensity class
+            let coffeeClass = '';
+            if (coffeeCount === 1) coffeeClass = 'calendar-day-coffee-1';
+            else if (coffeeCount === 2) coffeeClass = 'calendar-day-coffee-2';
+            else if (coffeeCount >= 3) coffeeClass = 'calendar-day-coffee-3';
 
             return (
               <div
                 key={day}
-                className={`calendar-day ${hasCoffee ? 'calendar-day-run' : ''} ${isToday ? 'calendar-day-today' : ''}`}
+                className={`calendar-day ${coffeeClass} ${isToday ? 'calendar-day-today' : ''}`}
               >
-                {hasCoffee ? '✓' : day}
+                {coffeeCount > 0 ? (
+                  <span className="relative">
+                    {day}
+                    <span className={`absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${
+                      coffeeCount >= 3 ? 'bg-foreground text-background' : 'bg-muted text-foreground'
+                    }`}>
+                      {coffeeCount}
+                    </span>
+                  </span>
+                ) : (
+                  day
+                )}
               </div>
             );
           })}
         </div>
 
         {/* Legend */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-sm">
+        <div className="mt-8 flex items-center justify-center gap-6 text-sm flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-foreground flex items-center justify-center text-background text-xs">
-              ✓
+            <div className="w-6 h-6 bg-muted/30 border border-border" />
+            <span className="text-muted-foreground">1 coffee</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-muted/60 border border-border" />
+            <span className="text-muted-foreground">2 coffees</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-foreground text-background text-[10px] flex items-center justify-center font-bold">
+              3+
             </div>
-            <span className="text-muted-foreground">Coffee day</span>
+            <span className="text-muted-foreground">3+ coffees</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 border-2 border-foreground" />

@@ -1,26 +1,14 @@
 interface ProgressBarProps {
-  current: number;
-  total: number;
+  monthCount: number;
 }
 
-export function ProgressBar({ current, total }: ProgressBarProps) {
-  const percentage = total > 0 ? (current / total) * 100 : 0;
-
+export function ProgressBar({ monthCount }: ProgressBarProps) {
   return (
     <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold uppercase tracking-wide">
-          Progress
+      <div className="flex items-center justify-center">
+        <span className="text-lg font-bold uppercase tracking-wide">
+          ☕ {monthCount} {monthCount === 1 ? 'coffee' : 'coffees'} this month
         </span>
-        <span className="text-sm font-bold">
-          {current} / {total} days
-        </span>
-      </div>
-      <div className="progress-bar">
-        <div 
-          className="progress-fill"
-          style={{ width: `${percentage}%` }}
-        />
       </div>
     </div>
   );

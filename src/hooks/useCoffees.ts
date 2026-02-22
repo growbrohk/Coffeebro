@@ -28,6 +28,141 @@ export function useMonthlyCoffees(year: number, month: number) {
   });
 }
 
+export interface CoffeeDetails {
+  rating?: number | null;
+  coffee_type?: string | null;
+  coffee_type_other?: string | null;
+  place?: string | null;
+  diary?: string | null;
+}
+
+// A) useAddCoffee() - INSERT mutation (NOT upsert)
+export function useAddCoffee() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const today = localYMD();
+
+  return useMutation({
+    mutationFn: async (details: CoffeeDetails) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .insert({
+          user_id: user.id,
+          coffee_date: today,
+          rating: details.rating ?? null,
+          coffee_type: details.coffee_type ?? null,
+          coffee_type_other: details.coffee_type_other ?? null,
+          place: details.place ?? null,
+          diary: details.diary ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['today-coffees'] });
+      queryClient.invalidateQueries({ queryKey: ['month-coffee-count'] });
+      queryClient.invalidateQueries({ queryKey: ['month-coffee-day-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['coffees'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
+    },
+  });
+}
+
+// B) useTodayCoffees() - Return array of coffee rows for today
+export function useTodayCoffees() {
+  const { user } = useAuth();
+  const today = localYMD();
+
+  return useQuery({
+    queryKey: ['today-coffees', user?.id, today],
+    queryFn: async () => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('coffee_date', today)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+}
+
+// C) useMonthCoffeeCount() - Return total number of coffees in current month
+export function useMonthCoffeeCount() {
+  const { user } = useAuth();
+  const now = new Date();
+
+  return useQuery({
+    queryKey: ['month-coffee-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const startDate = localYMD(new Date(now.getFullYear(), now.getMonth(), 1));
+      const endDate = localYMD(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+      const { count, error } = await supabase
+        .from('daily_coffees')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('coffee_date', startDate)
+        .lte('coffee_date', endDate);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+}
+
+// D) useMonthCoffeeDayCounts() - Return map of date -> count for calendar
+export function useMonthCoffeeDayCounts(year?: number, month?: number) {
+  const { user } = useAuth();
+  const now = new Date();
+  const targetYear = year ?? now.getFullYear();
+  const targetMonth = month ?? now.getMonth();
+
+  return useQuery({
+    queryKey: ['month-coffee-day-counts', user?.id, targetYear, targetMonth],
+    queryFn: async () => {
+      if (!user) return {} as Record<string, number>;
+
+      const startDate = localYMD(new Date(targetYear, targetMonth, 1));
+      const endDate = localYMD(new Date(targetYear, targetMonth + 1, 0));
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .select('coffee_date')
+        .eq('user_id', user.id)
+        .gte('coffee_date', startDate)
+        .lte('coffee_date', endDate);
+
+      if (error) throw error;
+
+      // Group by date and count
+      const counts: Record<string, number> = {};
+      (data || []).forEach((row) => {
+        const date = row.coffee_date;
+        counts[date] = (counts[date] || 0) + 1;
+      });
+
+      return counts;
+    },
+    enabled: !!user,
+  });
+}
+
+// Legacy hook for backward compatibility (deprecated - use useMonthCoffeeCount instead)
 export function useCurrentMonthProgress() {
   const { user } = useAuth();
   const now = new Date();
@@ -58,6 +193,7 @@ export function useCurrentMonthProgress() {
   });
 }
 
+// Legacy hook for backward compatibility (deprecated - use useTodayCoffees instead)
 export function useTodayCoffee() {
   const { user } = useAuth();
   const today = localYMD();
@@ -72,6 +208,8 @@ export function useTodayCoffee() {
         .select('*')
         .eq('user_id', user.id)
         .eq('coffee_date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
@@ -81,50 +219,9 @@ export function useTodayCoffee() {
   });
 }
 
-export interface CoffeeCheckInDetails {
-  rating?: number | null;
-  coffee_type?: string | null;
-  coffee_type_other?: string | null;
-  place?: string | null;
-  diary?: string | null;
-}
-
+// Legacy hook for backward compatibility (deprecated - use useAddCoffee instead)
 export function useCoffeeCheckIn() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const today = localYMD();
-
-  return useMutation({
-    mutationFn: async (details?: CoffeeCheckInDetails) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('daily_coffees')
-        .upsert({
-          user_id: user.id,
-          coffee_date: today,
-          rating: details?.rating ?? null,
-          coffee_type: details?.coffee_type ?? null,
-          coffee_type_other: details?.coffee_type_other ?? null,
-          place: details?.place ?? null,
-          diary: details?.diary ?? null,
-        }, {
-          onConflict: 'user_id,coffee_date',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['today-coffee'] });
-      queryClient.invalidateQueries({ queryKey: ['current-month-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['coffees'] });
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
-      queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
-    },
-  });
+  return useAddCoffee();
 }
 
 export function useTodayPercentage() {

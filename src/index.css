@@ -161,11 +161,27 @@
     box-sizing: border-box;
   }
   
-  /* Run day: filled black square with ✓ - overrides today styling */
-  .calendar-day-cell.calendar-day-run .calendar-day-number {
+  /* Coffee intensity classes - heatmap style */
+  .calendar-day-cell.calendar-day-coffee-1 .calendar-day-number {
+    @apply bg-muted/30 border border-border;
+  }
+  
+  .calendar-day-cell.calendar-day-coffee-2 .calendar-day-number {
+    @apply bg-muted/60 border border-border;
+  }
+  
+  .calendar-day-cell.calendar-day-coffee-3 .calendar-day-number {
     @apply bg-foreground text-background border-0;
-    width: 28px;
-    height: 28px;
+  }
+  
+  /* Today styling with coffee intensity */
+  .calendar-day-cell.calendar-day-today.calendar-day-coffee-1 .calendar-day-number,
+  .calendar-day-cell.calendar-day-today.calendar-day-coffee-2 .calendar-day-number {
+    @apply border-2 border-foreground;
+  }
+  
+  .calendar-day-cell.calendar-day-today.calendar-day-coffee-3 .calendar-day-number {
+    @apply border-0;
   }
   
   .calendar-day-events {
