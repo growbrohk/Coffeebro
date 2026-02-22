@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Running Habit Tracker - Black & White Minimal Design System */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 0%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 0% 0%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 0%;
+
+    --radius: 0rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 0%;
+  }
+
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 0% 100%;
+    --destructive-foreground: 0 0% 0%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 100%;
+    
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Montserrat', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-run {
+    @apply w-full py-6 text-2xl font-bold uppercase tracking-wider transition-all duration-200;
+  }
+  
+  .btn-run-yes {
+    @apply bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98];
+  }
+  
+  .btn-run-no {
+    @apply bg-background text-foreground border-2 border-foreground hover:bg-muted active:scale-[0.98];
+  }
+  
+  .progress-bar {
+    @apply h-1 bg-muted overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full bg-foreground transition-all duration-500 ease-out;
+  }
+  
+  .tab-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border;
+  }
+  
+  .tab-item {
+    @apply flex flex-col items-center justify-center py-3 text-muted-foreground transition-colors;
+  }
+  
+  .tab-item-active {
+    @apply text-foreground;
+  }
+  
+  .calendar-day {
+    @apply w-10 h-10 flex items-center justify-center text-sm font-medium;
+  }
+  
+  .calendar-day-run {
+    @apply bg-foreground text-background;
+  }
+  
+  .calendar-day-today {
+    /* No outer rectangle - styling moved to inner .calendar-day-number */
+  }
+
+  /* Calendar cell with events support */
+  .calendar-day-cell {
+    @apply min-h-[60px] flex flex-col items-center py-1 text-sm font-medium;
+  }
+  
+  .calendar-day-number {
+    @apply w-7 h-7 flex items-center justify-center text-sm font-medium;
+  }
+  
+  /* Today: inner square around day number */
+  .calendar-day-cell.calendar-day-today .calendar-day-number {
+    @apply border-2 border-foreground;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+  }
+  
+  /* Run day: filled black square with ✓ - overrides today styling */
+  .calendar-day-cell.calendar-day-run .calendar-day-number {
+    @apply bg-foreground text-background border-0;
+    width: 28px;
+    height: 28px;
+  }
+  
+  .calendar-day-events {
+    @apply flex flex-col items-center w-full mt-0.5 gap-0.5 px-0.5;
+  }
+  
+  .calendar-event-label {
+    @apply w-full text-[8px] leading-tight font-medium text-foreground bg-muted px-0.5 py-0.5 truncate text-center hover:bg-accent transition-colors cursor-pointer;
+  }
+  
+  .calendar-event-registered {
+    @apply bg-green-600 text-white hover:bg-green-700;
+  }
+  
+  .calendar-event-more {
+    @apply text-[7px] text-muted-foreground;
+  }
+}
