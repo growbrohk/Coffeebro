@@ -200,7 +200,7 @@ export type Database = {
             foreignKeyName: "event_registrations_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
-            referencedRelation: "run_club_events"
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -279,7 +279,7 @@ export type Database = {
         }
         Relationships: []
       }
-      run_club_events: {
+      events: {
         Row: {
           created_at: string
           created_by: string | null
@@ -315,7 +315,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "run_club_events_org_id_fkey"
+            foreignKeyName: "events_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"

@@ -25,7 +25,7 @@ export function useCanViewParticipants(eventId: string | null) {
       if (isRunClubHost) {
         // Get the event's org_id
         const { data: event, error: eventError } = await supabase
-          .from('run_club_events')
+          .from('events')
           .select('org_id')
           .eq('id', eventId)
           .maybeSingle();

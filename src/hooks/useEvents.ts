@@ -27,7 +27,7 @@ export function useMonthlyEvents(year: number, month: number) {
       const endDate = toYMDLocal(new Date(year, month + 1, 0));
       
       const { data, error } = await supabase
-        .from('run_club_events')
+        .from('events')
         .select('*')
         .gte('event_date', startDate)
         .lte('event_date', endDate)

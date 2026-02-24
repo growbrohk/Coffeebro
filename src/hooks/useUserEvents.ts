@@ -36,7 +36,7 @@ export function useUserEvents() {
 
       // Fetch event details with org info
       const { data: events, error: eventsError } = await supabase
-        .from('run_club_events')
+        .from('events')
         .select(`
           id,
           name,

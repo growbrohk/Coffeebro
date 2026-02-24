@@ -24,7 +24,7 @@
        // Super admin sees all events
        if (isSuperAdmin) {
          const { data, error } = await supabase
-           .from('run_club_events')
+           .from('events')
            .select('id, name, event_date, event_time, location, org_id')
            .order('event_date', { ascending: false });
 
@@ -42,10 +42,10 @@
 
        if (!orgHosts || orgHosts.length === 0) return [];
 
-       const orgIds = orgHosts.map(oh => oh.org_id);
-       const { data, error } = await supabase
-         .from('run_club_events')
-         .select('id, name, event_date, event_time, location, org_id')
+      const orgIds = orgHosts.map(oh => oh.org_id);
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name, event_date, event_time, location, org_id')
          .in('org_id', orgIds)
          .order('event_date', { ascending: false });
 

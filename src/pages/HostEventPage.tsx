@@ -109,7 +109,7 @@
  
      try {
        const { error } = await supabase
-         .from('run_club_events')
+         .from('events')
          .insert({
            name: name.trim(),
            event_date: eventDate,
