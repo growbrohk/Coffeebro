@@ -25,14 +25,13 @@
    const navigate = useNavigate();
    const { toast } = useToast();
  
-   const [eventType, setEventType] = useState<'$17Coffee' | 'Event'>('Event');
-   const [name, setName] = useState('');
-   const [orgId, setOrgId] = useState('');
-   const [eventDate, setEventDate] = useState('');
-   const [eventTime, setEventTime] = useState('');
-   const [location, setLocation] = useState('');
-   const [description, setDescription] = useState('');
-   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [name, setName] = useState('');
+  const [orgId, setOrgId] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
  
    // Loading state
    if (roleLoading) {
@@ -94,61 +93,33 @@
      );
    }
  
-   const handleSubmit = async (e: React.FormEvent) => {
-     e.preventDefault();
-     
-     // Always require: orgId, eventDate, eventType
-     if (!orgId || !eventDate || !eventType) {
-       toast({
-         title: 'Missing fields',
-         description: 'Please fill in the organization, event type, and date.',
-         variant: 'destructive',
-       });
-       return;
-     }
-
-    // If eventType === 'Event', require name
-    if (eventType === 'Event' && !name.trim()) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Always require: name, eventDate
+    if (!name.trim() || !eventDate) {
       toast({
         title: 'Missing fields',
-        description: 'Please fill in the event name.',
+        description: 'Please fill in the event name and date.',
         variant: 'destructive',
       });
       return;
     }
 
-     // If eventType === '$17Coffee', require selectedOrg?.org_name
-     const selectedOrg = orgs?.find(o => o.id === orgId);
-     if (eventType === '$17Coffee' && !selectedOrg?.org_name) {
-       toast({
-         title: 'Missing fields',
-         description: 'Please select an organization with a valid name.',
-         variant: 'destructive',
-       });
-       return;
-     }
+    setIsSubmitting(true);
 
-     setIsSubmitting(true);
-
-     try {
-       // Build the final name
-       const finalName =
-         eventType === '$17Coffee'
-           ? `${selectedOrg!.org_name} $17Coffee`
-           : name.trim();
-
-       const { error } = await supabase
-         .from('events')
-         .insert({
-           name: finalName,
-           event_type: eventType,
-           event_date: eventDate,
-           event_time: eventTime || null,
-           location: location.trim() || null,
-           description: description.trim() || null,
-           created_by: user.id,
-           org_id: orgId || null,
-         });
+    try {
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          name: name.trim(),
+          event_date: eventDate,
+          event_time: eventTime || null,
+          location: location.trim() || null,
+          description: description.trim() || null,
+          created_by: user.id,
+          org_id: orgId || null,
+        });
 
        if (error) throw error;
 
@@ -215,43 +186,20 @@
                )}
              </div>
 
-             <div className="space-y-2">
-               <Label htmlFor="eventType" className="text-sm font-semibold uppercase">
-                 Event Type *
-               </Label>
-               <Select
-                 value={eventType}
-                onValueChange={(v) => {
-                  const next = v as '$17Coffee' | 'Event';
-                  setEventType(next);
-                  if (next === '$17Coffee') setName('');
-                }}
-               >
-                 <SelectTrigger className="h-12 text-lg">
-                   <SelectValue placeholder="Select event type" />
-                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="$17Coffee">$17Coffee</SelectItem>
-                  <SelectItem value="Event">Event</SelectItem>
-                </SelectContent>
-               </Select>
-             </div>
-
-           {eventType === 'Event' && (
-             <div className="space-y-2">
-               <Label htmlFor="name" className="text-sm font-semibold uppercase">
-                 Event Name *
-               </Label>
-               <Input
-                 id="name"
-                 type="text"
-                 value={name}
-                 onChange={(e) => setName(e.target.value)}
-                 placeholder="Morning Run"
-                 className="h-12 text-lg"
-               />
-             </div>
-           )}
+           <div className="space-y-2">
+             <Label htmlFor="name" className="text-sm font-semibold uppercase">
+               Event Name *
+             </Label>
+             <Input
+               id="name"
+               type="text"
+               value={name}
+               onChange={(e) => setName(e.target.value)}
+               placeholder="Morning Run"
+               className="h-12 text-lg"
+               required
+             />
+           </div>
  
            <div className="space-y-2">
              <Label htmlFor="eventDate" className="text-sm font-semibold uppercase">

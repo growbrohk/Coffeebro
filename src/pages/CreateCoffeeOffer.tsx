@@ -25,8 +25,6 @@ export default function CreateCoffeeOffer() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [eventType, setEventType] = useState<'$17Coffee' | 'Event'>('Event');
-  const [name, setName] = useState('');
   const [orgId, setOrgId] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
@@ -97,29 +95,18 @@ export default function CreateCoffeeOffer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Always require: orgId, eventDate, eventType
-    if (!orgId || !eventDate || !eventType) {
+    // Always require: orgId, eventDate
+    if (!orgId || !eventDate) {
       toast({
         title: 'Missing fields',
-        description: 'Please fill in the organization, event type, and date.',
+        description: 'Please fill in the organization and date.',
         variant: 'destructive',
       });
       return;
     }
 
-   // If eventType === 'Event', require name
-   if (eventType === 'Event' && !name.trim()) {
-     toast({
-       title: 'Missing fields',
-       description: 'Please fill in the event name.',
-       variant: 'destructive',
-     });
-     return;
-   }
-
-    // If eventType === '$17Coffee', require selectedOrg?.org_name
     const selectedOrg = orgs?.find(o => o.id === orgId);
-    if (eventType === '$17Coffee' && !selectedOrg?.org_name) {
+    if (!selectedOrg?.org_name) {
       toast({
         title: 'Missing fields',
         description: 'Please select an organization with a valid name.',
@@ -131,11 +118,8 @@ export default function CreateCoffeeOffer() {
     setIsSubmitting(true);
 
     try {
-      // Build the final name
-      const finalName =
-        eventType === '$17Coffee'
-          ? `${selectedOrg!.org_name} $17Coffee`
-          : name.trim();
+      // Build the name from organization
+      const finalName = `${selectedOrg.org_name} $17Coffee`;
 
       const { error } = await supabase
         .from('coffee_offers')
@@ -213,44 +197,6 @@ export default function CreateCoffeeOffer() {
                 </p>
               )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="eventType" className="text-sm font-semibold uppercase">
-                Event Type *
-              </Label>
-              <Select
-                value={eventType}
-               onValueChange={(v) => {
-                 const next = v as '$17Coffee' | 'Event';
-                 setEventType(next);
-                 if (next === '$17Coffee') setName('');
-               }}
-              >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue placeholder="Select event type" />
-                </SelectTrigger>
-               <SelectContent>
-                 <SelectItem value="$17Coffee">$17Coffee</SelectItem>
-                 <SelectItem value="Event">Event</SelectItem>
-               </SelectContent>
-              </Select>
-            </div>
-
-          {eventType === 'Event' && (
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-semibold uppercase">
-                Event Name *
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Morning Run"
-                className="h-12 text-lg"
-              />
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="eventDate" className="text-sm font-semibold uppercase">
