@@ -1,11 +1,14 @@
 -- RPC function: mint_voucher_atomic
 -- Atomically mints a voucher with concurrency safety and coffee type validation
 
+-- Drop existing function first to allow return type change
+drop function if exists public.mint_voucher_atomic(uuid, text);
+
 create or replace function public.mint_voucher_atomic(
   p_offer_id uuid,
   p_selected_coffee_type text
 )
-returns table(voucher_id uuid, remaining integer, total integer)
+returns table(voucher_id uuid, code text, remaining integer, total integer)
 language plpgsql
 security definer
 set search_path = public
@@ -16,6 +19,8 @@ declare
   v_minted_count integer;
   v_remaining integer;
   v_voucher_id uuid;
+  v_code text;
+  v_chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 begin
   -- Require authentication
   v_user_id := auth.uid();
@@ -78,6 +83,18 @@ begin
     raise exception using errcode = 'P0001', message = 'ALREADY_CLAIMED';
   end if;
 
+  -- Generate unique 8-char code
+  loop
+    v_code := '';
+    for i in 1..8 loop
+      v_code := v_code || substr(v_chars, floor(random()*62)::int + 1, 1);
+    end loop;
+
+    exit when not exists (
+      select 1 from public.vouchers where public.vouchers.code = v_code
+    );
+  end loop;
+
   -- Insert the voucher
   -- Wrap in exception handler to catch unique constraint violations
   begin
@@ -85,6 +102,7 @@ begin
       coffee_offer_id,
       org_id,
       owner_id,
+      code,
       selected_coffee_type,
       status
     )
@@ -92,6 +110,7 @@ begin
       p_offer_id,
       v_offer_record.org_id,
       v_user_id,
+      v_code,
       p_selected_coffee_type,
       'active'
     )
@@ -110,10 +129,8 @@ begin
   -- Return result
   return query select
     v_voucher_id as voucher_id,
+    v_code as code,
     v_remaining::integer as remaining,
     (v_minted_count + 1)::integer as total;
 end;
 $$;
-
--- Grant execute to authenticated users
-grant execute on function public.mint_voucher_atomic(uuid, text) to authenticated;

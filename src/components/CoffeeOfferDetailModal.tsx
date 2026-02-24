@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Calendar, Users, Coffee } from 'lucide-react';
@@ -23,6 +23,7 @@ export function CoffeeOfferDetailModal({
 
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedCoffeeType, setSelectedCoffeeType] = useState<string | null>(null);
+  const [mintedCode, setMintedCode] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch user's voucher for this offer
@@ -33,6 +34,14 @@ export function CoffeeOfferDetailModal({
   
   // Mint voucher mutation
   const mintVoucher = useMintVoucher();
+
+  // Reset minted code when offer changes or modal closes
+  useEffect(() => {
+    if (!open || !offer) {
+      setMintedCode(null);
+      setSelectedCoffeeType(null);
+    }
+  }, [open, offer?.id]);
 
   const hasVoucher = !!myVoucher;
   const isSoldOut = offer.quantity_limit != null && voucherCount >= offer.quantity_limit;
@@ -109,13 +118,16 @@ export function CoffeeOfferDetailModal({
         selectedCoffeeType: selectedCoffeeType,
       });
 
+      // Store the minted code
+      setMintedCode(result.code);
+
       // Refetch voucher and count
       await refetchVoucher();
       await refetchCount();
 
       toast({
         title: 'Grabbed!',
-        description: 'Your voucher has been minted.',
+        description: `Your voucher code: ${result.code}`,
       });
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to grab voucher';
@@ -188,6 +200,18 @@ export function CoffeeOfferDetailModal({
             <div className="flex items-center gap-3 text-sm">
               <Users className="h-4 w-4 text-muted-foreground shrink-0" />
               <span>Quantity: {offer.quantity_limit} spots</span>
+            </div>
+          )}
+
+          {/* Voucher Code */}
+          {hasVoucher && (myVoucher.code || mintedCode) && (
+            <div className="pt-2 border-t border-foreground/10">
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-xs text-muted-foreground mb-2">Your Voucher Code</p>
+                <p className="font-mono font-bold text-2xl tracking-widest">
+                  {(myVoucher.code || mintedCode)?.toUpperCase()}
+                </p>
+              </div>
             </div>
           )}
 

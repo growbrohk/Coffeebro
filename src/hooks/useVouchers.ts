@@ -7,6 +7,7 @@ export interface Voucher {
   coffee_offer_id: string;
   org_id: string;
   owner_id: string;
+  code: string;
   selected_coffee_type: string | null;
   status: 'active' | 'redeemed' | 'expired' | 'refunded';
   created_at: string;
@@ -16,6 +17,7 @@ export interface Voucher {
 
 export interface MintVoucherResult {
   voucher_id: string;
+  code: string;
   remaining: number | null;
   total: number;
 }
