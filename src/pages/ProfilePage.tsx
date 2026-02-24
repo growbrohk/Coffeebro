@@ -69,6 +69,17 @@ export default function ProfilePage() {
        });
      }
    };
+
+   const handleCreateCoffeeOffer = () => {
+     if (canHostEvent) {
+       navigate('/host/offer/create');
+     } else {
+       toast({
+         title: 'Access Required',
+         description: 'Please upgrade your access to host events.',
+       });
+     }
+   };
  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,6 +160,14 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+           <Button
+             onClick={handleCreateCoffeeOffer}
+             className="w-full btn-run mb-4 bg-orange-500 hover:bg-orange-600 text-white"
+             disabled={roleLoading}
+           >
+             Create Coffee Offer
+           </Button>
 
            <Button
              onClick={handleHostEvent}

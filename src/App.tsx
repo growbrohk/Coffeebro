@@ -13,6 +13,7 @@ import MessagesPage from "./pages/MessagesPage";
 import UserCalendarPage from "./pages/UserCalendarPage";
  import HostEventPage from "./pages/HostEventPage";
  import HostParticipantsPage from "./pages/HostParticipantsPage";
+import CreateCoffeeOffer from "./pages/CreateCoffeeOffer";
 import MyEventsPage from "./pages/MyEventsPage";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
                <Route path="/host/event/create" element={<HostEventPage />} />
+               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
                <Route path="/host/participants" element={<HostParticipantsPage />} />
               <Route path="/events/my" element={<MyEventsPage />} />
               <Route path="*" element={<NotFound />} />
