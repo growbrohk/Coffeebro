@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Calendar, Users, Coffee } from 'lucide-react';
 import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { localYMD } from '@/lib/date';
+import { useMyVoucherForOffer, useVoucherCountForOffer, useMintVoucher } from '@/hooks/useVouchers';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface CoffeeOfferDetailModalProps {
   offer: CoffeeOffer | null;
@@ -19,6 +22,20 @@ export function CoffeeOfferDetailModal({
   if (!offer) return null;
 
   const [showFullTerms, setShowFullTerms] = useState(false);
+  const [selectedCoffeeType, setSelectedCoffeeType] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Fetch user's voucher for this offer
+  const { data: myVoucher, refetch: refetchVoucher } = useMyVoucherForOffer(offer.id);
+  
+  // Fetch voucher count for sold-out check
+  const { data: voucherCount = 0, refetch: refetchCount } = useVoucherCountForOffer(offer.id);
+  
+  // Mint voucher mutation
+  const mintVoucher = useMintVoucher();
+
+  const hasVoucher = !!myVoucher;
+  const isSoldOut = offer.quantity_limit != null && voucherCount >= offer.quantity_limit;
 
   const formatDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -48,7 +65,21 @@ export function CoffeeOfferDetailModal({
   const canRegister = isEventDate && afterStartTime;
 
   const getRegisterHelperText = () => {
-    if (canRegister) return null;
+    if (hasVoucher) {
+      return null; // User already has voucher
+    }
+    
+    if (isSoldOut) {
+      return 'This offer is sold out.';
+    }
+
+    if (canRegister) {
+      // Check if coffee selection is required
+      if (offer.coffee_types && offer.coffee_types.length > 0 && !selectedCoffeeType) {
+        return 'Please choose your coffee option.';
+      }
+      return null;
+    }
 
     if (isEventDate && offer.event_time && !afterStartTime) {
       return `Registration opens at ${offer.event_time} on ${formatDate(
@@ -57,6 +88,54 @@ export function CoffeeOfferDetailModal({
     }
 
     return 'Registration is only available on the event date.';
+  };
+
+  const handleGrab = async () => {
+    if (!canRegister || isSoldOut || hasVoucher) return;
+
+    // Validate coffee selection if required
+    if (offer.coffee_types && offer.coffee_types.length > 0 && !selectedCoffeeType) {
+      toast({
+        title: 'Selection required',
+        description: 'Please choose your coffee option.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const result = await mintVoucher.mutateAsync({
+        offerId: offer.id,
+        selectedCoffeeType: selectedCoffeeType,
+      });
+
+      // Refetch voucher and count
+      await refetchVoucher();
+      await refetchCount();
+
+      toast({
+        title: 'Grabbed!',
+        description: 'Your voucher has been minted.',
+      });
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to grab voucher';
+      
+      // Map error codes to user-friendly messages
+      let userMessage = errorMessage;
+      if (errorMessage === 'SOLD_OUT') {
+        userMessage = 'This offer is sold out.';
+      } else if (errorMessage === 'ALREADY_CLAIMED') {
+        userMessage = 'You have already claimed this offer.';
+      } else if (errorMessage === 'MISSING_COFFEE_TYPE' || errorMessage === 'INVALID_COFFEE_TYPE') {
+        userMessage = 'Please select a valid coffee option.';
+      }
+
+      toast({
+        title: 'Error',
+        description: userMessage,
+        variant: 'destructive',
+      });
+    }
   };
 
   // =========================
@@ -112,13 +191,18 @@ export function CoffeeOfferDetailModal({
             </div>
           )}
 
-          {/* Coffee Types */}
-          {offer.coffee_types && offer.coffee_types.length > 0 && (
+          {/* Coffee Options / Your Coffee */}
+          {hasVoucher && myVoucher.selected_coffee_type ? (
             <div className="flex items-center gap-3 text-sm">
               <Coffee className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>Coffee type: {offer.coffee_types.join(' • ')}</span>
+              <span>Your coffee: {myVoucher.selected_coffee_type}</span>
             </div>
-          )}
+          ) : offer.coffee_types && offer.coffee_types.length > 0 ? (
+            <div className="flex items-center gap-3 text-sm">
+              <Coffee className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>Coffee options: {offer.coffee_types.join(' • ')}</span>
+            </div>
+          ) : null}
 
           {/* Location */}
           {offer.location && (
@@ -172,21 +256,59 @@ export function CoffeeOfferDetailModal({
           </div>
 
           {/* =========================
+              Coffee Selection (before GRAB)
+          ========================== */}
+          {!hasVoucher && 
+           offer.coffee_types && 
+           offer.coffee_types.length > 0 && (
+            <div className="pt-2 border-t border-foreground/10 space-y-2">
+              <label className="text-sm font-semibold">Choose your coffee</label>
+              <div className="flex flex-wrap gap-2">
+                {offer.coffee_types.map((coffeeType) => (
+                  <Button
+                    key={coffeeType}
+                    type="button"
+                    variant={selectedCoffeeType === coffeeType ? 'default' : 'outline'}
+                    size="sm"
+                    className={cn(
+                      'btn-run',
+                      selectedCoffeeType === coffeeType && 'btn-run-yes'
+                    )}
+                    onClick={() => {
+                      setSelectedCoffeeType(
+                        selectedCoffeeType === coffeeType ? null : coffeeType
+                      );
+                    }}
+                  >
+                    {coffeeType}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* =========================
               Register CTA
           ========================== */}
           <div className="pt-2 space-y-2">
-            <Button
-              className="w-full btn-run"
-              disabled={!canRegister}
-              onClick={() => {
-                if (canRegister) {
-                  // TODO: wire to actual registration flow
-                  onOpenChange(false);
+            {hasVoucher ? (
+              <Button className="w-full btn-run" disabled>
+                Already Grabbed
+              </Button>
+            ) : (
+              <Button
+                className="w-full btn-run"
+                disabled={
+                  !canRegister ||
+                  isSoldOut ||
+                  (offer.coffee_types && offer.coffee_types.length > 0 && !selectedCoffeeType) ||
+                  mintVoucher.isPending
                 }
-              }}
-            >
-              GRAB
-            </Button>
+                onClick={handleGrab}
+              >
+                {mintVoucher.isPending ? 'Grabbing...' : 'GRAB'}
+              </Button>
+            )}
 
             {getRegisterHelperText() && (
               <p className="text-xs text-muted-foreground text-center">
