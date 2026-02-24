@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Calendar, Users } from 'lucide-react';
@@ -10,8 +11,14 @@ interface CoffeeOfferDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOfferDetailModalProps) {
+export function CoffeeOfferDetailModal({
+  offer,
+  open,
+  onOpenChange,
+}: CoffeeOfferDetailModalProps) {
   if (!offer) return null;
+
+  const [showFullTerms, setShowFullTerms] = useState(false);
 
   const formatDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -24,31 +31,43 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
     });
   };
 
-  // Registration gating: enabled only on event_date AND after start reg time
+  // =========================
+  // Registration Gating Logic
+  // =========================
   const today = localYMD(new Date());
   const isEventDate = today === offer.event_date;
+
   const now = new Date();
-  const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  const afterStartTime = !offer.event_time || currentHHMM >= offer.event_time;
+  const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(
+    now.getMinutes()
+  ).padStart(2, '0')}`;
+
+  const afterStartTime =
+    !offer.event_time || currentHHMM >= offer.event_time;
+
   const canRegister = isEventDate && afterStartTime;
 
   const getRegisterHelperText = () => {
     if (canRegister) return null;
+
     if (isEventDate && offer.event_time && !afterStartTime) {
-      return `Registration opens at ${offer.event_time} on ${formatDate(offer.event_date)}`;
+      return `Registration opens at ${offer.event_time} on ${formatDate(
+        offer.event_date
+      )}`;
     }
+
     return 'Registration is only available on the event date.';
   };
 
+  // =========================
+  // Redeem Window Display
+  // =========================
   const redeemWindowText = (() => {
     if (offer.event_time && offer.redeem_before_time) {
       return `Redeem: ${offer.event_time} – ${offer.redeem_before_time}`;
     }
     if (offer.redeem_before_time) {
       return `Redeem before: ${offer.redeem_before_time}`;
-    }
-    if (offer.event_time) {
-      return `Start reg: ${offer.event_time}`;
     }
     return null;
   })();
@@ -63,11 +82,13 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
+          {/* Date */}
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
             <span>{formatDate(offer.event_date)}</span>
           </div>
 
+          {/* Start Registration Time */}
           {offer.event_time && (
             <div className="flex items-center gap-3 text-sm">
               <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -75,6 +96,7 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
             </div>
           )}
 
+          {/* Redeem Window */}
           {redeemWindowText && (
             <div className="flex items-center gap-3 text-sm">
               <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -82,6 +104,7 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
             </div>
           )}
 
+          {/* Quantity */}
           {offer.quantity_limit != null && (
             <div className="flex items-center gap-3 text-sm">
               <Users className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -89,6 +112,7 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
             </div>
           )}
 
+          {/* Location */}
           {offer.location && (
             <div className="flex items-center gap-3 text-sm">
               <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -96,6 +120,7 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
             </div>
           )}
 
+          {/* Description */}
           {offer.description && (
             <div className="pt-2 border-t border-foreground/10">
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -104,36 +129,57 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
             </div>
           )}
 
-          {/* T&C Block */}
+          {/* =========================
+              Terms & Conditions
+          ========================== */}
           <div className="pt-2 border-t border-foreground/10">
-            <h4 className="text-sm font-semibold mb-2">Terms & Conditions</h4>
-            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside leading-relaxed">
-              <li>
-                One registration = one redeem. Redemptions are capped at the listed quantity and may end early when the cap is reached.
-              </li>
-              <li>
-                Valid only on the event date, within the redeem window shown. No extensions, reschedules, or cash refunds.
-              </li>
-              <li>
-                Service fulfillment is by the café. CoffeeBro is not responsible for café operational changes but will help coordinate support.
-              </li>
-            </ul>
+            <h4 className="text-sm font-semibold mb-2">
+              Terms & Conditions
+            </h4>
+
+            <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
+              <p>• One registration = one redeem.</p>
+
+              <p>
+                • Valid only on the event date and redeem window shown.
+                No extensions, reschedules, or cash refunds.
+              </p>
+
+              {showFullTerms && (
+                <p>
+                  • In the event of disputes, CoffeeBro and the partner café
+                  reserve the right to make the final decision in accordance
+                  with these terms.
+                </p>
+              )}
+
+              <button
+                type="button"
+                className="text-xs underline underline-offset-2"
+                onClick={() => setShowFullTerms((v) => !v)}
+              >
+                {showFullTerms ? 'Show less' : 'Show more'}
+              </button>
+            </div>
           </div>
 
-          {/* Register CTA with time gating */}
+          {/* =========================
+              Register CTA
+          ========================== */}
           <div className="pt-2 space-y-2">
             <Button
               className="w-full btn-run"
               disabled={!canRegister}
               onClick={() => {
                 if (canRegister) {
-                  // Placeholder - wire to actual registration flow when available
+                  // TODO: wire to actual registration flow
                   onOpenChange(false);
                 }
               }}
             >
               Register
             </Button>
+
             {getRegisterHelperText() && (
               <p className="text-xs text-muted-foreground text-center">
                 {getRegisterHelperText()}
