@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 
+function isValidHHMM(value: string): boolean {
+  if (!value) return true;
+  if (!/^\d{2}:\d{2}$/.test(value)) return false;
+  const [h, m] = value.split(':').map(Number);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+}
+
 export default function CreateCoffeeOffer() {
   const { user } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
@@ -29,9 +36,44 @@ export default function CreateCoffeeOffer() {
   const [offerType, setOfferType] = useState<'$17coffee'>('$17coffee');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
+  const [redeemBeforeTime, setRedeemBeforeTime] = useState('');
+  const [quantityLimit, setQuantityLimit] = useState(17);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const lastAutoLocationRef = useRef<string>('');
+
+  // Default org to first in allowed list when orgs load
+  useEffect(() => {
+    if (orgs && orgs.length > 0 && !orgId) {
+      const first = orgs[0];
+      setOrgId(first.id);
+      const loc = first.location ?? '';
+      setLocation(loc);
+      lastAutoLocationRef.current = loc;
+    }
+  }, [orgs, orgId]);
+
+  // Auto-fill location from org when org changes (do not overwrite user edits)
+  const handleOrgChange = (newOrgId: string) => {
+    const newOrg = orgs?.find((o) => o.id === newOrgId);
+    setOrgId(newOrgId);
+
+    if (newOrg?.location) {
+      const newLoc = newOrg.location;
+      if (location === '' || location === lastAutoLocationRef.current) {
+        setLocation(newLoc);
+        lastAutoLocationRef.current = newLoc;
+      }
+    } else {
+      if (location === '' || location === lastAutoLocationRef.current) {
+        setLocation('');
+        lastAutoLocationRef.current = '';
+      }
+    }
+  };
+
+  const handleLocationChange = (value: string) => setLocation(value);
 
   // Loading state
   if (roleLoading) {
@@ -96,6 +138,24 @@ export default function CreateCoffeeOffer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate time format if provided
+    if (eventTime && !isValidHHMM(eventTime)) {
+      toast({
+        title: 'Invalid time',
+        description: 'Start reg time must be HH:MM (24-hour, e.g. 09:00).',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (redeemBeforeTime && !isValidHHMM(redeemBeforeTime)) {
+      toast({
+        title: 'Invalid time',
+        description: 'Redeem before must be HH:MM (24-hour, e.g. 12:00).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Always require: orgId, eventDate
     if (!orgId || !eventDate) {
       toast({
@@ -128,9 +188,11 @@ export default function CreateCoffeeOffer() {
           name: finalName,
           offer_type: offerType,
           event_date: eventDate,
-          event_time: eventTime || null,
+          event_time: eventTime.trim() || null,
+          redeem_before_time: redeemBeforeTime.trim() || null,
           location: location.trim() || null,
           description: description.trim() || null,
+          quantity_limit: quantityLimit,
           created_by: user.id,
           org_id: orgId,
         });
@@ -175,11 +237,11 @@ export default function CreateCoffeeOffer() {
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
             <div className="space-y-2">
               <Label htmlFor="org" className="text-sm font-semibold uppercase">
-                Organization *
+                Organization
               </Label>
               <Select
                 value={orgId}
-                onValueChange={setOrgId}
+                onValueChange={handleOrgChange}
                 disabled={orgsLoading}
               >
                 <SelectTrigger className="h-12 text-lg">
@@ -233,7 +295,7 @@ export default function CreateCoffeeOffer() {
 
           <div className="space-y-2">
             <Label htmlFor="eventTime" className="text-sm font-semibold uppercase">
-              Time (Optional)
+              Start reg time (HH:MM)
             </Label>
             <Input
               id="eventTime"
@@ -245,6 +307,37 @@ export default function CreateCoffeeOffer() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="redeemBeforeTime" className="text-sm font-semibold uppercase">
+              Redeem before (HH:MM)
+            </Label>
+            <Input
+              id="redeemBeforeTime"
+              type="time"
+              value={redeemBeforeTime}
+              onChange={(e) => setRedeemBeforeTime(e.target.value)}
+              className="h-12 text-lg"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quantityLimit" className="text-sm font-semibold uppercase">
+              Quantity limit
+            </Label>
+            <Input
+              id="quantityLimit"
+              type="number"
+              min={1}
+              value={quantityLimit}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setQuantityLimit(isNaN(v) ? 17 : Math.max(1, v));
+              }}
+              className="h-12 text-lg"
+            />
+            <p className="text-xs text-muted-foreground">Default: 17</p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="location" className="text-sm font-semibold uppercase">
               Location (Optional)
             </Label>
@@ -252,7 +345,7 @@ export default function CreateCoffeeOffer() {
               id="location"
               type="text"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              onChange={(e) => handleLocationChange(e.target.value)}
               placeholder="Central Park"
               className="h-12 text-lg"
             />

@@ -5,7 +5,7 @@ import { localYMD } from '@/lib/date';
 export interface CoffeeOffer {
   id: string;
   name: string;
-  offer_type: string;
+  offer_type: string | null;
   event_date: string;
   event_time: string | null;
   location: string | null;
@@ -13,6 +13,8 @@ export interface CoffeeOffer {
   org_id: string;
   created_by: string;
   created_at: string;
+  quantity_limit: number | null;
+  redeem_before_time: string | null;
 }
 
 export function useMonthlyCoffeeOffers(year: number, month: number) {
@@ -24,13 +26,13 @@ export function useMonthlyCoffeeOffers(year: number, month: number) {
 
       const { data, error } = await supabase
         .from('coffee_offers')
-        .select('id, name, offer_type, event_date, event_time, location, description, org_id, created_by, created_at')
+        .select('id, name, offer_type, event_date, event_time, location, description, org_id, created_by, created_at, quantity_limit, redeem_before_time')
         .gte('event_date', startDate)
         .lte('event_date', endDate)
         .order('event_date', { ascending: true });
 
       if (error) throw error;
-      return (data || []) as CoffeeOffer[];
+      return (data || []) as unknown as CoffeeOffer[];
     },
   });
 }

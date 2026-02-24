@@ -3,12 +3,13 @@
  import { useAuth } from '@/contexts/AuthContext';
  import { useUserRole } from './useUserRole';
  
- export interface Org {
-   id: string;
-   owner_user_id: string;
-   org_name: string;
-   created_at: string;
- }
+export interface Org {
+  id: string;
+  owner_user_id: string;
+  org_name: string;
+  created_at: string;
+  location?: string | null;
+}
  
  export function useOrgs() {
    const { user } = useAuth();

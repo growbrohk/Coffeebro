@@ -71,10 +71,13 @@ export function CalendarDayCell({
                   e.stopPropagation();
                   onCoffeeOfferClick(item.data);
                 }}
-                className="calendar-event-label calendar-event-coffee"
+                className="calendar-event-label calendar-event-coffee flex flex-col items-center"
                 title={item.data.name}
               >
-                {item.data.name}
+                <span className="truncate max-w-full">{item.data.name}</span>
+                {item.data.redeem_before_time && (
+                  <span className="text-[7px] opacity-90">Redeem before: {item.data.redeem_before_time}</span>
+                )}
               </button>
             ) : (
               <button
