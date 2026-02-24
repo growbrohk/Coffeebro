@@ -112,6 +112,14 @@ export function CoffeeOfferDetailModal({
             </div>
           )}
 
+          {/* Coffee Types */}
+          {offer.coffee_types && offer.coffee_types.length > 0 && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-muted-foreground shrink-0">☕</span>
+              <span>Coffee type: {offer.coffee_types.join(' • ')}</span>
+            </div>
+          )}
+
           {/* Location */}
           {offer.location && (
             <div className="flex items-center gap-3 text-sm">

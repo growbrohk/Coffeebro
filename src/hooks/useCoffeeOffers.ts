@@ -15,6 +15,7 @@ export interface CoffeeOffer {
   created_at: string;
   quantity_limit: number | null;
   redeem_before_time: string | null;
+  coffee_types: string[] | null;
 }
 
 export function useMonthlyCoffeeOffers(year: number, month: number) {
@@ -26,7 +27,7 @@ export function useMonthlyCoffeeOffers(year: number, month: number) {
 
       const { data, error } = await supabase
         .from('coffee_offers')
-        .select('id, name, offer_type, event_date, event_time, location, description, org_id, created_by, created_at, quantity_limit, redeem_before_time')
+        .select('id, name, offer_type, event_date, event_time, location, description, org_id, created_by, created_at, quantity_limit, redeem_before_time, coffee_types')
         .gte('event_date', startDate)
         .lte('event_date', endDate)
         .order('event_date', { ascending: true });

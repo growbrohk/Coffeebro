@@ -17,6 +17,7 @@ import { useOrgs } from '@/hooks/useOrgs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
+import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
 
 function isValidHHMM(value: string): boolean {
   if (!value) return true;
@@ -40,6 +41,7 @@ export default function CreateCoffeeOffer() {
   const [quantityLimit, setQuantityLimit] = useState(17);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
+  const [coffeeTypes, setCoffeeTypes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastAutoLocationRef = useRef<string>('');
 
@@ -193,6 +195,7 @@ export default function CreateCoffeeOffer() {
           location: location.trim() || null,
           description: description.trim() || null,
           quantity_limit: quantityLimit,
+          coffee_types: coffeeTypes.length > 0 ? coffeeTypes : null,
           created_by: user.id,
           org_id: orgId,
         });
@@ -278,6 +281,22 @@ export default function CreateCoffeeOffer() {
                 </SelectContent>
               </Select>
             </div>
+
+          <div className="space-y-2">
+            <CoffeeTypeSelect
+              value={coffeeTypes}
+              onChange={setCoffeeTypes}
+              maxSelected={2}
+              label="Coffee type (choose up to 2)"
+              onMaxReached={() => {
+                toast({
+                  title: 'Maximum reached',
+                  description: 'You can choose up to 2 coffee types',
+                  variant: 'destructive',
+                });
+              }}
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="eventDate" className="text-sm font-semibold uppercase">
