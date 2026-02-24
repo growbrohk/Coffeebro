@@ -161,7 +161,7 @@ export default function CalendarPage() {
               <div className="w-6 h-4 bg-muted text-[8px] flex items-center justify-center">
                 Event
               </div>
-              <span className="text-muted-foreground">777RC Event</span>
+              <span className="text-muted-foreground">Event</span>
             </div>
           )}
         </div>
