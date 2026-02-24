@@ -26,14 +26,9 @@ export function CoffeeOfferDetailModal({ offer, open, onOpenChange }: CoffeeOffe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-background border border-foreground/20">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
-            {offer.name}
-            {offer.offer_type && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded bg-orange-500 text-white">
-                {offer.offer_type}
-              </span>
-            )}
-          </DialogTitle>
+        <DialogTitle className="text-xl font-bold tracking-tight">
+          {offer.name}
+        </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
