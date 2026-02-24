@@ -21,10 +21,10 @@ export function getCoffeeDayClass(count: number): string {
   return 'calendar-day-coffee-3';
 }
 
-export function CalendarDayCell({ 
-  day, 
-  coffeeCount, 
-  isToday, 
+export function CalendarDayCell({
+  day,
+  coffeeCount,
+  isToday,
   events,
   coffeeOffers,
   registeredEventIds,
@@ -32,7 +32,9 @@ export function CalendarDayCell({
   onCoffeeOfferClick,
 }: CalendarDayCellProps) {
   const MAX_VISIBLE_ITEMS = 2;
-  const allItems: Array<{ type: 'offer'; data: CoffeeOffer } | { type: 'event'; data: RunClubEvent }> = [
+  const allItems: Array<
+    { type: 'offer'; data: CoffeeOffer } | { type: 'event'; data: RunClubEvent }
+  > = [
     ...coffeeOffers.map((o) => ({ type: 'offer' as const, data: o })),
     ...events.map((e) => ({ type: 'event' as const, data: e })),
   ];
@@ -51,15 +53,19 @@ export function CalendarDayCell({
       <div className="calendar-day-number relative">
         {day}
         {coffeeCount > 0 && (
-          <span className={cn(
-            'absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center',
-            coffeeCount >= 3 ? 'bg-foreground text-background' : 'bg-muted text-foreground'
-          )}>
+          <span
+            className={cn(
+              'absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center',
+              coffeeCount >= 3
+                ? 'bg-foreground text-background'
+                : 'bg-muted text-foreground'
+            )}
+          >
             {coffeeCount}
           </span>
         )}
       </div>
-      
+
       {/* Coffee offers (orange) + Events (muted) */}
       {allItems.length > 0 && (
         <div className="calendar-day-events">
@@ -71,13 +77,10 @@ export function CalendarDayCell({
                   e.stopPropagation();
                   onCoffeeOfferClick(item.data);
                 }}
-                className="calendar-event-label calendar-event-coffee flex flex-col items-center"
+                className="calendar-event-label calendar-event-coffee"
                 title={item.data.name}
               >
                 <span className="truncate max-w-full">{item.data.name}</span>
-                {item.data.redeem_before_time && (
-                  <span className="text-[7px] opacity-90">Redeem before: {item.data.redeem_before_time}</span>
-                )}
               </button>
             ) : (
               <button
@@ -86,17 +89,20 @@ export function CalendarDayCell({
                   e.stopPropagation();
                   onEventClick(item.data);
                 }}
-                className={`calendar-event-label ${registeredEventIds.has(item.data.id) ? 'calendar-event-registered' : ''}`}
+                className={`calendar-event-label ${
+                  registeredEventIds.has(item.data.id)
+                    ? 'calendar-event-registered'
+                    : ''
+                }`}
                 title={item.data.name}
               >
                 {item.data.name}
               </button>
             )
           )}
+
           {remainingCount > 0 && (
-            <span className="calendar-event-more">
-              +{remainingCount} more
-            </span>
+            <span className="calendar-event-more">+{remainingCount} more</span>
           )}
         </div>
       )}
