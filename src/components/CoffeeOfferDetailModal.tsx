@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Calendar, Users, Coffee } from 'lucide-react';
+import { MapPin, Clock, Calendar, Users, Coffee, QrCode } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { localYMD } from '@/lib/date';
 import { useMyVoucherForOffer, useVoucherCountForOffer, useMintVoucher } from '@/hooks/useVouchers';
@@ -24,6 +25,7 @@ export function CoffeeOfferDetailModal({
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedCoffeeType, setSelectedCoffeeType] = useState<string | null>(null);
   const [mintedCode, setMintedCode] = useState<string | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch user's voucher for this offer
@@ -40,6 +42,7 @@ export function CoffeeOfferDetailModal({
     if (!open || !offer) {
       setMintedCode(null);
       setSelectedCoffeeType(null);
+      setQrOpen(false);
     }
   }, [open, offer?.id]);
 
@@ -164,6 +167,7 @@ export function CoffeeOfferDetailModal({
   })();
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-background border border-foreground/20">
         <DialogHeader>
@@ -208,9 +212,21 @@ export function CoffeeOfferDetailModal({
             <div className="pt-2 border-t border-foreground/10">
               <div className="bg-muted/50 rounded-lg p-4 text-center">
                 <p className="text-xs text-muted-foreground mb-2">Your Voucher Code</p>
-                <p className="font-mono font-bold text-2xl tracking-widest">
-                  {(myVoucher.code || mintedCode)?.toUpperCase()}
-                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-mono font-bold text-2xl tracking-widest">
+                    {(myVoucher.code || mintedCode)?.toUpperCase()}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setQrOpen(true)}
+                    aria-label="Show QR code"
+                  >
+                    <QrCode className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -343,5 +359,28 @@ export function CoffeeOfferDetailModal({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* QR Code Dialog */}
+    {hasVoucher && (myVoucher.code || mintedCode) && (
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-base">Scan to Redeem</DialogTitle>
+          </DialogHeader>
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="bg-white p-3 rounded-md">
+                <QRCode
+                  value={(myVoucher.code || mintedCode) || ''}
+                  size={220}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground font-mono">
+                {(myVoucher.code || mintedCode)?.toUpperCase()}
+              </p>
+            </div>
+        </DialogContent>
+      </Dialog>
+    )}
+  </>
   );
 }
