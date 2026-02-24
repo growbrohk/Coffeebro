@@ -1,4 +1,5 @@
 import type { RunClubEvent } from '@/hooks/useEvents';
+import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { cn } from '@/lib/utils';
 
 interface CalendarDayCellProps {
@@ -6,8 +7,10 @@ interface CalendarDayCellProps {
   coffeeCount: number;
   isToday: boolean;
   events: RunClubEvent[];
+  coffeeOffers: CoffeeOffer[];
   registeredEventIds: Set<string>;
   onEventClick: (event: RunClubEvent) => void;
+  onCoffeeOfferClick: (offer: CoffeeOffer) => void;
 }
 
 // Helper function to get coffee day class based on count
@@ -23,12 +26,18 @@ export function CalendarDayCell({
   coffeeCount, 
   isToday, 
   events,
+  coffeeOffers,
   registeredEventIds,
-  onEventClick 
+  onEventClick,
+  onCoffeeOfferClick,
 }: CalendarDayCellProps) {
-  const MAX_VISIBLE_EVENTS = 2;
-  const visibleEvents = events.slice(0, MAX_VISIBLE_EVENTS);
-  const remainingCount = events.length - MAX_VISIBLE_EVENTS;
+  const MAX_VISIBLE_ITEMS = 2;
+  const allItems: Array<{ type: 'offer'; data: CoffeeOffer } | { type: 'event'; data: RunClubEvent }> = [
+    ...coffeeOffers.map((o) => ({ type: 'offer' as const, data: o })),
+    ...events.map((e) => ({ type: 'event' as const, data: e })),
+  ];
+  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
+  const remainingCount = allItems.length - MAX_VISIBLE_ITEMS;
 
   return (
     <div
@@ -51,26 +60,36 @@ export function CalendarDayCell({
         )}
       </div>
       
-      {/* Events */}
-      {events.length > 0 && (
+      {/* Coffee offers (orange) + Events (muted) */}
+      {allItems.length > 0 && (
         <div className="calendar-day-events">
-          {visibleEvents.map((event) => {
-            const isRegistered = registeredEventIds.has(event.id);
-            const isCoffeeEvent = event.event_type === '$17Coffee';
-            return (
+          {visibleItems.map((item) =>
+            item.type === 'offer' ? (
               <button
-                key={event.id}
+                key={`offer-${item.data.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEventClick(event);
+                  onCoffeeOfferClick(item.data);
                 }}
-                className={`calendar-event-label ${isRegistered ? 'calendar-event-registered' : ''} ${isCoffeeEvent ? 'calendar-event-coffee' : ''}`}
-                title={event.name}
+                className="calendar-event-label calendar-event-coffee"
+                title={item.data.name}
               >
-                {event.name}
+                {item.data.name}
               </button>
-            );
-          })}
+            ) : (
+              <button
+                key={`event-${item.data.id}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEventClick(item.data);
+                }}
+                className={`calendar-event-label ${registeredEventIds.has(item.data.id) ? 'calendar-event-registered' : ''}`}
+                title={item.data.name}
+              >
+                {item.data.name}
+              </button>
+            )
+          )}
           {remainingCount > 0 && (
             <span className="calendar-event-more">
               +{remainingCount} more

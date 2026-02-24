@@ -323,6 +323,60 @@ export type Database = {
           },
         ]
       }
+      coffee_offers: {
+        Row: {
+          id: string
+          org_id: string
+          created_by: string
+          name: string
+          offer_type: string
+          event_date: string
+          event_time: string | null
+          location: string | null
+          description: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          created_by: string
+          name: string
+          offer_type?: string
+          event_date: string
+          event_time?: string | null
+          location?: string | null
+          description?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          created_by?: string
+          name?: string
+          offer_type?: string
+          event_date?: string
+          event_time?: string | null
+          location?: string | null
+          description?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coffee_offers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coffee_offers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_access: {
         Row: {
           created_at: string

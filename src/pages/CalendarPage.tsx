@@ -5,9 +5,11 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMonthCoffeeCount, useMonthCoffeeDayCounts } from '@/hooks/useCoffees';
 import { useMonthlyEvents, groupEventsByDate, type RunClubEvent } from '@/hooks/useEvents';
+import { useMonthlyCoffeeOffers, groupCoffeeOffersByDate, type CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { useUserEventRegistrations } from '@/hooks/useEventRegistrations';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
 import { EventDetailModal } from '@/components/EventDetailModal';
+import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { localYMD } from '@/lib/date';
 
 const MONTHS = [
@@ -22,6 +24,8 @@ export default function CalendarPage() {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<RunClubEvent | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCoffeeOffer, setSelectedCoffeeOffer] = useState<CoffeeOffer | null>(null);
+  const [coffeeOfferModalOpen, setCoffeeOfferModalOpen] = useState(false);
   
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -31,23 +35,16 @@ export default function CalendarPage() {
   const monthCount = useMonthCoffeeCount();
   const { data: coffeeDayCounts = {}, isLoading: coffeeCountsLoading } = useMonthCoffeeDayCounts(year, month);
   const { data: events = [] } = useMonthlyEvents(year, month);
+  const { data: coffeeOffers = [] } = useMonthlyCoffeeOffers(year, month);
   const { data: registrations = [] } = useUserEventRegistrations();
 
   // Get first day of month and total days
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Group events by date
+  // Group events and coffee offers by date
   const eventsByDate = groupEventsByDate(events);
-  
-  // Group events by type for legend
-  const coffeeEvents = useMemo(() => {
-    return events.filter(e => e.event_type === '$17Coffee');
-  }, [events]);
-  
-  const normalEvents = useMemo(() => {
-    return events.filter(e => e.event_type === 'Event');
-  }, [events]);
+  const coffeeOffersByDate = groupCoffeeOffersByDate(coffeeOffers);
   
   // Create set of registered event IDs for quick lookup
   const registeredEventIds = useMemo(() => {
@@ -71,6 +68,11 @@ export default function CalendarPage() {
   const handleEventClick = (event: RunClubEvent) => {
     setSelectedEvent(event);
     setModalOpen(true);
+  };
+
+  const handleCoffeeOfferClick = (offer: CoffeeOffer) => {
+    setSelectedCoffeeOffer(offer);
+    setCoffeeOfferModalOpen(true);
   };
 
   if (isLoading) {
@@ -130,6 +132,7 @@ export default function CalendarPage() {
             const coffeeCount = coffeeDayCounts[dateKey] || 0;
             const isToday = isCurrentMonth && today.getDate() === day;
             const dayEvents = eventsByDate.get(day) || [];
+            const dayCoffeeOffers = coffeeOffersByDate.get(day) || [];
 
             return (
               <CalendarDayCell
@@ -138,8 +141,10 @@ export default function CalendarPage() {
                 coffeeCount={coffeeCount}
                 isToday={isToday}
                 events={dayEvents}
+                coffeeOffers={dayCoffeeOffers}
                 registeredEventIds={registeredEventIds}
                 onEventClick={handleEventClick}
+                onCoffeeOfferClick={handleCoffeeOfferClick}
               />
             );
           })}
@@ -165,22 +170,18 @@ export default function CalendarPage() {
             <div className="w-6 h-6 border-2 border-foreground" />
             <span className="text-muted-foreground">Today</span>
           </div>
-          {coffeeEvents.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-4 bg-orange-500 text-white text-[8px] flex items-center justify-center font-medium">
-                $17
-              </div>
-              <span className="text-muted-foreground">$17coffee</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 bg-orange-500 text-white text-[8px] flex items-center justify-center font-medium">
+              $17
             </div>
-          )}
-          {normalEvents.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-4 bg-muted text-[8px] flex items-center justify-center">
-                Event
-              </div>
-              <span className="text-muted-foreground">Event</span>
+            <span className="text-muted-foreground">$17coffee</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-4 bg-muted text-[8px] flex items-center justify-center">
+              Event
             </div>
-          )}
+            <span className="text-muted-foreground">Event</span>
+          </div>
         </div>
       </div>
 
@@ -189,6 +190,13 @@ export default function CalendarPage() {
         event={selectedEvent} 
         open={modalOpen} 
         onOpenChange={setModalOpen} 
+      />
+
+      {/* Coffee Offer Detail Modal */}
+      <CoffeeOfferDetailModal
+        offer={selectedCoffeeOffer}
+        open={coffeeOfferModalOpen}
+        onOpenChange={setCoffeeOfferModalOpen}
       />
     </div>
   );

@@ -26,6 +26,7 @@ export default function CreateCoffeeOffer() {
   const { toast } = useToast();
 
   const [orgId, setOrgId] = useState('');
+  const [offerType, setOfferType] = useState<'$17coffee'>('$17coffee');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
@@ -118,13 +119,14 @@ export default function CreateCoffeeOffer() {
     setIsSubmitting(true);
 
     try {
-      // Build the name from organization
-      const finalName = `${selectedOrg.org_name} $17Coffee`;
+      // Build the name from organization and offer type
+      const finalName = `${selectedOrg.org_name} ${offerType}`;
 
       const { error } = await supabase
         .from('coffee_offers')
         .insert({
           name: finalName,
+          offer_type: offerType,
           event_date: eventDate,
           event_time: eventTime || null,
           location: location.trim() || null,
@@ -196,6 +198,23 @@ export default function CreateCoffeeOffer() {
                   No organizations available. Contact an admin to create one.
                 </p>
               )}
+            </div>
+
+          <div className="space-y-2">
+              <Label htmlFor="offerType" className="text-sm font-semibold uppercase">
+                Offer Type *
+              </Label>
+              <Select
+                value={offerType}
+                onValueChange={(v) => setOfferType(v as '$17coffee')}
+              >
+                <SelectTrigger className="h-12 text-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="$17coffee">$17coffee</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
           <div className="space-y-2">
