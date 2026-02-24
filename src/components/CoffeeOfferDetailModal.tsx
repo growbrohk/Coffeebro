@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Calendar, Users } from 'lucide-react';
+import { MapPin, Clock, Calendar, Users, Coffee } from 'lucide-react';
 import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { localYMD } from '@/lib/date';
 
@@ -115,7 +115,7 @@ export function CoffeeOfferDetailModal({
           {/* Coffee Types */}
           {offer.coffee_types && offer.coffee_types.length > 0 && (
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-muted-foreground shrink-0">☕</span>
+              <Coffee className="h-4 w-4 text-muted-foreground shrink-0" />
               <span>Coffee type: {offer.coffee_types.join(' • ')}</span>
             </div>
           )}
@@ -185,7 +185,7 @@ export function CoffeeOfferDetailModal({
                 }
               }}
             >
-              Register
+              GRAB
             </Button>
 
             {getRegisterHelperText() && (
