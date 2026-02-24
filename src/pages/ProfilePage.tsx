@@ -155,7 +155,7 @@ export default function ProfilePage() {
              className="w-full btn-run btn-run-yes mb-4"
              disabled={roleLoading}
            >
-             Host Event
+             Create Event
            </Button>
 
           <Button

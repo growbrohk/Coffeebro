@@ -25,6 +25,7 @@
    const navigate = useNavigate();
    const { toast } = useToast();
  
+   const [eventType, setEventType] = useState<'$17Coffee' | 'Events'>('Events');
    const [name, setName] = useState('');
    const [orgId, setOrgId] = useState('');
    const [eventDate, setEventDate] = useState('');
@@ -48,12 +49,12 @@
        <div className="min-h-screen bg-background pb-24">
          <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
            <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-             Host Event
+             Create Event
            </h1>
          </div>
          <div className="container px-4 py-8">
            <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
-             <p className="font-bold uppercase mb-4">Please log in to host events.</p>
+             <p className="font-bold uppercase mb-4">Please log in to create events.</p>
              <Button onClick={() => navigate('/profile')} variant="outline" className="btn-run">
                Go to Login
              </Button>
@@ -76,7 +77,7 @@
                <ArrowLeft className="w-6 h-6" />
              </button>
              <h1 className="text-2xl font-black uppercase tracking-tight">
-               Host Event
+               Create Event
              </h1>
            </div>
          </div>
@@ -96,37 +97,66 @@
    const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
      
-     if (!name.trim() || !eventDate || !orgId) {
+     // Always require: orgId, eventDate, eventType
+     if (!orgId || !eventDate || !eventType) {
        toast({
          title: 'Missing fields',
-         description: 'Please fill in the organization, event name, and date.',
+         description: 'Please fill in the organization, event type, and date.',
          variant: 'destructive',
        });
        return;
      }
- 
+
+     // If eventType === 'Events', require name
+     if (eventType === 'Events' && !name.trim()) {
+       toast({
+         title: 'Missing fields',
+         description: 'Please fill in the event name.',
+         variant: 'destructive',
+       });
+       return;
+     }
+
+     // If eventType === '$17Coffee', require selectedOrg?.org_name
+     const selectedOrg = orgs?.find(o => o.id === orgId);
+     if (eventType === '$17Coffee' && !selectedOrg?.org_name) {
+       toast({
+         title: 'Missing fields',
+         description: 'Please select an organization with a valid name.',
+         variant: 'destructive',
+       });
+       return;
+     }
+
      setIsSubmitting(true);
- 
+
      try {
+       // Build the final name
+       const finalName =
+         eventType === '$17Coffee'
+           ? `${selectedOrg!.org_name} $17Coffee`
+           : name.trim();
+
        const { error } = await supabase
          .from('events')
          .insert({
-           name: name.trim(),
+           name: finalName,
+           event_type: eventType,
            event_date: eventDate,
            event_time: eventTime || null,
            location: location.trim() || null,
            description: description.trim() || null,
            created_by: user.id,
-           org_id: orgId,
+           org_id: orgId || null,
          });
- 
+
        if (error) throw error;
- 
+
        toast({
          title: 'Event Created!',
          description: 'Your event has been added to the calendar.',
        });
- 
+
        navigate('/calendar');
      } catch (error: any) {
        console.error('Error creating event:', error);
@@ -151,7 +181,7 @@
              <ArrowLeft className="w-6 h-6" />
            </button>
            <h1 className="text-2xl font-black uppercase tracking-tight">
-             Host Event
+             Create Event
            </h1>
          </div>
        </div>
@@ -184,21 +214,44 @@
                  </p>
                )}
              </div>
- 
-           <div className="space-y-2">
-             <Label htmlFor="name" className="text-sm font-semibold uppercase">
-               Event Name *
-             </Label>
-             <Input
-               id="name"
-               type="text"
-               value={name}
-               onChange={(e) => setName(e.target.value)}
-               placeholder="Morning Run"
-               className="h-12 text-lg"
-               required
-             />
-           </div>
+
+             <div className="space-y-2">
+               <Label htmlFor="eventType" className="text-sm font-semibold uppercase">
+                 Event Type *
+               </Label>
+               <Select
+                 value={eventType}
+                 onValueChange={(v) => {
+                   const next = v as '$17Coffee' | 'Events';
+                   setEventType(next);
+                   if (next === '$17Coffee') setName('');
+                 }}
+               >
+                 <SelectTrigger className="h-12 text-lg">
+                   <SelectValue placeholder="Select event type" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="$17Coffee">$17Coffee</SelectItem>
+                   <SelectItem value="Events">Events</SelectItem>
+                 </SelectContent>
+               </Select>
+             </div>
+
+           {eventType === 'Events' && (
+             <div className="space-y-2">
+               <Label htmlFor="name" className="text-sm font-semibold uppercase">
+                 Event Name *
+               </Label>
+               <Input
+                 id="name"
+                 type="text"
+                 value={name}
+                 onChange={(e) => setName(e.target.value)}
+                 placeholder="Morning Run"
+                 className="h-12 text-lg"
+               />
+             </div>
+           )}
  
            <div className="space-y-2">
              <Label htmlFor="eventDate" className="text-sm font-semibold uppercase">

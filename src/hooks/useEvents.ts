@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface RunClubEvent {
   id: string;
   name: string;
+  event_type: '$17Coffee' | 'Events';
   event_date: string;
   event_time: string | null;
   location: string | null;
@@ -28,7 +29,7 @@ export function useMonthlyEvents(year: number, month: number) {
       
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('id, name, event_type, event_date, event_time, location, description, created_at')
         .gte('event_date', startDate)
         .lte('event_date', endDate)
         .order('event_date', { ascending: true });
