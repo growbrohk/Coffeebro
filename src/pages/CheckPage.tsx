@@ -72,7 +72,7 @@ export default function CheckPage() {
         ) : (
           <>
             <h1 className="text-3xl font-black uppercase tracking-tight text-center mb-12">
-              Log a coffee ☕
+              Log a coffee
             </h1>
 
             <div className="w-full max-w-sm space-y-6">
