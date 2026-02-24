@@ -56,6 +56,7 @@ export function CalendarDayCell({
         <div className="calendar-day-events">
           {visibleEvents.map((event) => {
             const isRegistered = registeredEventIds.has(event.id);
+            const isCoffeeEvent = event.event_type === '$17Coffee';
             return (
               <button
                 key={event.id}
@@ -63,7 +64,7 @@ export function CalendarDayCell({
                   e.stopPropagation();
                   onEventClick(event);
                 }}
-                className={`calendar-event-label ${isRegistered ? 'calendar-event-registered' : ''}`}
+                className={`calendar-event-label ${isRegistered ? 'calendar-event-registered' : ''} ${isCoffeeEvent ? 'calendar-event-coffee' : ''}`}
                 title={event.name}
               >
                 {event.name}

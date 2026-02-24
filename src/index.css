@@ -192,6 +192,14 @@
     @apply bg-green-600 text-white hover:bg-green-700;
   }
   
+  .calendar-event-coffee {
+    @apply bg-orange-500 text-white hover:bg-orange-600;
+  }
+  
+  .calendar-event-coffee.calendar-event-registered {
+    @apply bg-green-600 hover:bg-green-700;
+  }
+  
   .calendar-event-more {
     @apply text-[7px] text-muted-foreground;
   }

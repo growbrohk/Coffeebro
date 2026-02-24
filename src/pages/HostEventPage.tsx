@@ -25,7 +25,7 @@
    const navigate = useNavigate();
    const { toast } = useToast();
  
-   const [eventType, setEventType] = useState<'$17Coffee' | 'Events'>('Events');
+   const [eventType, setEventType] = useState<'$17Coffee' | 'Event'>('Event');
    const [name, setName] = useState('');
    const [orgId, setOrgId] = useState('');
    const [eventDate, setEventDate] = useState('');
@@ -107,15 +107,15 @@
        return;
      }
 
-     // If eventType === 'Events', require name
-     if (eventType === 'Events' && !name.trim()) {
-       toast({
-         title: 'Missing fields',
-         description: 'Please fill in the event name.',
-         variant: 'destructive',
-       });
-       return;
-     }
+    // If eventType === 'Event', require name
+    if (eventType === 'Event' && !name.trim()) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in the event name.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
      // If eventType === '$17Coffee', require selectedOrg?.org_name
      const selectedOrg = orgs?.find(o => o.id === orgId);
@@ -221,23 +221,23 @@
                </Label>
                <Select
                  value={eventType}
-                 onValueChange={(v) => {
-                   const next = v as '$17Coffee' | 'Events';
-                   setEventType(next);
-                   if (next === '$17Coffee') setName('');
-                 }}
+                onValueChange={(v) => {
+                  const next = v as '$17Coffee' | 'Event';
+                  setEventType(next);
+                  if (next === '$17Coffee') setName('');
+                }}
                >
                  <SelectTrigger className="h-12 text-lg">
                    <SelectValue placeholder="Select event type" />
                  </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="$17Coffee">$17Coffee</SelectItem>
-                   <SelectItem value="Events">Events</SelectItem>
-                 </SelectContent>
+                <SelectContent>
+                  <SelectItem value="$17Coffee">$17Coffee</SelectItem>
+                  <SelectItem value="Event">Event</SelectItem>
+                </SelectContent>
                </Select>
              </div>
 
-           {eventType === 'Events' && (
+           {eventType === 'Event' && (
              <div className="space-y-2">
                <Label htmlFor="name" className="text-sm font-semibold uppercase">
                  Event Name *

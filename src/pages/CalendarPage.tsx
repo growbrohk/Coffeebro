@@ -40,6 +40,15 @@ export default function CalendarPage() {
   // Group events by date
   const eventsByDate = groupEventsByDate(events);
   
+  // Group events by type for legend
+  const coffeeEvents = useMemo(() => {
+    return events.filter(e => e.event_type === '$17Coffee');
+  }, [events]);
+  
+  const normalEvents = useMemo(() => {
+    return events.filter(e => e.event_type === 'Event');
+  }, [events]);
+  
   // Create set of registered event IDs for quick lookup
   const registeredEventIds = useMemo(() => {
     return new Set(registrations.map(r => r.event_id));
@@ -156,7 +165,15 @@ export default function CalendarPage() {
             <div className="w-6 h-6 border-2 border-foreground" />
             <span className="text-muted-foreground">Today</span>
           </div>
-          {events.length > 0 && (
+          {coffeeEvents.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-4 bg-orange-500 text-white text-[8px] flex items-center justify-center font-medium">
+                $17
+              </div>
+              <span className="text-muted-foreground">$17coffee</span>
+            </div>
+          )}
+          {normalEvents.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="w-6 h-4 bg-muted text-[8px] flex items-center justify-center">
                 Event

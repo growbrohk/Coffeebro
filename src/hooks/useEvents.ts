@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface RunClubEvent {
   id: string;
   name: string;
-  event_type: '$17Coffee' | 'Events';
+  event_type: '$17Coffee' | 'Event';
   event_date: string;
   event_time: string | null;
   location: string | null;
