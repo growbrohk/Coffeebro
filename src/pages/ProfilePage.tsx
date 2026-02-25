@@ -59,24 +59,13 @@ export default function ProfilePage() {
     ? leaderboard.findIndex(e => e.username === profile.username) + 1 
     : null;
 
-   const handleHostEvent = () => {
-     if (canHostEvent) {
-       navigate('/host/event/create');
-     } else {
-       toast({
-         title: 'Access Required',
-         description: 'Please upgrade your access to host events.',
-       });
-     }
-   };
-
    const handleCreateCoffeeOffer = () => {
      if (canHostEvent) {
        navigate('/host/offer/create');
      } else {
        toast({
          title: 'Access Required',
-         description: 'Please upgrade your access to host events.',
+         description: 'Please upgrade your access to create coffee offers.',
        });
      }
    };
@@ -168,40 +157,6 @@ export default function ProfilePage() {
            >
              Create Coffee Offer
            </Button>
-
-           <Button
-             onClick={handleHostEvent}
-             className="w-full btn-run btn-run-yes mb-4"
-             disabled={roleLoading}
-           >
-             Create Event
-           </Button>
-
-          <Button
-            onClick={() => navigate('/events/my')}
-            className="w-full btn-run btn-run-yes mb-4"
-          >
-            View Event
-          </Button>
- 
-            {(role === 'run_club_host' || role === 'super_admin') && (
-              <Button
-                onClick={() => {
-                  if (canHostEvent) {
-                    navigate('/host/participants');
-                  } else {
-                    toast({
-                      title: 'Access Required',
-                      description: 'Please upgrade your access to host events.',
-                    });
-                  }
-                }}
-                className="w-full btn-run btn-run-yes mb-4"
-                disabled={roleLoading}
-              >
-                View Participants
-              </Button>
-            )}
  
           <Button
             onClick={handleSignOut}

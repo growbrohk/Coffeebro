@@ -64,7 +64,7 @@ export interface Org {
          return data as Org[];
        }
 
-       // Regular users can't see any orgs (they can't create events)
+       // Regular users can't see any orgs (they can't create coffee offers)
        return [];
      },
      enabled: !!user && (isSuperAdmin || isRunClubHost),

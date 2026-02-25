@@ -1,4 +1,3 @@
-import type { RunClubEvent } from '@/hooks/useEvents';
 import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { cn } from '@/lib/utils';
 
@@ -6,10 +5,7 @@ interface CalendarDayCellProps {
   day: number;
   coffeeCount: number;
   isToday: boolean;
-  events: RunClubEvent[];
   coffeeOffers: CoffeeOffer[];
-  registeredEventIds: Set<string>;
-  onEventClick: (event: RunClubEvent) => void;
   onCoffeeOfferClick: (offer: CoffeeOffer) => void;
 }
 
@@ -25,21 +21,12 @@ export function CalendarDayCell({
   day,
   coffeeCount,
   isToday,
-  events,
   coffeeOffers,
-  registeredEventIds,
-  onEventClick,
   onCoffeeOfferClick,
 }: CalendarDayCellProps) {
   const MAX_VISIBLE_ITEMS = 2;
-  const allItems: Array<
-    { type: 'offer'; data: CoffeeOffer } | { type: 'event'; data: RunClubEvent }
-  > = [
-    ...coffeeOffers.map((o) => ({ type: 'offer' as const, data: o })),
-    ...events.map((e) => ({ type: 'event' as const, data: e })),
-  ];
-  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
-  const remainingCount = allItems.length - MAX_VISIBLE_ITEMS;
+  const visibleItems = coffeeOffers.slice(0, MAX_VISIBLE_ITEMS);
+  const remainingCount = coffeeOffers.length - MAX_VISIBLE_ITEMS;
 
   return (
     <div
@@ -66,40 +53,22 @@ export function CalendarDayCell({
         )}
       </div>
 
-      {/* Coffee offers (orange) + Events (muted) */}
-      {allItems.length > 0 && (
+      {/* Coffee offers */}
+      {coffeeOffers.length > 0 && (
         <div className="calendar-day-events">
-          {visibleItems.map((item) =>
-            item.type === 'offer' ? (
-              <button
-                key={`offer-${item.data.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCoffeeOfferClick(item.data);
-                }}
-                className="calendar-event-label calendar-event-coffee"
-                title={item.data.name}
-              >
-                <span className="truncate max-w-full">{item.data.name}</span>
-              </button>
-            ) : (
-              <button
-                key={`event-${item.data.id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEventClick(item.data);
-                }}
-                className={`calendar-event-label ${
-                  registeredEventIds.has(item.data.id)
-                    ? 'calendar-event-registered'
-                    : ''
-                }`}
-                title={item.data.name}
-              >
-                {item.data.name}
-              </button>
-            )
-          )}
+          {visibleItems.map((offer) => (
+            <button
+              key={`offer-${offer.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCoffeeOfferClick(offer);
+              }}
+              className="calendar-event-label calendar-event-coffee"
+              title={offer.name}
+            >
+              <span className="truncate max-w-full">{offer.name}</span>
+            </button>
+          ))}
 
           {remainingCount > 0 && (
             <span className="calendar-event-more">+{remainingCount} more</span>

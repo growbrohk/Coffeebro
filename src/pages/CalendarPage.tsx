@@ -1,14 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ProgressBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMonthCoffeeCount, useMonthCoffeeDayCounts } from '@/hooks/useCoffees';
-import { useMonthlyEvents, groupEventsByDate, type RunClubEvent } from '@/hooks/useEvents';
 import { useMonthlyCoffeeOffers, groupCoffeeOffersByDate, type CoffeeOffer } from '@/hooks/useCoffeeOffers';
-import { useUserEventRegistrations } from '@/hooks/useEventRegistrations';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
-import { EventDetailModal } from '@/components/EventDetailModal';
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { localYMD } from '@/lib/date';
 
@@ -22,8 +19,6 @@ const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 export default function CalendarPage() {
   const { user, loading } = useAuth();
   const [viewDate, setViewDate] = useState(new Date());
-  const [selectedEvent, setSelectedEvent] = useState<RunClubEvent | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [selectedCoffeeOffer, setSelectedCoffeeOffer] = useState<CoffeeOffer | null>(null);
   const [coffeeOfferModalOpen, setCoffeeOfferModalOpen] = useState(false);
   
@@ -34,22 +29,14 @@ export default function CalendarPage() {
   
   const monthCount = useMonthCoffeeCount();
   const { data: coffeeDayCounts = {}, isLoading: coffeeCountsLoading } = useMonthCoffeeDayCounts(year, month);
-  const { data: events = [] } = useMonthlyEvents(year, month);
   const { data: coffeeOffers = [] } = useMonthlyCoffeeOffers(year, month);
-  const { data: registrations = [] } = useUserEventRegistrations();
 
   // Get first day of month and total days
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Group events and coffee offers by date
-  const eventsByDate = groupEventsByDate(events);
+  // Group coffee offers by date
   const coffeeOffersByDate = groupCoffeeOffersByDate(coffeeOffers);
-  
-  // Create set of registered event IDs for quick lookup
-  const registeredEventIds = useMemo(() => {
-    return new Set(registrations.map(r => r.event_id));
-  }, [registrations]);
 
   const isLoading = loading;
 
@@ -63,11 +50,6 @@ export default function CalendarPage() {
 
   const goToToday = () => {
     setViewDate(new Date());
-  };
-
-  const handleEventClick = (event: RunClubEvent) => {
-    setSelectedEvent(event);
-    setModalOpen(true);
   };
 
   const handleCoffeeOfferClick = (offer: CoffeeOffer) => {
@@ -131,7 +113,6 @@ export default function CalendarPage() {
             const dateKey = localYMD(new Date(year, month, day));
             const coffeeCount = coffeeDayCounts[dateKey] || 0;
             const isToday = isCurrentMonth && today.getDate() === day;
-            const dayEvents = eventsByDate.get(day) || [];
             const dayCoffeeOffers = coffeeOffersByDate.get(day) || [];
 
             return (
@@ -140,10 +121,7 @@ export default function CalendarPage() {
                 day={day}
                 coffeeCount={coffeeCount}
                 isToday={isToday}
-                events={dayEvents}
                 coffeeOffers={dayCoffeeOffers}
-                registeredEventIds={registeredEventIds}
-                onEventClick={handleEventClick}
                 onCoffeeOfferClick={handleCoffeeOfferClick}
               />
             );
@@ -176,21 +154,8 @@ export default function CalendarPage() {
             </div>
             <span className="text-muted-foreground">$17coffee</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-4 bg-muted text-[8px] flex items-center justify-center">
-              Event
-            </div>
-            <span className="text-muted-foreground">Event</span>
-          </div>
         </div>
       </div>
-
-      {/* Event Detail Modal */}
-      <EventDetailModal 
-        event={selectedEvent} 
-        open={modalOpen} 
-        onOpenChange={setModalOpen} 
-      />
 
       {/* Coffee Offer Detail Modal */}
       <CoffeeOfferDetailModal

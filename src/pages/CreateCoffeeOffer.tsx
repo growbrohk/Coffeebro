@@ -127,7 +127,7 @@ export default function CreateCoffeeOffer() {
         <div className="container px-4 py-8">
           <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
             <p className="font-bold uppercase mb-2">Access Required</p>
-            <p className="text-sm mb-4">Please upgrade your access to host events.</p>
+            <p className="text-sm mb-4">Please upgrade your access to create coffee offers.</p>
             <Button onClick={() => navigate('/profile')} variant="outline" className="btn-run">
               Back to Profile
             </Button>
