@@ -29,6 +29,7 @@ export default function ScanPage() {
   const lastCodeRef = useRef<string | null>(null);
   const lastCodeTimeRef = useRef<number>(0);
   const loadingRef = useRef(false);
+  const activeTabRef = useRef(activeTab);
 
   // Host gate check
   if (!roleLoading && !canHostEvent) {
@@ -126,13 +127,51 @@ export default function ScanPage() {
     }
   }, []);
 
-  // QR Scanning setup
+  // Update activeTab ref
   useEffect(() => {
-    if (activeTab !== 'qr' || !videoRef.current) {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  // QR Scanning setup - runs when QR tab is active
+  useEffect(() => {
+    // Only run when QR tab is active
+    if (activeTab !== 'qr') {
+      // Cleanup when leaving QR tab
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      if (readerRef.current) {
+        readerRef.current = null;
+      }
+      controlsRef.current = null;
       return;
     }
 
+    // Reset status when switching back to QR tab
+    setCameraStatus('Point camera at QR code');
+    setHasPermission(null);
+
     const startScanning = async () => {
+      // Clean up any existing reader first
+      if (readerRef.current) {
+        if (videoRef.current && videoRef.current.srcObject) {
+          const stream = videoRef.current.srcObject as MediaStream;
+          stream.getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
+        }
+        readerRef.current = null;
+      }
+      
+      // Small delay to ensure cleanup is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Double-check we're still on QR tab after delay (use ref to avoid stale closure)
+      if (activeTabRef.current !== 'qr' || !videoRef.current) {
+        return;
+      }
+
       try {
         const reader = new BrowserMultiFormatReader();
         readerRef.current = reader;
@@ -158,13 +197,23 @@ export default function ScanPage() {
         setCameraStatus('Point camera at QR code');
         setHasPermission(true);
 
+        // Ensure video element is still available
+        if (!videoRef.current) {
+          console.error('Video element not available');
+          return;
+        }
+
         // Start scanning - let the reader handle camera permissions
-        // decodeFromVideoDevice returns a promise that resolves when scanning starts
         try {
           await reader.decodeFromVideoDevice(
             selectedDeviceId,
             videoRef.current,
             (result, error) => {
+              // Check if we're still on QR tab (use ref to avoid stale closure)
+              if (activeTabRef.current !== 'qr') {
+                return;
+              }
+
               if (result) {
                 const code = result.getText();
                 if (code && code !== lastCodeRef.current) {
@@ -186,8 +235,6 @@ export default function ScanPage() {
               }
             }
           );
-          // If we get here, scanning started successfully
-          // Store a reference for cleanup (the reader itself can be stopped)
         } catch (scanError: any) {
           console.error('Error starting QR scanner:', scanError);
           setHasPermission(false);
@@ -204,10 +251,21 @@ export default function ScanPage() {
       }
     };
 
-    // Start scanning after user gesture (tab click counts)
+    // Wait for video element to be available, then start scanning
+    if (!videoRef.current) {
+      // Use a small delay to ensure video element is mounted
+      const timer = setTimeout(() => {
+        if (videoRef.current && activeTab === 'qr') {
+          startScanning();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    // Start scanning immediately if video element is available
     startScanning();
 
-    // Cleanup - stop all video tracks
+    // Cleanup function
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -218,19 +276,6 @@ export default function ScanPage() {
       controlsRef.current = null;
     };
   }, [activeTab, redeem]);
-
-  // Stop scanning when leaving QR tab
-  useEffect(() => {
-    if (activeTab !== 'qr') {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-      readerRef.current = null;
-      controlsRef.current = null;
-    }
-  }, [activeTab]);
 
   const handleManualRedeem = () => {
     redeem(manualCode);
