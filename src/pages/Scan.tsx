@@ -25,6 +25,7 @@ export default function ScanPage() {
   // QR scanning refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  const controlsRef = useRef<{ stop: () => void } | null>(null);
   const lastCodeRef = useRef<string | null>(null);
   const lastCodeTimeRef = useRef<number>(0);
   const loadingRef = useRef(false);
@@ -89,7 +90,7 @@ export default function ScanPage() {
     setResult({ type: null, message: null });
 
     try {
-      const { data, error } = await supabase.rpc('redeem_voucher_atomic', {
+      const { data, error } = await supabase.rpc('redeem_voucher_atomic' as any, {
         p_code: trimmedCode,
       });
 
@@ -136,19 +137,17 @@ export default function ScanPage() {
         const reader = new BrowserMultiFormatReader();
         readerRef.current = reader;
 
-        // Check camera permission
+        // List available video devices (static method)
+        let videoInputDevices;
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          stream.getTracks().forEach(track => track.stop());
-          setHasPermission(true);
-        } catch (permError) {
+          videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+        } catch (listError) {
+          console.error('Error listing video devices:', listError);
           setHasPermission(false);
-          setCameraStatus('Camera permission denied. Please use manual entry.');
+          setCameraStatus('Unable to access camera. Please use manual entry.');
           return;
         }
 
-        // Start scanning
-        const videoInputDevices = await reader.listVideoInputDevices();
         if (videoInputDevices.length === 0) {
           setHasPermission(false);
           setCameraStatus('No camera found. Please use manual entry.');
@@ -157,25 +156,49 @@ export default function ScanPage() {
 
         const selectedDeviceId = videoInputDevices[0].deviceId;
         setCameraStatus('Point camera at QR code');
+        setHasPermission(true);
 
-        reader.decodeFromVideoDevice(
-          selectedDeviceId,
-          videoRef.current,
-          (result, error) => {
-            if (result) {
-              const code = result.getText();
-              if (code && code !== lastCodeRef.current) {
-                redeem(code);
+        // Start scanning - let the reader handle camera permissions
+        // decodeFromVideoDevice returns a promise that resolves when scanning starts
+        try {
+          await reader.decodeFromVideoDevice(
+            selectedDeviceId,
+            videoRef.current,
+            (result, error) => {
+              if (result) {
+                const code = result.getText();
+                if (code && code !== lastCodeRef.current) {
+                  redeem(code);
+                }
+              }
+              if (error) {
+                if (error.name === 'NotFoundException') {
+                  // NotFoundException is normal when no QR code is visible
+                  return;
+                }
+                // Other errors might indicate permission issues
+                if (error.name === 'NotAllowedError' || error.name === 'NotReadableError') {
+                  setHasPermission(false);
+                  setCameraStatus('Camera permission denied. Please use manual entry.');
+                } else {
+                  console.debug('QR scan error:', error);
+                }
               }
             }
-            if (error && error.name !== 'NotFoundException') {
-              // NotFoundException is normal when no QR code is visible
-              console.debug('QR scan error:', error);
-            }
+          );
+          // If we get here, scanning started successfully
+          // Store a reference for cleanup (the reader itself can be stopped)
+        } catch (scanError: any) {
+          console.error('Error starting QR scanner:', scanError);
+          setHasPermission(false);
+          if (scanError.name === 'NotAllowedError' || scanError.name === 'NotReadableError') {
+            setCameraStatus('Camera permission denied. Please use manual entry.');
+          } else {
+            setCameraStatus('Failed to start camera. Please use manual entry.');
           }
-        );
+        }
       } catch (error) {
-        console.error('Error starting QR scanner:', error);
+        console.error('Error initializing QR scanner:', error);
         setHasPermission(false);
         setCameraStatus('Failed to start camera. Please use manual entry.');
       }
@@ -184,20 +207,28 @@ export default function ScanPage() {
     // Start scanning after user gesture (tab click counts)
     startScanning();
 
-    // Cleanup
+    // Cleanup - stop all video tracks
     return () => {
-      if (readerRef.current) {
-        readerRef.current.reset();
-        readerRef.current = null;
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
       }
+      readerRef.current = null;
+      controlsRef.current = null;
     };
   }, [activeTab, redeem]);
 
   // Stop scanning when leaving QR tab
   useEffect(() => {
-    if (activeTab !== 'qr' && readerRef.current) {
-      readerRef.current.reset();
+    if (activeTab !== 'qr') {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
       readerRef.current = null;
+      controlsRef.current = null;
     }
   }, [activeTab]);
 
@@ -261,34 +292,37 @@ export default function ScanPage() {
 
             {/* Manual Entry Tab */}
             <TabsContent value="manual" className="mt-6">
-              <div className="space-y-4">
-                <div className="flex gap-2">
+              <div className="space-y-4 min-h-[200px]">
+                <div className="flex flex-col gap-3">
                   <Input
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder="Enter voucher code"
-                    className="flex-1"
+                    className="w-full"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !loading) {
+                      if (e.key === 'Enter' && !loading && manualCode.trim()) {
                         handleManualRedeem();
                       }
                     }}
                     disabled={loading}
+                    autoFocus
                   />
-                  <Button
-                    onClick={handleManualRedeem}
-                    disabled={loading || !manualCode.trim()}
-                    className="btn-run"
-                  >
-                    {loading ? 'Redeeming...' : 'Redeem'}
-                  </Button>
-                  <Button
-                    onClick={handleClear}
-                    variant="outline"
-                    disabled={loading}
-                  >
-                    Clear
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleManualRedeem}
+                      disabled={loading || !manualCode.trim()}
+                      className="flex-1"
+                    >
+                      {loading ? 'Redeeming...' : 'Redeem'}
+                    </Button>
+                    <Button
+                      onClick={handleClear}
+                      variant="outline"
+                      disabled={loading}
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
               </div>
             </TabsContent>
