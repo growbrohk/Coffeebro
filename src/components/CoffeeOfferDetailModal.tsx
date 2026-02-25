@@ -333,7 +333,7 @@ export function CoffeeOfferDetailModal({
           <div className="pt-2 space-y-2">
             {hasVoucher ? (
               <Button className="w-full btn-run" disabled>
-                Already Grabbed
+                {myVoucher?.status === 'redeemed' ? 'Redeemed' : 'Already Grabbed'}
               </Button>
             ) : (
               <Button
