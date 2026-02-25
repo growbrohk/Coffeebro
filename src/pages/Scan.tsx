@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { ArrowLeft, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -23,204 +23,110 @@ export default function ScanPage() {
     message: null,
   });
   const [loading, setLoading] = useState(false);
-  const [cameraStatus, setCameraStatus] = useState<string>('Point camera at QR code');
+  const [cameraStatus, setCameraStatus] = useState<string>('Initializing camera...');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  // QR scanning refs
+  // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
-
-  // Anti-spam + lock refs
+  const controlsRef = useRef<IScannerControls | null>(null); // CRITICAL: Controls the hardware stream
+  
   const lastCodeRef = useRef<string | null>(null);
   const lastCodeTimeRef = useRef<number>(0);
-  const loadingRef = useRef(false);
-
-  // Keep latest tab in a ref (avoid stale closure in callback)
   const activeTabRef = useRef(activeTab);
+
   useEffect(() => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
-  const stopVideoStream = useCallback(() => {
-    if (videoRef.current?.srcObject) {
+  // Reliable Cleanup Function
+  const cleanupScanner = useCallback(() => {
+    if (controlsRef.current) {
+      controlsRef.current.stop(); // This turns off the green light/camera
+      controlsRef.current = null;
+    }
+    if (videoRef.current) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((t) => t.stop());
+      stream?.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
   }, []);
 
-  const resetReader = useCallback(() => {
-    if (readerRef.current) {
-      try {
-        // ZXing cleanup
-        (readerRef.current as any).reset?.();
-      } catch {
-        // ignore
-      }
-      readerRef.current = null;
-    }
-  }, []);
-
-  // Host gate check (UX only; backend still enforces)
-  if (!roleLoading && !canHostEvent) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container px-4 py-8">
-          <div className="max-w-sm mx-auto">
-            <div className="mb-6">
-              <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
-                <ArrowLeft className="w-6 h-6" />
-              </Button>
-            </div>
-            <div className="p-6 bg-muted rounded-lg text-center">
-              <h2 className="text-xl font-bold mb-2">No Access</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Host access required to scan vouchers.
-              </p>
-              <Button onClick={() => navigate(-1)} variant="outline">
-                Back
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Redeem function (shared for QR and manual)
   const redeem = useCallback(async (code: string) => {
     const trimmedCode = code.trim();
+    if (!trimmedCode || loading) return;
 
-    if (!trimmedCode) {
-      setResult({ type: 'error', message: 'Please enter a code' });
-      return;
-    }
-
-    // Anti-spam: ignore same code within 2 seconds
+    // Anti-spam
     const now = Date.now();
-    if (lastCodeRef.current === trimmedCode && now - lastCodeTimeRef.current < 2000) {
-      return;
-    }
-
-    // Don't redeem while loading
-    if (loadingRef.current) return;
+    if (lastCodeRef.current === trimmedCode && now - lastCodeTimeRef.current < 3000) return;
 
     lastCodeRef.current = trimmedCode;
     lastCodeTimeRef.current = now;
-
-    loadingRef.current = true;
     setLoading(true);
     setResult({ type: null, message: null });
 
     try {
-      const { error } = await supabase.rpc('redeem_voucher_atomic' as any, {
-        p_code: trimmedCode,
-      });
-
+      const { error } = await supabase.rpc('redeem_voucher_atomic', { p_code: trimmedCode });
       if (error) {
-        let userMessage = error.message || 'Failed to redeem voucher';
-
-        if (error.message === 'NOT_AUTHORIZED') userMessage = 'Host only';
-        else if (error.message === 'NOT_FOUND') userMessage = 'Invalid code';
-        else if (error.message === 'ALREADY_REDEEMED') userMessage = 'Already redeemed';
-        else if (error.message === 'NOT_IN_WINDOW') userMessage = 'Not in redeem window';
-
-        setResult({ type: 'error', message: userMessage });
+        let msg = error.message;
+        if (msg === 'NOT_FOUND') msg = 'Invalid code';
+        if (msg === 'ALREADY_REDEEMED') msg = 'Already used';
+        setResult({ type: 'error', message: msg });
       } else {
-        setResult({ type: 'success', message: 'Voucher redeemed successfully!' });
-
-        // Allow re-scan of same code after a moment (useful if user insists)
-        setTimeout(() => {
-          lastCodeRef.current = null;
-        }, 3000);
+        setResult({ type: 'success', message: 'Success!' });
+        setTimeout(() => { lastCodeRef.current = null; }, 5000);
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to redeem voucher';
-      setResult({ type: 'error', message: errorMessage });
+    } catch (err) {
+      setResult({ type: 'error', message: 'System error' });
     } finally {
-      loadingRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [loading]);
 
-  // QR Scanner setup (this is the important fixed part)
+  // Main Scanner Effect
   useEffect(() => {
-    // Always cleanup first when tab changes
-    // (prevents stale streams/reader from blocking restart)
-    stopVideoStream();
-    resetReader();
+    let isMounted = true;
 
     if (activeTab !== 'qr') {
+      cleanupScanner();
       return;
     }
 
-    setCameraStatus('Point camera at QR code');
-    setHasPermission(null);
-
-    let cancelled = false;
-
     const startScanner = async () => {
-      // Small delay helps when rapidly switching tabs on mobile
-      await new Promise((r) => setTimeout(r, 50));
-      if (cancelled) return;
-
-      if (!videoRef.current) {
-        setHasPermission(false);
-        setCameraStatus('Camera not ready. Please try again.');
-        return;
-      }
+      // 1. Clear any existing instances before starting a new one
+      cleanupScanner();
+      
+      // 2. Small delay to let hardware release from previous session
+      await new Promise(r => setTimeout(r, 250));
+      if (!isMounted || activeTabRef.current !== 'qr') return;
 
       try {
         const reader = new BrowserMultiFormatReader();
         readerRef.current = reader;
 
-        await reader.decodeFromConstraints(
-          {
-            video: {
-              facingMode: { ideal: 'environment' }, // back camera
-            },
-          },
-          videoRef.current,
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' } } },
+          videoRef.current!,
           (scanResult, scanError) => {
-            // Don’t do anything if user left QR tab
-            if (activeTabRef.current !== 'qr') return;
-
+            if (!isMounted || activeTabRef.current !== 'qr') return;
             if (scanResult) {
-              const scannedCode = scanResult.getText();
-              if (scannedCode && scannedCode !== lastCodeRef.current) {
-                redeem(scannedCode);
-              }
-            }
-
-            if (scanError) {
-              const name = (scanError as any).name;
-
-              // NotFoundException is normal (no QR in frame)
-              if (name === 'NotFoundException') return;
-
-              if (name === 'NotAllowedError' || name === 'NotReadableError') {
-                setHasPermission(false);
-                setCameraStatus('Camera permission denied. Please use manual entry.');
-              } else {
-                console.debug('QR scan error:', scanError);
-              }
+              redeem(scanResult.getText());
             }
           }
         );
 
-        if (cancelled) return;
-        setHasPermission(true);
-        setCameraStatus('Point camera at QR code');
-      } catch (err: any) {
-        console.error('Error starting QR scanner:', err);
-        if (cancelled) return;
-
-        setHasPermission(false);
-        const name = err?.name;
-        if (name === 'NotAllowedError' || name === 'NotReadableError') {
-          setCameraStatus('Camera permission denied. Please use manual entry.');
+        // 3. Check again if user switched tabs while camera was starting
+        if (!isMounted || activeTabRef.current !== 'qr') {
+          controls.stop();
         } else {
-          setCameraStatus('Failed to start camera. Please use manual entry.');
+          controlsRef.current = controls;
+          setHasPermission(true);
+          setCameraStatus('Scan a QR code');
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          setHasPermission(false);
+          setCameraStatus('Camera access denied');
         }
       }
     };
@@ -228,115 +134,58 @@ export default function ScanPage() {
     startScanner();
 
     return () => {
-      cancelled = true;
-      stopVideoStream();
-      resetReader();
+      isMounted = false;
+      cleanupScanner();
     };
-  }, [activeTab, redeem, resetReader, stopVideoStream]);
+  }, [activeTab, redeem, cleanupScanner]);
 
-  const handleManualRedeem = () => redeem(manualCode);
-
-  const handleClear = () => {
-    setManualCode('');
-    setResult({ type: null, message: null });
-  };
+  if (!roleLoading && !canHostEvent) {
+    return <div className="p-8 text-center">Host access required.</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container px-4 py-8">
-        <div className="max-w-md mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-center relative mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
-              className="absolute left-0 p-2"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </Button>
-            <h1 className="text-2xl font-black uppercase tracking-tight">Scan Voucher</h1>
-          </div>
-
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="qr">QR Scan</TabsTrigger>
-              <TabsTrigger value="manual">Enter Code</TabsTrigger>
-            </TabsList>
-
-            {/* QR Scan Tab */}
-            <TabsContent value="qr" className="mt-6">
-              <div className="space-y-4">
-                <div className="relative w-full aspect-square bg-muted rounded-lg overflow-hidden">
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    muted
-                  />
-                  {hasPermission === false && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted/90 p-4">
-                      <p className="text-sm text-center text-muted-foreground">
-                        {cameraStatus}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-center text-muted-foreground">{cameraStatus}</p>
-              </div>
-            </TabsContent>
-
-            {/* Manual Entry Tab */}
-            <TabsContent value="manual" className="mt-6">
-              <div className="space-y-4 min-h-[200px]">
-                <div className="flex flex-col gap-3">
-                  <Input
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="Enter voucher code"
-                    className="w-full"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !loading && manualCode.trim()) {
-                        handleManualRedeem();
-                      }
-                    }}
-                    disabled={loading}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleManualRedeem}
-                      disabled={loading || !manualCode.trim()}
-                      className="flex-1"
-                    >
-                      {loading ? 'Redeeming...' : 'Redeem'}
-                    </Button>
-                    <Button onClick={handleClear} variant="outline" disabled={loading}>
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Result Panel */}
-          {result.type && (
-            <Alert
-              variant={result.type === 'error' ? 'destructive' : 'default'}
-              className="mt-6"
-            >
-              <div className="flex items-center gap-2">
-                {result.type === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>{result.message}</AlertDescription>
-              </div>
-            </Alert>
-          )}
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft /></Button>
+          <h1 className="text-xl font-bold uppercase">Scanner</h1>
         </div>
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="qr">Camera</TabsTrigger>
+            <TabsTrigger value="manual">Manual</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="qr" className="relative aspect-square bg-black rounded-xl overflow-hidden mt-4">
+            <video ref={videoRef} className="w-full h-full object-cover" />
+
+            {!hasPermission && (
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center p-6 text-center">
+                <p>{cameraStatus}</p>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="manual" className="space-y-4 mt-4">
+            <Input 
+              placeholder="Enter code..." 
+              value={manualCode} 
+              onChange={e => setManualCode(e.target.value)} 
+            />
+            <Button className="w-full" onClick={() => redeem(manualCode)} disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Redeem
+            </Button>
+          </TabsContent>
+        </Tabs>
+
+        {result.type && (
+          <Alert variant={result.type === 'error' ? 'destructive' : 'default'}>
+            {result.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            <AlertDescription>{result.message}</AlertDescription>
+          </Alert>
+        )}
       </div>
     </div>
   );
