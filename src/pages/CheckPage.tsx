@@ -5,6 +5,7 @@ import { CoffeeModal } from '@/components/CoffeeModal';
 import { CoffeeDetailsSheet, CoffeeDetails } from '@/components/CoffeeDetailsSheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMonthCoffeeCount, useTodayCoffees, useAddCoffee, useTodayPercentage } from '@/hooks/useCoffees';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate } from 'react-router-dom';
 
 // Temporary type until database types are regenerated
@@ -26,6 +27,7 @@ export default function CheckPage() {
   const { data: monthCount = 0, isLoading: countLoading } = useMonthCoffeeCount();
   const { data: todayCoffees = [], isLoading: todayLoading } = useTodayCoffees();
   const { data: percentage } = useTodayPercentage();
+  const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const addCoffee = useAddCoffee();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
@@ -84,6 +86,17 @@ export default function CheckPage() {
               >
                 {addCoffee.isPending ? 'Saving...' : '+ Add Coffee'}
               </Button>
+
+              {/* Host-only Scan Voucher button */}
+              {!roleLoading && canHostEvent && (
+                <Button
+                  onClick={() => navigate('/scan')}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  size="lg"
+                >
+                  Scan Voucher
+                </Button>
+              )}
 
               {/* Today's coffees list */}
               {todayCoffees.length > 0 && (
