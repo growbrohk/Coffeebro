@@ -200,22 +200,28 @@ export default function HostParticipantsPage() {
                    <div className="animate-pulse text-muted-foreground">Loading tickets...</div>
                  </div>
                ) : tickets && tickets.length > 0 ? (
-                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                   {tickets.map((ticket, idx) => (
-                     <RedeemCodeCard
-                       key={ticket.id}
-                       title="Ticket"
-                       code={ticket.code}
-                       status={ticket.status}
-                       metaLines={[
-                         `#${idx + 1} of ${tickets.length}`,
-                         ticket.redeemed_at
-                           ? `Redeemed at ${format(parseISO(ticket.redeemed_at), 'MMM d, h:mm a')}`
-                           : '',
-                       ].filter(Boolean)}
-                     />
-                   ))}
-                 </div>
+                 <>
+                   <div className="text-xs text-muted-foreground mb-2">
+                     {tickets.filter(t => t.assigned_to).length} assigned, {tickets.filter(t => !t.assigned_to && t.status === 'active').length} available
+                   </div>
+                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                     {tickets.map((ticket, idx) => (
+                       <RedeemCodeCard
+                         key={ticket.id}
+                         title="Ticket"
+                         code={ticket.code}
+                         status={ticket.status}
+                         metaLines={[
+                           `#${idx + 1} of ${tickets.length}`,
+                           ticket.assigned_to ? 'Assigned' : 'Available',
+                           ticket.redeemed_at
+                             ? `Redeemed at ${format(parseISO(ticket.redeemed_at), 'MMM d, h:mm a')}`
+                             : '',
+                         ].filter(Boolean)}
+                       />
+                     ))}
+                   </div>
+                 </>
                ) : (
                  <div className="text-center p-6 bg-muted rounded-lg">
                    <p className="text-muted-foreground font-medium">No tickets for this event.</p>

@@ -22,17 +22,17 @@ export function useUserEvents() {
     queryFn: async () => {
       if (!user) return [];
 
-      // Fetch all events where the user has registered
-      const { data: registrations, error: regError } = await supabase
-        .from('event_registrations')
+      // Fetch all events where the user has a ticket
+      const { data: tickets, error: ticketsError } = await supabase
+        .from('event_tickets')
         .select('event_id')
-        .eq('user_id', user.id)
-        .eq('status', 'registered');
+        .eq('assigned_to', user.id)
+        .eq('status', 'active');
 
-      if (regError) throw regError;
-      if (!registrations || registrations.length === 0) return [];
+      if (ticketsError) throw ticketsError;
+      if (!tickets || tickets.length === 0) return [];
 
-      const eventIds = registrations.map(r => r.event_id);
+      const eventIds = tickets.map(t => t.event_id);
 
       // Fetch event details with org info
       const { data: events, error: eventsError } = await supabase

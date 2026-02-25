@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Calendar, Check, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEventRegistration, useRegisterForEvent, useCancelRegistration } from '@/hooks/useEventRegistrations';
+import { useMyTicketForEvent } from '@/hooks/useEventTickets';
 import { useToast } from '@/hooks/use-toast';
 import { useCanViewParticipants } from '@/hooks/useCanViewParticipants';
+import { RedeemCodeCard } from '@/components/RedeemCodeCard';
 import type { RunClubEvent } from '@/hooks/useEvents';
 
 interface EventDetailModalProps {
@@ -24,6 +26,7 @@ export function EventDetailModal({ event, open, onOpenChange }: EventDetailModal
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
   const { data: registration, isLoading: isLoadingRegistration } = useEventRegistration(event?.id);
+  const { data: myTicket, isLoading: isLoadingTicket } = useMyTicketForEvent(event?.id || null);
   const { data: canViewParticipants, isLoading: isLoadingCanView } = useCanViewParticipants(event?.id || null);
   const registerMutation = useRegisterForEvent();
   const cancelMutation = useCancelRegistration();
@@ -60,18 +63,27 @@ export function EventDetailModal({ event, open, onOpenChange }: EventDetailModal
   const handleConfirmRegister = async () => {
     setShowRegisterConfirm(false);
     try {
-      await registerMutation.mutateAsync({
+      const result = await registerMutation.mutateAsync({
         eventId: event.id,
         existingRegistrationId: existingRegistrationId,
       });
       toast({
         title: 'Registered!',
-        description: `You're registered for ${event.name}.`,
+        description: result.ticket_code 
+          ? `You're registered! Your ticket code: ${result.ticket_code}`
+          : `You're registered for ${event.name}.`,
       });
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to register';
+      let userMessage = errorMessage;
+      if (errorMessage === 'NO_TICKETS_AVAILABLE') {
+        userMessage = 'No tickets available for this event.';
+      } else if (errorMessage === 'ALREADY_REGISTERED') {
+        userMessage = 'You are already registered for this event.';
+      }
       toast({
         title: 'Registration failed',
-        description: 'Please try again.',
+        description: userMessage,
         variant: 'destructive',
       });
     }
@@ -147,9 +159,24 @@ export function EventDetailModal({ event, open, onOpenChange }: EventDetailModal
               </div>
             )}
 
+            {/* Ticket Code & QR (if registered) */}
+            {!isLoadingTicket && myTicket && (
+              <div className="pt-2 border-t border-foreground/10">
+                <RedeemCodeCard
+                  title="Your Ticket"
+                  code={myTicket.code}
+                  status={myTicket.status}
+                  metaLines={[
+                    `Event: ${event.name}`,
+                    myTicket.redeemed_at ? `Redeemed at ${new Date(myTicket.redeemed_at).toLocaleString()}` : '',
+                  ].filter(Boolean)}
+                />
+              </div>
+            )}
+
             {/* Registration Controls */}
             <div className="pt-4 border-t border-foreground/10 space-y-3">
-              {isLoadingRegistration ? (
+              {isLoadingRegistration || isLoadingTicket ? (
                 <div className="text-sm text-muted-foreground">Loading...</div>
               ) : isRegistered ? (
                 <div className="flex items-center gap-3">
