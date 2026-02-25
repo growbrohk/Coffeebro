@@ -214,7 +214,7 @@ export function CoffeeOfferDetailModal({
                 <p className="text-xs text-muted-foreground mb-2">Your Voucher Code</p>
                 <div className="flex items-center justify-center gap-2">
                   <span className="font-mono font-bold text-2xl tracking-widest">
-                    {(myVoucher.code || mintedCode)?.toUpperCase()}
+                    {myVoucher.code || mintedCode}
                   </span>
                   <Button
                     type="button"
@@ -375,7 +375,7 @@ export function CoffeeOfferDetailModal({
                 />
               </div>
               <p className="text-xs text-muted-foreground font-mono">
-                {(myVoucher.code || mintedCode)?.toUpperCase()}
+                {myVoucher.code || mintedCode}
               </p>
             </div>
         </DialogContent>

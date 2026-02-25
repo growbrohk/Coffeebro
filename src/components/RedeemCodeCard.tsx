@@ -56,7 +56,7 @@ export function RedeemCodeCard({
         </div>
         <div className="flex items-center justify-center gap-2">
           <span className="font-mono font-bold text-2xl tracking-widest">
-            {code.toUpperCase()}
+            {code}
           </span>
           <Button
             type="button"
@@ -100,7 +100,7 @@ export function RedeemCodeCard({
               <QRCode value={code} size={220} />
             </div>
             <p className="text-xs text-muted-foreground font-mono">
-              {code.toUpperCase()}
+              {code}
             </p>
           </div>
         </DialogContent>
