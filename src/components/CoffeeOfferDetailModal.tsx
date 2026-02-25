@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Calendar, Users, Coffee, QrCode } from 'lucide-react';
@@ -7,6 +8,7 @@ import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { localYMD } from '@/lib/date';
 import { useMyVoucherForOffer, useVoucherCountForOffer, useMintVoucher } from '@/hooks/useVouchers';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
 
 interface CoffeeOfferDetailModalProps {
@@ -27,6 +29,8 @@ export function CoffeeOfferDetailModal({
   const [mintedCode, setMintedCode] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { canHostEvent } = useUserRole();
 
   // Fetch user's voucher for this offer
   const { data: myVoucher, refetch: refetchVoucher } = useMyVoucherForOffer(offer.id);
@@ -354,6 +358,21 @@ export function CoffeeOfferDetailModal({
               <p className="text-xs text-muted-foreground text-center">
                 {getRegisterHelperText()}
               </p>
+            )}
+
+            {/* View Participants Button (Host Only) */}
+            {canHostEvent && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate(`/offers/${offer.id}/participants`);
+                }}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                View Participants
+              </Button>
             )}
           </div>
         </div>
