@@ -31,6 +31,7 @@
   const [eventTime, setEventTime] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
+  const [ticketLimit, setTicketLimit] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
  
    // Loading state
@@ -106,10 +107,24 @@
       return;
     }
 
+    const ticketLimitNum =
+      ticketLimit.trim() === '' ? null : parseInt(ticketLimit, 10);
+    if (
+      ticketLimit.trim() !== '' &&
+      (ticketLimitNum === null || isNaN(ticketLimitNum) || ticketLimitNum < 0)
+    ) {
+      toast({
+        title: 'Invalid ticket limit',
+        description: 'Ticket limit must be an integer >= 0.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('events')
         .insert({
           name: name.trim(),
@@ -119,16 +134,36 @@
           description: description.trim() || null,
           created_by: user.id,
           org_id: orgId || null,
-        });
+          ticket_limit: ticketLimit.trim() === '' ? null : parseInt(ticketLimit, 10),
+        })
+        .select('id')
+        .single();
 
        if (error) throw error;
 
+       if (ticketLimitNum != null && ticketLimitNum > 0) {
+         const { error: mintError } = await supabase.rpc('mint_event_tickets_atomic', {
+           p_event_id: inserted.id,
+           p_count: ticketLimitNum,
+         });
+         if (mintError) {
+           console.error('Ticket minting failed:', mintError);
+           toast({
+             title: 'Event created, but tickets failed',
+             description: mintError.message,
+             variant: 'destructive',
+           });
+         }
+       }
+
        toast({
          title: 'Event Created!',
-         description: 'Your event has been added to the calendar.',
+         description: ticketLimitNum != null && ticketLimitNum > 0
+           ? `Your event has been added. ${ticketLimitNum} tickets minted.`
+           : 'Your event has been added to the calendar.',
        });
 
-       navigate('/calendar');
+       navigate('/host/participants', { state: { eventId: inserted.id } });
      } catch (error: any) {
        console.error('Error creating event:', error);
        toast({
@@ -253,6 +288,24 @@
                placeholder="Join us for a morning run..."
                className="min-h-[100px] text-lg"
              />
+           </div>
+
+           <div className="space-y-2">
+             <Label htmlFor="ticketLimit" className="text-sm font-semibold uppercase">
+               Ticket limit
+             </Label>
+             <Input
+               id="ticketLimit"
+               type="number"
+               min={0}
+               value={ticketLimit}
+               onChange={(e) => setTicketLimit(e.target.value)}
+               placeholder="30"
+               className="h-12 text-lg"
+             />
+             <p className="text-xs text-muted-foreground">
+               How many tickets available for this event. Leave blank for unlimited (or 0 for none).
+             </p>
            </div>
  
            <Button

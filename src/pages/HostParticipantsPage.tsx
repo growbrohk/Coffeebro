@@ -3,8 +3,10 @@
  import { Button } from '@/components/ui/button';
  import { useAuth } from '@/contexts/AuthContext';
  import { useUserRole } from '@/hooks/useUserRole';
- import { useHostEvents } from '@/hooks/useHostEvents';
- import { useEventParticipants } from '@/hooks/useEventParticipants';
+import { useHostEvents } from '@/hooks/useHostEvents';
+import { useEventParticipants } from '@/hooks/useEventParticipants';
+import { useEventTickets } from '@/hooks/useEventTickets';
+import { RedeemCodeCard } from '@/components/RedeemCodeCard';
  import { ArrowLeft } from 'lucide-react';
  import {
    Select,
@@ -34,6 +36,7 @@ export default function HostParticipantsPage() {
 
    const { data: events, isLoading: eventsLoading } = useHostEvents();
    const { data: participants, isLoading: participantsLoading } = useEventParticipants(selectedEventId);
+   const { data: tickets, isLoading: ticketsLoading } = useEventTickets(selectedEventId);
 
    // Update selected event if it's provided via navigation state
    useEffect(() => {
@@ -188,6 +191,40 @@ export default function HostParticipantsPage() {
                  <p className="text-muted-foreground font-medium">No participants yet.</p>
                </div>
              )}
+
+             {/* Event Tickets Section */}
+             <div className="mt-8 space-y-4">
+               <h3 className="text-sm font-semibold uppercase">Tickets</h3>
+               {ticketsLoading ? (
+                 <div className="text-center p-6">
+                   <div className="animate-pulse text-muted-foreground">Loading tickets...</div>
+                 </div>
+               ) : tickets && tickets.length > 0 ? (
+                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                   {tickets.map((ticket, idx) => (
+                     <RedeemCodeCard
+                       key={ticket.id}
+                       title="Ticket"
+                       code={ticket.code}
+                       status={ticket.status}
+                       metaLines={[
+                         `#${idx + 1} of ${tickets.length}`,
+                         ticket.redeemed_at
+                           ? `Redeemed at ${format(parseISO(ticket.redeemed_at), 'MMM d, h:mm a')}`
+                           : '',
+                       ].filter(Boolean)}
+                     />
+                   ))}
+                 </div>
+               ) : (
+                 <div className="text-center p-6 bg-muted rounded-lg">
+                   <p className="text-muted-foreground font-medium">No tickets for this event.</p>
+                   <p className="text-xs text-muted-foreground mt-1">
+                     Set a ticket limit when creating an event to mint tickets.
+                   </p>
+                 </div>
+               )}
+             </div>
            </div>
          )}
        </div>
