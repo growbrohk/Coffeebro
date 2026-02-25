@@ -52,6 +52,8 @@ const COFFEE_OPTIONS = [
   'Turkish Coffee',
   'Instant Coffee',
   'Decaf',
+  'Drip Coffee',
+  'Filter Coffee',
   'Oat Latte',
   'Soy Latte',
   'Almond Latte',
