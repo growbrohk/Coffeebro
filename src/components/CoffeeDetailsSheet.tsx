@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -11,21 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
 
 export interface CoffeeDetails {
   rating: number | null;
@@ -42,50 +28,6 @@ interface CoffeeDetailsSheetProps {
   isPending?: boolean;
 }
 
-const COFFEE_OPTIONS = [
-  'Espresso',
-  'Doppio',
-  'Ristretto',
-  'Lungo',
-  'Americano',
-  'Long Black',
-  'Cappuccino',
-  'Latte',
-  'Flat White',
-  'Piccolo',
-  'Cortado',
-  'Macchiato',
-  'Mocha',
-  'Affogato',
-  'Café au lait',
-  'Breve',
-  'Vienna',
-  'Irish Coffee',
-  'Iced Americano',
-  'Iced Latte',
-  'Iced Cappuccino',
-  'Iced Mocha',
-  'Cold Brew',
-  'Nitro Cold Brew',
-  'Espresso Tonic',
-  'Pour-over (V60)',
-  'Chemex',
-  'AeroPress',
-  'French Press',
-  'Moka Pot',
-  'Siphon',
-  'Turkish Coffee',
-  'Instant Coffee',
-  'Decaf',
-  'Oat Latte',
-  'Soy Latte',
-  'Almond Latte',
-  'Coconut Latte',
-  'Dirty (espresso + milk)',
-  'Latte with syrup (vanilla/caramel/hazelnut)',
-  'Other',
-];
-
 export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: CoffeeDetailsSheetProps) {
   const [rating, setRating] = useState<number>(5);
   const [ratingSet, setRatingSet] = useState(false);
@@ -93,13 +35,6 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
   const [coffeeTypeOther, setCoffeeTypeOther] = useState<string>('');
   const [place, setPlace] = useState<string>('');
   const [diary, setDiary] = useState<string>('');
-  const [comboboxOpen, setComboboxOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-
-  // Filter coffee options based on search
-  const filteredOptions = COFFEE_OPTIONS.filter((option) =>
-    option.toLowerCase().includes(searchValue.toLowerCase())
-  );
 
   const handleSave = () => {
     const details: CoffeeDetails = {
@@ -129,7 +64,6 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     setCoffeeTypeOther('');
     setPlace('');
     setDiary('');
-    setSearchValue('');
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -139,28 +73,11 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     onOpenChange(newOpen);
   };
 
-  const handleCoffeeTypeSelect = (value: string) => {
-    if (value === 'Other') {
-      setCoffeeType('Other');
-      setCoffeeTypeOther(searchValue.trim() || '');
-    } else {
-      setCoffeeType(value);
-      setCoffeeTypeOther('');
-    }
-    setComboboxOpen(false);
-    setSearchValue('');
+  const handleCoffeeTypeChange = (value: string[]) => {
+    const selected = value[0] ?? null;
+    setCoffeeType(selected);
+    if (selected !== 'Other') setCoffeeTypeOther('');
   };
-
-  const handleUseTypedAsOther = () => {
-    if (searchValue.trim()) {
-      setCoffeeType('Other');
-      setCoffeeTypeOther(searchValue.trim());
-      setComboboxOpen(false);
-      setSearchValue('');
-    }
-  };
-
-  const displayValue = coffeeType === 'Other' ? coffeeTypeOther : coffeeType;
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -209,62 +126,27 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
             )}
           </div>
 
-          {/* Coffee Type - Searchable Combobox */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">
-              What coffee did you have?!
-            </Label>
-            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={comboboxOpen}
-                  className="w-full justify-between bg-background border-border"
-                >
-                  {displayValue || 'Search coffee…'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput
-                    placeholder="Search coffee…"
-                    value={searchValue}
-                    onValueChange={setSearchValue}
-                  />
-                  <CommandList>
-                    <CommandEmpty>No coffee found.</CommandEmpty>
-                    <CommandGroup>
-                      {filteredOptions.map((option) => (
-                        <CommandItem
-                          key={option}
-                          value={option}
-                          onSelect={() => handleCoffeeTypeSelect(option)}
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4',
-                              coffeeType === option ? 'opacity-100' : 'opacity-0'
-                            )}
-                          />
-                          {option}
-                        </CommandItem>
-                      ))}
-                      {searchValue.trim() && !filteredOptions.includes(searchValue.trim()) && (
-                        <CommandItem
-                          onSelect={handleUseTypedAsOther}
-                          className="text-muted-foreground"
-                        >
-                          Use &quot;{searchValue}&quot; (Other)
-                        </CommandItem>
-                      )}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
+          {/* Coffee Type - reuses shared CoffeeTypeSelect (single selection) */}
+          <CoffeeTypeSelect
+            value={coffeeType ? [coffeeType] : []}
+            onChange={handleCoffeeTypeChange}
+            maxSelected={1}
+            label="What coffee did you have?!"
+          />
+          {coffeeType === 'Other' && (
+            <div className="space-y-2">
+              <Label htmlFor="coffee-type-other" className="text-sm font-semibold">
+                Specify (optional)
+              </Label>
+              <Input
+                id="coffee-type-other"
+                placeholder="e.g. Custom blend name"
+                value={coffeeTypeOther}
+                onChange={(e) => setCoffeeTypeOther(e.target.value)}
+                className="bg-background border-border"
+              />
+            </div>
+          )}
 
           {/* Place */}
           <div className="space-y-2">
