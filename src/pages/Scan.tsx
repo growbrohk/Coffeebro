@@ -66,16 +66,35 @@ export default function ScanPage() {
     setResult({ type: null, message: null });
 
     try {
-      const { error } = await supabase.rpc('redeem_voucher_atomic', { p_code: trimmedCode });
+      const { data, error } = await supabase.rpc('redeem_voucher_atomic', { p_code: trimmedCode });
+
       if (error) {
-        let msg = error.message;
-        if (msg === 'NOT_FOUND') msg = 'Invalid code';
-        if (msg === 'ALREADY_REDEEMED') msg = 'Already used';
-        setResult({ type: 'error', message: msg });
-      } else {
+        // only real system/db errors land here
+        setResult({ type: 'error', message: error.message || 'System error' });
+        return;
+      }
+      
+      const res = data?.[0]; // because RPC returns a table (array)
+      if (!res) {
+        setResult({ type: 'error', message: 'System error' });
+        return;
+      }
+      
+      if (res.status === 'OK') {
         setResult({ type: 'success', message: 'Success!' });
         setTimeout(() => { lastCodeRef.current = null; }, 5000);
+        return;
       }
+      
+      // Business outcomes
+      let msg = res.message || res.status;
+      if (res.status === 'NOT_FOUND') msg = 'Invalid code';
+      if (res.status === 'ALREADY_REDEEMED') msg = 'Already used';
+      if (res.status === 'NOT_AUTHORIZED') msg = 'Host only';
+      if (res.status === 'EXPIRED') msg = 'Expired';
+      
+      setResult({ type: 'error', message: msg });
+      
     } catch (err) {
       setResult({ type: 'error', message: 'System error' });
     } finally {
