@@ -9,6 +9,8 @@ import { useMonthCoffeeCount } from '@/hooks/useCoffees';
  import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
 import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
+import { useUserQuizResult } from '@/hooks/useUserQuizResult';
+import { FROG_NAMES } from '@/lib/quiz/constants';
 import { useNavigate, useSearchParams } from 'react-router-dom';
  import { useToast } from '@/hooks/use-toast';
 
@@ -45,6 +47,7 @@ export default function ProfilePage() {
   const { data: orgs = [] } = useOrgs();
   const orgIds = orgs.map((o) => o.id);
   const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
+  const { data: quizResultType } = useUserQuizResult(user?.id);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -129,11 +132,16 @@ export default function ProfilePage() {
         <div className="container px-4 py-8">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-foreground text-background rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl font-black uppercase">
-                {profile.username.charAt(0)}
+              <span className="text-4xl">
+                {quizResultType ? '🐸' : profile.username.charAt(0)}
               </span>
             </div>
             <h2 className="text-2xl font-black uppercase">{profile.username}</h2>
+            {quizResultType && (
+              <p className="text-sm font-medium text-muted-foreground mt-1">
+                {FROG_NAMES[quizResultType]}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-8">
