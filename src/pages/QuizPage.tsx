@@ -1,0 +1,235 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { QuizLanding } from '@/components/quiz/QuizLanding';
+import { QuizQuestions } from '@/components/quiz/QuizQuestions';
+import { QuizResultBlurred } from '@/components/quiz/QuizResultBlurred';
+import { QuizResultFull } from '@/components/quiz/QuizResultFull';
+import { QUESTIONS, FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
+import { calculateScores, resolveResultType } from '@/lib/quiz/scoring';
+import { useQuizSession, getSessionToken } from '@/hooks/useQuizSession';
+import type { FrogType } from '@/lib/quiz/types';
+
+type QuizStep = 'landing' | 'questions' | 'blurred' | 'full';
+
+const DEFAULT_STORE = 'default';
+
+export default function QuizPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const storeId = searchParams.get('s') ?? DEFAULT_STORE;
+  const claimParam = searchParams.get('claim');
+
+  const { user, loading: authLoading } = useAuth();
+  const { startQuiz, completeQuiz, claimResult, fetchResultBySession } = useQuizSession();
+
+  const [step, setStep] = useState<QuizStep>('landing');
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [resultType, setResultType] = useState<FrogType | null>(null);
+  const [scores, setScores] = useState<Record<FrogType, number> | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false);
+
+  // Handle claim flow (return from signup/login)
+  useEffect(() => {
+    if (!claimParam || authLoading) return;
+    const run = async () => {
+      setIsLoading(true);
+      setError(null);
+      const res = await fetchResultBySession();
+      if (!res) {
+        setError('Result not found');
+        setIsLoading(false);
+        return;
+      }
+      if (res.user_id && user?.id && res.user_id === user.id) {
+        setResultType(res.result_type);
+        setStep('full');
+      } else if (res.user_id) {
+        setError('Already claimed by another account');
+      } else if (user) {
+        const { ok, error: claimErr } = await claimResult();
+        if (ok) {
+          setResultType(res.result_type);
+          setStep('full');
+        } else {
+          setError(claimErr ?? 'Failed to claim');
+        }
+      } else {
+        setResultType(res.result_type);
+        setStep('blurred');
+      }
+      setIsLoading(false);
+    };
+    run();
+  }, [claimParam, user?.id, authLoading, fetchResultBySession, claimResult]);
+
+  // On mount: check for existing result (refresh on blurred)
+  useEffect(() => {
+    if (step !== 'landing' || claimParam) return;
+    const token = getSessionToken();
+    if (!token) {
+      setHasCheckedSession(true);
+      return;
+    }
+    const run = async () => {
+      const res = await fetchResultBySession();
+      setHasCheckedSession(true);
+      if (!res) return;
+      setResultType(res.result_type);
+      if (res.user_id && user?.id && res.user_id === user.id) {
+        setStep('full');
+      } else {
+        setStep('blurred');
+      }
+    };
+    run();
+  }, [step, claimParam, user?.id, fetchResultBySession]);
+
+  const handleStart = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const { ok, error: err } = await startQuiz(storeId);
+    if (ok) {
+      setStep('questions');
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+    } else {
+      setError(err ?? 'Failed to start');
+    }
+    setIsLoading(false);
+  }, [storeId, startQuiz]);
+
+  const handleAnswer = useCallback((value: string) => {
+    const q = QUESTIONS[currentQuestionIndex];
+    if (q) setAnswers((prev) => ({ ...prev, [q.id]: value }));
+  }, [currentQuestionIndex]);
+
+  const handleNext = useCallback(async () => {
+    const q = QUESTIONS[currentQuestionIndex];
+    const value = answers[q.id];
+    if (!value) return;
+
+    if (currentQuestionIndex < QUESTIONS.length - 1) {
+      setCurrentQuestionIndex((i) => i + 1);
+      return;
+    }
+
+    // Last question: compute, persist, show result
+    const computedScores = calculateScores(answers);
+    const computedType = resolveResultType(computedScores, answers);
+    setScores(computedScores);
+    setResultType(computedType);
+
+    setIsLoading(true);
+    setError(null);
+    const { ok, error: err } = await completeQuiz(storeId, answers, computedScores, computedType);
+    if (!ok) {
+      setError(err ?? 'Failed to save');
+      setIsLoading(false);
+      return;
+    }
+
+    if (user) {
+      const { ok: claimOk } = await claimResult();
+      if (claimOk) {
+        setStep('full');
+      } else {
+        setStep('blurred');
+      }
+    } else {
+      setStep('blurred');
+    }
+    setIsLoading(false);
+  }, [currentQuestionIndex, answers, storeId, user, completeQuiz, claimResult]);
+
+  const handleSignUp = useCallback(() => {
+    const token = getSessionToken();
+    navigate(`/profile?msg=quiz${token ? `&claim=${token}` : ''}`);
+  }, [navigate]);
+
+  const handleShare = useCallback(() => {
+    if (!resultType) return;
+    const desc = FROG_DESCRIPTIONS[resultType];
+    const bestMatchName = FROG_NAMES[desc.bestMatch];
+    const text = `I'm a ${FROG_NAMES[resultType]} 🐸\nBest Match: ${bestMatchName} ☕\nWhat are you?\n\nTake the quiz: ${window.location.origin}/q`;
+    const shareData: ShareData = {
+      title: '7 Frogs Coffee Quiz',
+      text,
+      url: `${window.location.origin}/q?r=${resultType}`,
+    };
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {
+        navigator.clipboard?.writeText(text);
+      });
+    } else {
+      navigator.clipboard?.writeText(text);
+    }
+  }, [resultType]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
+        <p className="text-destructive font-medium">{error}</p>
+        <Button variant="outline" className="mt-4" onClick={() => setStep('landing')}>
+          Start over
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoading && step === 'landing' && claimParam) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="animate-pulse">Loading your result…</p>
+      </div>
+    );
+  }
+
+  if (step === 'landing' && !claimParam) {
+    const token = getSessionToken();
+    if (token && !hasCheckedSession) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="animate-pulse">Loading…</p>
+        </div>
+      );
+    }
+    return <QuizLanding onStart={handleStart} isLoading={isLoading} />;
+  }
+
+  if (step === 'questions') {
+    const question = QUESTIONS[currentQuestionIndex];
+    return (
+      <QuizQuestions
+        question={question}
+        totalQuestions={QUESTIONS.length}
+        currentIndex={currentQuestionIndex}
+        value={answers[question.id] ?? null}
+        onValueChange={handleAnswer}
+        onNext={handleNext}
+        canProceed={!!answers[question.id]}
+      />
+    );
+  }
+
+  if (step === 'blurred' && resultType) {
+    return (
+      <QuizResultBlurred resultType={resultType} onSignUp={handleSignUp} />
+    );
+  }
+
+  if (step === 'full' && resultType) {
+    return (
+      <QuizResultFull resultType={resultType} onShare={handleShare} />
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <p className="animate-pulse">Loading…</p>
+    </div>
+  );
+}

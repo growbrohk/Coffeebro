@@ -1,0 +1,20 @@
+export type FrogType = 'ESP' | 'LAT' | 'OAT' | 'AME' | 'MOC' | 'CLD' | 'DRP';
+
+export interface QuizQuestion {
+  id: number;
+  text: string;
+  options: { value: string; label: string }[];
+}
+
+export interface FrogDescription {
+  name: string;
+  narrative: string;
+  bestMatch: FrogType;
+  wildcard: FrogType;
+}
+
+export interface QuizResult {
+  resultType: FrogType;
+  answers: Record<number, string>;
+  scores: Record<FrogType, number>;
+}

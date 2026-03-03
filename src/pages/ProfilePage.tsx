@@ -7,6 +7,8 @@ import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useMaxStreak } from '@/hooks/useStreak';
 import { useMonthCoffeeCount } from '@/hooks/useCoffees';
  import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgs } from '@/hooks/useOrgs';
+import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
 import { useNavigate, useSearchParams } from 'react-router-dom';
  import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +16,8 @@ export default function ProfilePage() {
   const [searchParams] = useSearchParams();
   const msgParam = searchParams.get('msg');
   
+  const claimParam = searchParams.get('claim');
+
   // Different message types for different contexts
   const getMessage = () => {
     switch (msgParam) {
@@ -25,18 +29,23 @@ export default function ProfilePage() {
         return 'Log in to search and view other coffee drinkers.';
       case 'messages':
         return 'Log in to message other coffee drinkers.';
+      case 'quiz':
+        return 'Sign up to unlock your Coffee Frog!';
       default:
         return null;
     }
   };
-  
+
   const authMessage = getMessage();
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
   const { data: leaderboard } = useLeaderboard();
   const { data: maxStreak } = useMaxStreak();
   const { data: monthCount = 0 } = useMonthCoffeeCount();
    const { canHostEvent, role, isLoading: roleLoading } = useUserRole();
-   const { toast } = useToast();
+  const { data: orgs = [] } = useOrgs();
+  const orgIds = orgs.map((o) => o.id);
+  const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -86,14 +95,14 @@ export default function ProfilePage() {
         if (error) {
           setError(error.message);
         } else {
-          navigate('/');
+          navigate(claimParam ? `/q?claim=${claimParam}` : '/');
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
           setError(error.message);
         } else {
-          navigate('/');
+          navigate(claimParam ? `/q?claim=${claimParam}` : '/');
         }
       }
     } catch (err) {
@@ -149,6 +158,31 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {conversionRates.length > 0 && (
+            <div className="space-y-3 mb-8">
+              <h3 className="text-sm font-semibold uppercase text-muted-foreground">
+                Quiz Conversion
+              </h3>
+              {conversionRates.map((cr) => {
+                const org = orgs.find((o) => o.id === cr.store_id);
+                return (
+                  <div
+                    key={cr.store_id}
+                    className="p-4 bg-muted rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-semibold">{org?.org_name ?? cr.store_id}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cr.starts} starts · {cr.signups} signups
+                      </p>
+                    </div>
+                    <p className="text-2xl font-black">{cr.conversion_rate}%</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
            <Button
              onClick={handleCreateCoffeeOffer}

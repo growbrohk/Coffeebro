@@ -14,6 +14,7 @@ import UserCalendarPage from "./pages/UserCalendarPage";
 import CreateCoffeeOffer from "./pages/CreateCoffeeOffer";
 import ScanPage from "./pages/Scan";
 import OfferParticipantsPage from "./pages/OfferParticipantsPage";
+import QuizPage from "./pages/QuizPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
+              <Route path="/q" element={<QuizPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
