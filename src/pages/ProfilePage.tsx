@@ -169,7 +169,7 @@ export default function ProfilePage() {
 
           <Button
             variant={quizResultType ? 'outline' : 'default'}
-            className="w-full mb-8"
+            className="w-full btn-run mb-4"
             onClick={() => navigate(quizResultType ? '/q/result' : '/q')}
           >
             {quizResultType ? 'View my result' : 'Take the quiz'}
