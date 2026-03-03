@@ -167,6 +167,14 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          <Button
+            variant={quizResultType ? 'outline' : 'default'}
+            className="w-full mb-8"
+            onClick={() => navigate(quizResultType ? '/q/result' : '/q')}
+          >
+            {quizResultType ? 'View my result' : 'Take the quiz'}
+          </Button>
+
           {conversionRates.length > 0 && (
             <div className="space-y-3 mb-8">
               <h3 className="text-sm font-semibold uppercase text-muted-foreground">
