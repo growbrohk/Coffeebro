@@ -27,7 +27,7 @@ export function QuizQuestions({
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col">
+    <div className="min-h-screen bg-background p-4 pb-24 flex flex-col">
       <div className="max-w-md w-full mx-auto flex-1 flex flex-col">
         <div className="mb-4">
           <Progress value={progress} className="h-2" />
