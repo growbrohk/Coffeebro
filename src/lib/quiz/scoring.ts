@@ -1,15 +1,15 @@
 import type { FrogType } from './types';
-import { FROG_TYPES, SCORING_MATRIX, TIE_BREAK_PRIORITY } from './constants';
+import { FROG_TYPES, SCORING_MATRIX } from './constants';
 
 export function calculateScores(answers: Record<number, string>): Record<FrogType, number> {
   const scores: Record<FrogType, number> = {
     ESP: 0,
     LAT: 0,
-    OAT: 0,
     AME: 0,
     MOC: 0,
     CLD: 0,
-    DRP: 0,
+    MAT: 0,
+    DIR: 0,
   };
 
   for (const [qStr, answer] of Object.entries(answers)) {
@@ -25,34 +25,43 @@ export function calculateScores(answers: Record<number, string>): Record<FrogTyp
   return scores;
 }
 
-export function resolveResultType(scores: Record<FrogType, number>, answers: Record<number, string>): FrogType {
+function hashSessionToken(sessionToken: string): number {
+  return (
+    sessionToken.split('').reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) | 0
+  );
+}
+
+export function resolveResultType(
+  scores: Record<FrogType, number>,
+  answers: Record<number, string>,
+  sessionToken: string | null
+): FrogType {
   const maxScore = Math.max(...Object.values(scores));
   const tied = FROG_TYPES.filter((t) => scores[t] === maxScore);
 
   if (tied.length === 1) return tied[0];
 
-  // Tie-break: Q4 → Q9 → Q11 → fallback priority
-  const tieBreakQuestions = [4, 9, 11] as const;
+  // Tie-break: Q3 → Q4 → Q7
+  const tieBreakQuestions = [3, 4, 7] as const;
+  let stillTied = [...tied];
+
   for (const q of tieBreakQuestions) {
-    const qScores = tied.map((t) => {
+    const qScores = stillTied.map((t) => {
       const ans = answers[q];
       const m = SCORING_MATRIX[q]?.[ans];
       return { type: t, points: m?.[t] ?? 0 };
     });
     const maxTie = Math.max(...qScores.map((x) => x.points));
-    const stillTied = qScores.filter((x) => x.points === maxTie).map((x) => x.type);
+    stillTied = qScores.filter((x) => x.points === maxTie).map((x) => x.type);
     if (stillTied.length === 1) return stillTied[0];
-    if (stillTied.length > 0) {
-      // Multiple still tied, use fallback order
-      for (const p of TIE_BREAK_PRIORITY) {
-        if (stillTied.includes(p)) return p;
-      }
-    }
   }
 
-  // Fallback
-  for (const p of TIE_BREAK_PRIORITY) {
-    if (tied.includes(p)) return p;
+  // Still tied: use stable tie-break based on session_token
+  if (sessionToken) {
+    const stableIndex =
+      Math.abs(hashSessionToken(sessionToken)) % stillTied.length;
+    return stillTied[stableIndex];
   }
-  return tied[0];
+
+  return stillTied[0];
 }

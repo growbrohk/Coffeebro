@@ -1,4 +1,4 @@
-export type FrogType = 'ESP' | 'LAT' | 'OAT' | 'AME' | 'MOC' | 'CLD' | 'DRP';
+export type FrogType = 'ESP' | 'LAT' | 'AME' | 'MOC' | 'CLD' | 'MAT' | 'DIR';
 
 export interface QuizQuestion {
   id: number;

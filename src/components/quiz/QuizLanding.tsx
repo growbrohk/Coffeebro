@@ -22,7 +22,7 @@ export function QuizLanding({ onStart, isLoading }: QuizLandingProps) {
         <Card>
           <CardHeader>
             <p className="text-center text-sm text-muted-foreground">
-              Answer 11 quick questions to discover your Coffee Frog — and see who matches you best.
+              Answer 7 quick questions to discover your Coffee Frog — and see who matches you best.
             </p>
           </CardHeader>
           <CardContent>

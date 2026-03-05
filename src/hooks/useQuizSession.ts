@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { LEGACY_FROG_MAP } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 
 const SESSION_TOKEN_KEY = 'coffeebro_quiz_session';
@@ -74,15 +75,18 @@ export function useQuizSession() {
       p_session_token: token,
     });
     if (error || !data?.[0]) return null;
-    return data[0] as {
+    const row = data[0] as {
       id: string;
       user_id: string | null;
       store_id: string;
       answers: Record<number, string>;
       scores: Record<FrogType, number>;
-      result_type: FrogType;
+      result_type: string;
       created_at: string;
     };
+    const resultType =
+      (LEGACY_FROG_MAP[row.result_type] as FrogType) ?? (row.result_type as FrogType);
+    return { ...row, result_type: resultType };
   }, []);
 
   return { startQuiz, completeQuiz, claimResult, fetchResultBySession };

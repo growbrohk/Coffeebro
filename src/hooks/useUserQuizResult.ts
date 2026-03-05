@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { LEGACY_FROG_MAP } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 
 export function useUserQuizResult(userId: string | undefined) {
@@ -15,7 +16,9 @@ export function useUserQuizResult(userId: string | undefined) {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return (data?.result_type as FrogType) ?? null;
+      const raw = data?.result_type as string | undefined;
+      if (!raw) return null;
+      return (LEGACY_FROG_MAP[raw] as FrogType) ?? (raw as FrogType);
     },
     enabled: !!userId,
   });
