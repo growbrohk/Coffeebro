@@ -27,15 +27,6 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, MapPin, Pencil, Plus, QrCode } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
-function generateQrCodeId(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = 'hunt_';
-  for (let i = 0; i < 12; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
-}
-
 export default function HuntManagePage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
@@ -43,31 +34,17 @@ export default function HuntManagePage() {
   const { user } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: hunt, isLoading, isError, refetch } = useHunt(huntId ?? null);
-  const { data: treasures = [], refetch: refetchTreasures } = useTreasures(huntId ?? null);
+  const { data: treasures = [] } = useTreasures(huntId ?? null, false);
   const { data: orgs = [] } = useOrgs();
   const { toast } = useToast();
 
-  const [addTreasureOpen, setAddTreasureOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editOrgId, setEditOrgId] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
-  const [treasureName, setTreasureName] = useState('');
-  const [treasureAddress, setTreasureAddress] = useState('');
-  const [treasureLat, setTreasureLat] = useState('');
-  const [treasureLng, setTreasureLng] = useState('');
-  const [rewardTitle, setRewardTitle] = useState('');
-  const [rewardOrgId, setRewardOrgId] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [selectedTreasure, setSelectedTreasure] = useState<{ id: string; qr_code_id: string; name: string } | null>(null);
-
-  useEffect(() => {
-    if (orgs.length > 0 && !rewardOrgId) {
-      setRewardOrgId(orgs[0].id);
-    }
-  }, [orgs, rewardOrgId]);
 
   useEffect(() => {
     if (hunt && editDialogOpen) {
@@ -76,15 +53,6 @@ export default function HuntManagePage() {
       setEditOrgId(hunt.org_id);
     }
   }, [hunt, editDialogOpen]);
-
-  const resetTreasureForm = () => {
-    setTreasureName('');
-    setTreasureAddress('');
-    setTreasureLat('');
-    setTreasureLng('');
-    setRewardTitle('');
-    setRewardOrgId(orgs[0]?.id || '');
-  };
 
   if (isError) {
     return (
@@ -124,59 +92,6 @@ export default function HuntManagePage() {
       </div>
     );
   }
-
-  const handleAddTreasure = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!huntId || !treasureName.trim()) return;
-    if (!rewardTitle.trim() || !rewardOrgId) {
-      toast({
-        title: 'Missing reward',
-        description: 'Reward title and org are required.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const qrCodeId = generateQrCodeId();
-      const { data: treasure, error: treasureError } = await (supabase as any)
-        .from('treasures')
-        .insert({
-          hunt_id: huntId,
-          qr_code_id: qrCodeId,
-          name: treasureName.trim(),
-          address: treasureAddress.trim() || null,
-          lat: treasureLat ? parseFloat(treasureLat) : null,
-          lng: treasureLng ? parseFloat(treasureLng) : null,
-        })
-        .select('id')
-        .single();
-
-      if (treasureError) throw treasureError;
-
-      const { error: rewardError } = await (supabase as any).from('treasure_reward').insert({
-        treasure_id: treasure.id,
-        title: rewardTitle.trim(),
-        org_id: rewardOrgId,
-      });
-
-      if (rewardError) throw rewardError;
-
-      toast({ title: 'Treasure added!' });
-      setAddTreasureOpen(false);
-      resetTreasureForm();
-      refetchTreasures();
-    } catch (err: unknown) {
-      toast({
-        title: 'Error',
-        description: (err as Error).message || 'Failed to add treasure.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleActivate = async () => {
     if (!huntId) return;
@@ -298,92 +213,13 @@ export default function HuntManagePage() {
           <Button
             variant="outline"
             className="w-full mt-2"
-            onClick={() => {
-              resetTreasureForm();
-              setAddTreasureOpen(true);
-            }}
+            onClick={() => huntId && navigate(`/host/offer/create?mode=hunt&huntId=${huntId}`)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Treasure
           </Button>
         </div>
       </div>
-
-      <Dialog open={addTreasureOpen} onOpenChange={setAddTreasureOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Treasure</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddTreasure} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Treasure Name *</Label>
-              <Input
-                value={treasureName}
-                onChange={(e) => setTreasureName(e.target.value)}
-                placeholder="Stop 1"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Address (optional)</Label>
-              <Input
-                value={treasureAddress}
-                onChange={(e) => setTreasureAddress(e.target.value)}
-                placeholder="123 Main St"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <Label>Lat (optional)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={treasureLat}
-                  onChange={(e) => setTreasureLat(e.target.value)}
-                  placeholder="40.7128"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Lng (optional)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={treasureLng}
-                  onChange={(e) => setTreasureLng(e.target.value)}
-                  placeholder="-74.0060"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Reward Title *</Label>
-              <Input
-                value={rewardTitle}
-                onChange={(e) => setRewardTitle(e.target.value)}
-                placeholder="Free pastry"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Redeem at (Org) *</Label>
-              <Select value={rewardOrgId} onValueChange={setRewardOrgId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select org" />
-                </SelectTrigger>
-                <SelectContent>
-                  {orgs.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.org_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Add Treasure'}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent className="sm:max-w-xs">

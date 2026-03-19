@@ -69,9 +69,11 @@ export default function MyVouchersPage() {
                 key={v.id}
                 className="p-4 bg-muted/50 rounded-lg border border-border"
               >
-                <p className="text-sm font-semibold mb-2">{v.title}</p>
-                {v.org_name && (
-                  <p className="text-xs text-muted-foreground mb-2">{v.org_name}</p>
+                <p className="text-sm font-semibold mb-1">{v.title}</p>
+                {(v.org_name || v.offer_type) && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {[v.org_name, v.offer_type].filter(Boolean).join(' · ')}
+                  </p>
                 )}
                 <RedeemCodeCard
                   code={v.code}

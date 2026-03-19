@@ -56,7 +56,7 @@ export default function HuntScanPage() {
       if (!trimmed || loading) return;
 
       const now = Date.now();
-      if (lastCodeRef.current === trimmed && now - lastCodeTimeRef.current < 3000) return;
+      if (lastCodeRef.current === trimmed && now - lastCodeTimeRef.current < 5000) return;
 
       lastCodeRef.current = trimmed;
       lastCodeTimeRef.current = now;
@@ -80,6 +80,9 @@ export default function HuntScanPage() {
           if (res.status === 'NOT_JOINED') msg = 'Join the hunt first';
           if (res.status === 'HUNT_INACTIVE') msg = 'This hunt is not active';
           if (res.status === 'HUNT_ENDED') msg = 'This hunt has ended';
+          if (res.status === 'LIMIT_REACHED') msg = 'This treasure has reached its claim limit';
+          if (res.status === 'NOT_YET_ACTIVE') msg = 'This treasure is not yet active';
+          if (res.status === 'TREASURE_ENDED') msg = 'This treasure has ended';
           setResult({ type: 'error', message: msg });
         }
       } catch (err: unknown) {

@@ -24,6 +24,9 @@ export interface Treasure {
   lng: number | null;
   address: string | null;
   sort_order: number;
+  claim_limit?: number | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
   scanned?: boolean;
 }
 
@@ -104,11 +107,19 @@ export function useHunt(huntId: string | null) {
   });
 }
 
-export function useTreasures(huntId: string | null) {
+export function useTreasures(huntId: string | null, activeOnly = true) {
   return useQuery({
-    queryKey: ['treasures', huntId],
+    queryKey: ['treasures', huntId, activeOnly],
     queryFn: async () => {
       if (!huntId) return [];
+
+      if (activeOnly) {
+        const { data, error } = await (supabase as any).rpc('get_active_treasures', {
+          p_hunt_id: huntId,
+        });
+        if (!error) return (data || []) as Treasure[];
+        // Fallback to direct select if RPC not yet available (migrations not run)
+      }
 
       const { data, error } = await (supabase as any)
         .from('treasures')
@@ -123,11 +134,19 @@ export function useTreasures(huntId: string | null) {
   });
 }
 
-export function useAllTreasures(huntId: string | null, enabled = true) {
+export function useAllTreasures(huntId: string | null, enabled = true, activeOnly = true) {
   return useQuery({
-    queryKey: ['all-treasures', huntId],
+    queryKey: ['all-treasures', huntId, activeOnly],
     enabled,
     queryFn: async () => {
+      if (activeOnly) {
+        const { data, error } = await (supabase as any).rpc('get_active_treasures', {
+          p_hunt_id: huntId,
+        });
+        if (!error) return (data || []) as Treasure[];
+        // Fallback to direct select if RPC not yet available (migrations not run)
+      }
+
       if (huntId) {
         const { data, error } = await (supabase as any)
           .from('treasures')

@@ -2,6 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+const OFFER_TYPE_LABELS: Record<string, string> = {
+  free: 'Free',
+  $17coffee: '$17 Coffee',
+  buy1get1free: 'Buy 1 Get 1 Free',
+};
+
 export interface MyVoucher {
   id: string;
   code: string;
@@ -13,6 +19,7 @@ export interface MyVoucher {
   // Display info
   title: string;
   org_name?: string;
+  offer_type?: string;
 }
 
 export function useMyVouchers() {
@@ -38,8 +45,8 @@ export function useMyVouchers() {
           treasure_reward_id,
           org_id,
           orgs(org_name),
-          coffee_offers(name),
-          treasure_reward(title)
+          coffee_offers(name, offer_type),
+          treasure_reward(title, offer_type)
         `)
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
@@ -48,10 +55,13 @@ export function useMyVouchers() {
 
       const result: MyVoucher[] = (vouchers || []).map((v: any) => {
         let title = 'Voucher';
-        if (v.source_type === 'coffee_offer' && v.coffee_offers?.name) {
-          title = v.coffee_offers.name;
-        } else if (v.source_type === 'hunt_stop' && v.treasure_reward?.title) {
-          title = v.treasure_reward.title;
+        let offerType: string | undefined;
+        if (v.source_type === 'coffee_offer' && v.coffee_offers) {
+          title = v.coffee_offers.name || title;
+          offerType = v.coffee_offers.offer_type;
+        } else if (v.source_type === 'hunt_stop' && v.treasure_reward) {
+          title = v.treasure_reward.title || title;
+          offerType = v.treasure_reward.offer_type;
         }
         return {
           id: v.id,
@@ -63,6 +73,7 @@ export function useMyVouchers() {
           expires_at: v.expires_at,
           title,
           org_name: v.orgs?.org_name,
+          offer_type: offerType ? OFFER_TYPE_LABELS[offerType] ?? offerType : undefined,
         };
       });
 
