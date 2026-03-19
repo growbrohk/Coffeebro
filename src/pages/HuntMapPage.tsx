@@ -16,6 +16,7 @@ import {
   useAllTreasures,
   useIsParticipant,
   useJoinHunt,
+  useMyClaimedTreasureIds,
 } from '@/hooks/useHunts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -46,11 +47,16 @@ export default function HuntMapPage() {
     isGlobalMode
   );
   const { data: isParticipant } = useIsParticipant(huntId ?? null);
+  const { data: claimedIds } = useMyClaimedTreasureIds();
   const joinHunt = useJoinHunt();
   const hasTriedJoin = useRef(false);
   const { toast } = useToast();
 
-  const treasures = isGlobalMode ? allTreasures : singleTreasures;
+  const rawTreasures = isGlobalMode ? allTreasures : singleTreasures;
+  const treasures = rawTreasures.map((t) => ({
+    ...t,
+    scanned: claimedIds?.has(t.id) ?? false,
+  }));
   const treasuresLoading = isGlobalMode ? allTreasuresLoading : false;
 
   useEffect(() => {
@@ -173,21 +179,41 @@ export default function HuntMapPage() {
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
                   <p className="text-sm font-semibold">{treasures.length} treasures</p>
                   <div className="space-y-2">
-                    {treasures.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => navigate(`/hunts/${t.hunt_id}/map`)}
-                        className="w-full flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border text-left hover:bg-muted transition-colors"
-                      >
-                        <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{t.name}</p>
-                          {t.address && (
-                            <p className="text-sm text-muted-foreground">{t.address}</p>
-                          )}
+                    {treasures.map((t) =>
+                      t.scanned ? (
+                        <div
+                          key={t.id}
+                          className="w-full flex items-start gap-2 p-3 bg-muted/20 rounded-lg border border-border text-left opacity-75"
+                        >
+                          <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-muted-foreground">
+                              <span className="mr-2 text-[10px] font-medium uppercase">
+                                Scanned
+                              </span>
+                              {t.name}
+                            </p>
+                            {t.address && (
+                              <p className="text-sm text-muted-foreground">{t.address}</p>
+                            )}
+                          </div>
                         </div>
-                      </button>
-                    ))}
+                      ) : (
+                        <button
+                          key={t.id}
+                          onClick={() => navigate(`/hunts/${t.hunt_id}/map`)}
+                          className="w-full flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border text-left hover:bg-muted transition-colors"
+                        >
+                          <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{t.name}</p>
+                            {t.address && (
+                              <p className="text-sm text-muted-foreground">{t.address}</p>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -299,11 +325,20 @@ export default function HuntMapPage() {
                   {treasures.map((t) => (
                     <div
                       key={t.id}
-                      className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border"
+                      className={`flex items-start gap-2 p-3 rounded-lg border border-border ${
+                        t.scanned ? 'bg-muted/20 opacity-75' : 'bg-muted/30'
+                      }`}
                     >
                       <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
                       <div>
-                        <p className="font-medium">{t.name}</p>
+                        <p className={`font-medium ${t.scanned ? 'text-muted-foreground' : ''}`}>
+                          {t.scanned && (
+                            <span className="mr-2 text-[10px] font-medium uppercase">
+                              Scanned
+                            </span>
+                          )}
+                          {t.name}
+                        </p>
                         {t.address && (
                           <p className="text-sm text-muted-foreground">{t.address}</p>
                         )}

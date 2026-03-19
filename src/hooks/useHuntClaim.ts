@@ -34,6 +34,8 @@ export function useClaimTreasure() {
       queryClient.invalidateQueries({ queryKey: ['vouchers', 'my'] });
       queryClient.invalidateQueries({ queryKey: ['hunt'] });
       queryClient.invalidateQueries({ queryKey: ['treasures'] });
+      queryClient.invalidateQueries({ queryKey: ['hunt-claims'] });
+      queryClient.invalidateQueries({ queryKey: ['all-treasures'] });
     },
   });
 }

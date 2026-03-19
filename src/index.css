@@ -247,6 +247,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.hunt-map-marker-pin-scanned {
+  background: hsl(var(--muted)) !important;
+  border-color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.7;
+}
+
 .hunt-map-marker-tooltip {
   background: transparent !important;
   border: none !important;

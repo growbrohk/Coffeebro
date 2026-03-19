@@ -11,10 +11,13 @@ const TILE_LAYERS = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
 } as const;
 
-function createMarkerIcon(): L.DivIcon {
+function createMarkerIcon(scanned = false): L.DivIcon {
+  const pinClass = scanned
+    ? 'hunt-map-marker-pin hunt-map-marker-pin-scanned'
+    : 'hunt-map-marker-pin';
   return L.divIcon({
     className: 'hunt-map-marker',
-    html: '<div class="hunt-map-marker-pin"></div>',
+    html: `<div class="${pinClass}"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 20],
   });
@@ -45,7 +48,8 @@ export function HuntMap({ treasures }: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
-  const markerIcon = useMemo(() => createMarkerIcon(), []);
+  const markerIcon = useMemo(() => createMarkerIcon(false), []);
+  const markerIconScanned = useMemo(() => createMarkerIcon(true), []);
 
   const hasCoords = treasures.some((t) => t.lat != null && t.lng != null);
   const treasuresWithCoords = treasures.filter((t) => t.lat != null && t.lng != null);
@@ -65,11 +69,22 @@ export function HuntMap({ treasures }: HuntMapProps) {
         {treasures.map((t) => (
           <div
             key={t.id}
-            className="flex items-start gap-2 p-3 bg-background rounded-lg border"
+            className={`flex items-start gap-2 p-3 rounded-lg border ${
+              t.scanned
+                ? 'bg-muted/20 opacity-75'
+                : 'bg-background'
+            }`}
           >
             <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
             <div>
-              <p className="font-medium">{t.name}</p>
+              <p className={`font-medium ${t.scanned ? 'text-muted-foreground' : ''}`}>
+                {t.scanned && (
+                  <span className="mr-2 text-[10px] font-medium uppercase text-muted-foreground">
+                    Scanned
+                  </span>
+                )}
+                {t.name}
+              </p>
               {t.address && (
                 <p className="text-sm text-muted-foreground">{t.address}</p>
               )}
@@ -99,21 +114,30 @@ export function HuntMap({ treasures }: HuntMapProps) {
         />
         <FitBounds treasures={treasuresWithCoords} />
         {treasuresWithCoords.map((t) => (
-          <Marker key={t.id} position={[t.lat!, t.lng!]} icon={markerIcon}>
-            <Tooltip
-              permanent
-              direction="right"
-              offset={[8, 0]}
-              className="hunt-map-marker-tooltip"
-            >
-              {t.name}
-            </Tooltip>
-            <Popup>
-              <div className="font-medium">{t.name}</div>
-              {t.address && (
-                <div className="text-sm text-muted-foreground">{t.address}</div>
-              )}
-            </Popup>
+          <Marker
+            key={t.id}
+            position={[t.lat!, t.lng!]}
+            icon={t.scanned ? markerIconScanned : markerIcon}
+            eventHandlers={t.scanned ? { click: () => {} } : undefined}
+          >
+            {!t.scanned && (
+              <>
+                <Tooltip
+                  permanent
+                  direction="right"
+                  offset={[8, 0]}
+                  className="hunt-map-marker-tooltip"
+                >
+                  {t.name}
+                </Tooltip>
+                <Popup>
+                  <div className="font-medium">{t.name}</div>
+                  {t.address && (
+                    <div className="text-sm text-muted-foreground">{t.address}</div>
+                  )}
+                </Popup>
+              </>
+            )}
           </Marker>
         ))}
       </MapContainer>

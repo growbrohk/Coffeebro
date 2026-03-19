@@ -24,6 +24,28 @@ export interface Treasure {
   lng: number | null;
   address: string | null;
   sort_order: number;
+  scanned?: boolean;
+}
+
+export function useMyClaimedTreasureIds() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['hunt-claims', user?.id],
+    queryFn: async (): Promise<Set<string>> => {
+      if (!user) return new Set();
+
+      const { data, error } = await (supabase as any)
+        .from('hunt_claims')
+        .select('treasure_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      const ids = (data || []).map((r: { treasure_id: string }) => r.treasure_id);
+      return new Set(ids);
+    },
+    enabled: !!user,
+  });
 }
 
 export function useMyHunts() {

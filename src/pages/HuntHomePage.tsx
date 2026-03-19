@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHunts, useAllTreasures } from '@/hooks/useHunts';
+import { useHunts, useAllTreasures, useMyClaimedTreasureIds } from '@/hooks/useHunts';
 import { HuntMap } from '@/components/HuntMap';
 import { MapPin } from 'lucide-react';
 
@@ -12,7 +12,12 @@ export default function HuntHomePage() {
   const [activeTab, setActiveTab] = useState<'map' | 'hunts'>('map');
   const [selectedHuntId, setSelectedHuntId] = useState<string | null>(null);
   const { data: hunts = [], isLoading: huntsLoading } = useHunts();
-  const { data: treasures = [], isLoading: treasuresLoading } = useAllTreasures(selectedHuntId);
+  const { data: rawTreasures = [], isLoading: treasuresLoading } = useAllTreasures(selectedHuntId);
+  const { data: claimedIds } = useMyClaimedTreasureIds();
+  const treasures = rawTreasures.map((t) => ({
+    ...t,
+    scanned: claimedIds?.has(t.id) ?? false,
+  }));
 
   if (loading || huntsLoading) {
     return (
