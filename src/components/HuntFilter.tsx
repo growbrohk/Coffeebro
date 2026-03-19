@@ -49,7 +49,7 @@ export function HuntFilter({
           <SelectTrigger className="h-9 text-sm">
             <SelectValue placeholder="Campaign" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-[9999]">
             <SelectItem value="all">All</SelectItem>
             {hunts.map((h) => (
               <SelectItem key={h.id} value={h.id}>
