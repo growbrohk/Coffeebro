@@ -7,9 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import CheckPage from "./pages/CheckPage";
 import CalendarPage from "./pages/CalendarPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
 import ProfilePage from "./pages/ProfilePage";
-import MessagesPage from "./pages/MessagesPage";
 import UserCalendarPage from "./pages/UserCalendarPage";
 import CreateCoffeeOffer from "./pages/CreateCoffeeOffer";
 import ScanPage from "./pages/Scan";
@@ -17,6 +15,13 @@ import OfferParticipantsPage from "./pages/OfferParticipantsPage";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import NotFound from "./pages/NotFound";
+import HuntListPage from "./pages/HuntListPage";
+import HuntDetailPage from "./pages/HuntDetailPage";
+import HuntMapPage from "./pages/HuntMapPage";
+import HuntScanPage from "./pages/HuntScanPage";
+import MyVouchersPage from "./pages/MyVouchersPage";
+import CreateHuntPage from "./pages/CreateHuntPage";
+import HuntManagePage from "./pages/HuntManagePage";
 
 const queryClient = new QueryClient();
 
@@ -31,13 +36,18 @@ const App = () => (
             <Routes>
               <Route path="/" element={<CheckPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/messages" element={<MessagesPage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
+              <Route path="/hunts" element={<HuntListPage />} />
+              <Route path="/hunts/:huntId" element={<HuntDetailPage />} />
+              <Route path="/hunts/:huntId/map" element={<HuntMapPage />} />
+              <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
+              <Route path="/vouchers" element={<MyVouchersPage />} />
+              <Route path="/host/hunt/create" element={<CreateHuntPage />} />
+              <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />
               <Route path="/q" element={<QuizPage />} />
               <Route path="/q/result" element={<QuizResultPage />} />
               <Route path="*" element={<NotFound />} />

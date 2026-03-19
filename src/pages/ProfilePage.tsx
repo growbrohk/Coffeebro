@@ -81,6 +81,17 @@ export default function ProfilePage() {
        });
      }
    };
+
+   const handleCreateHunt = () => {
+     if (canHostEvent) {
+       navigate('/host/hunt/create');
+     } else {
+       toast({
+         title: 'Access Required',
+         description: 'Please upgrade your access to create hunts.',
+       });
+     }
+   };
  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,6 +217,15 @@ export default function ProfilePage() {
              disabled={roleLoading}
            >
              Create Coffee Offer
+           </Button>
+
+           <Button
+             onClick={handleCreateHunt}
+             variant="outline"
+             className="w-full btn-run mb-4"
+             disabled={roleLoading}
+           >
+             Create Hunt
            </Button>
  
           <Button
