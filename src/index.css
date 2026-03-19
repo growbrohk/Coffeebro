@@ -208,6 +208,29 @@
 /* HuntMap - map styles to match app theme */
 .hunt-map-wrapper .leaflet-container {
   height: 100% !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* Fix white lines/grid between map tiles (sub-pixel rendering) */
+.hunt-map-wrapper .leaflet-tile {
+  border: none !important;
+  outline: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.hunt-map-wrapper .leaflet-tile-pane {
+  border: none !important;
+}
+
+/* Remove zoom box / selection rectangle border */
+.hunt-map-wrapper .leaflet-zoom-box {
+  border: none !important;
+  outline: none !important;
+}
+
+.hunt-map-wrapper .leaflet-container:focus {
+  outline: none !important;
 }
 
 .hunt-map-marker {
