@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +25,7 @@ export default function CreateHuntPage() {
   const { data: orgs = [] } = useOrgs();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [orgId, setOrgId] = useState('');
   const [name, setName] = useState('');
@@ -117,12 +119,24 @@ export default function CreateHuntPage() {
 
       if (error) throw error;
 
+      const huntId = data?.id ?? (Array.isArray(data) ? data[0]?.id : null);
+      if (!huntId) {
+        toast({
+          title: 'Error',
+          description: 'Hunt created but could not load. Please try from the hunt list.',
+          variant: 'destructive',
+        });
+        navigate('/hunts');
+        return;
+      }
+
       toast({
         title: 'Hunt Created!',
         description: 'Add treasures and rewards to get started.',
       });
 
-      navigate(`/host/hunts/${data.id}`);
+      queryClient.invalidateQueries({ queryKey: ['hunt', huntId] });
+      navigate(`/host/hunts/${huntId}`);
     } catch (err: unknown) {
       console.error(err);
       toast({

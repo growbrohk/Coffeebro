@@ -9,6 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useHunt, useTreasures } from '@/hooks/useHunts';
@@ -31,8 +38,8 @@ export default function HuntManagePage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { canHostEvent } = useUserRole();
-  const { data: hunt, isLoading } = useHunt(huntId ?? null);
+  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { data: hunt, isLoading, isError, refetch } = useHunt(huntId ?? null);
   const { data: treasures = [], refetch: refetchTreasures } = useTreasures(huntId ?? null);
   const { data: orgs = [] } = useOrgs();
   const { toast } = useToast();
@@ -63,7 +70,25 @@ export default function HuntManagePage() {
     setRewardOrgId(orgs[0]?.id || '');
   };
 
-  if (isLoading || !hunt) {
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="container px-4 py-8 text-center">
+          <p className="text-muted-foreground">Could not load hunt.</p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Button variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/hunts')}>
+              Back to Hunts
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || roleLoading || !hunt) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
