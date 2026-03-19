@@ -2,9 +2,9 @@ import { MapPin, Check, Calendar, User, Ticket } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const tabs = [
-  { path: '/hunts', label: 'Hunt', icon: MapPin, pathMatch: 'prefix' as const },
+  { path: '/check', label: 'Check', icon: Check },
   { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/', label: 'Check', icon: Check },
+  { path: '/hunts', label: 'Hunt', icon: MapPin, pathMatch: 'prefix' as const },
   { path: '/vouchers', label: 'Vouchers', icon: Ticket },
   { path: '/profile', label: 'Profile', icon: User },
 ];

@@ -34,7 +34,8 @@ const App = () => (
         <AuthProvider>
           <Layout>
             <Routes>
-              <Route path="/" element={<CheckPage />} />
+              <Route path="/" element={<Navigate to="/hunts" replace />} />
+              <Route path="/check" element={<CheckPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
