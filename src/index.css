@@ -204,3 +204,44 @@
     @apply text-[7px] text-muted-foreground;
   }
 }
+
+/* HuntMap - map styles to match app theme */
+.hunt-map-marker {
+  background: none !important;
+  border: none !important;
+}
+
+.hunt-map-marker-pin {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  border: 2px solid hsl(var(--primary-foreground));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--popover));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0.5rem 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.leaflet-popup-tip {
+  background: hsl(var(--popover));
+}
+
+.leaflet-control-attribution {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 10px;
+}
+
+.leaflet-control-attribution a {
+  color: hsl(var(--muted-foreground));
+}

@@ -1,12 +1,54 @@
+import { useEffect, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import type { Treasure } from '@/hooks/useHunts';
 import { MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const TILE_LAYERS = {
+  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+} as const;
+
+function createMarkerIcon(): L.DivIcon {
+  return L.divIcon({
+    className: 'hunt-map-marker',
+    html: '<div class="hunt-map-marker-pin"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 20],
+  });
+}
 
 interface HuntMapProps {
   treasures: Treasure[];
 }
 
+function FitBounds({ treasures }: { treasures: Treasure[] }) {
+  const map = useMap();
+  useEffect(() => {
+    const withCoords = treasures.filter((t) => t.lat != null && t.lng != null);
+    if (withCoords.length === 0) return;
+    if (withCoords.length === 1) {
+      map.setView([withCoords[0].lat!, withCoords[0].lng!], 15);
+      return;
+    }
+    const bounds = L.latLngBounds(
+      withCoords.map((t) => [t.lat!, t.lng!] as [number, number])
+    );
+    map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
+  }, [map, treasures]);
+  return null;
+}
+
 export function HuntMap({ treasures }: HuntMapProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
+  const markerIcon = useMemo(() => createMarkerIcon(), []);
+
   const hasCoords = treasures.some((t) => t.lat != null && t.lng != null);
+  const treasuresWithCoords = treasures.filter((t) => t.lat != null && t.lng != null);
 
   if (treasures.length === 0) {
     return (
@@ -38,38 +80,35 @@ export function HuntMap({ treasures }: HuntMapProps) {
     );
   }
 
-  const lats = treasures.map((t) => t.lat).filter((v): v is number => v != null);
-  const lngs = treasures.map((t) => t.lng).filter((v): v is number => v != null);
-  const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+  const centerLat =
+    treasuresWithCoords.reduce((a, t) => a + t.lat!, 0) / treasuresWithCoords.length;
+  const centerLng =
+    treasuresWithCoords.reduce((a, t) => a + t.lng!, 0) / treasuresWithCoords.length;
 
   return (
-    <div className="w-full h-full min-h-[300px] relative bg-muted/30">
-      <iframe
-        title="Map"
-        width="100%"
-        height="100%"
-        style={{ border: 0, minHeight: 300 }}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        src={`https://www.openstreetmap.org/export/embed.html?bbox=${centerLng - 0.02}%2C${centerLat - 0.02}%2C${centerLng + 0.02}%2C${centerLat + 0.02}&layer=mapnik&marker=${centerLat}%2C${centerLng}`}
-      />
-      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
-        {treasures.map((t) =>
-          t.lat != null && t.lng != null ? (
-            <a
-              key={t.id}
-              href={`https://www.openstreetmap.org/?mlat=${t.lat}&mlon=${t.lng}#map=17/${t.lat}/${t.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2 py-1 bg-background/90 rounded text-xs font-medium"
-            >
-              <MapPin className="h-3 w-3" />
-              {t.name}
-            </a>
-          ) : null
-        )}
-      </div>
+    <div className="w-full h-full min-h-[300px] rounded-lg overflow-hidden">
+      <MapContainer
+        center={[centerLat, centerLng]}
+        zoom={13}
+        className="w-full h-full min-h-[300px]"
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+          url={tileUrl}
+        />
+        <FitBounds treasures={treasuresWithCoords} />
+        {treasuresWithCoords.map((t) => (
+          <Marker key={t.id} position={[t.lat!, t.lng!]} icon={markerIcon}>
+            <Popup>
+              <div className="font-medium">{t.name}</div>
+              {t.address && (
+                <div className="text-sm text-muted-foreground">{t.address}</div>
+              )}
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
     </div>
   );
 }
