@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useHunt, useIsParticipant, useJoinHunt } from '@/hooks/useHunts';
-import { MapPin, QrCode, Loader2 } from 'lucide-react';
+import { MapPin, Camera, Loader2 } from 'lucide-react';
 
 export default function HuntDetailPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -114,7 +114,7 @@ export default function HuntDetailPage() {
               className="w-full"
               onClick={() => navigate(`/hunts/${huntId}/scan`)}
             >
-              <QrCode className="h-4 w-4 mr-2" />
+              <Camera className="h-4 w-4 mr-2" />
               Scan QR
             </Button>
           </>

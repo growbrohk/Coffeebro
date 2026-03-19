@@ -26,7 +26,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { MapPin, QrCode, Loader2, Filter } from 'lucide-react';
+import { MapPin, Camera, Loader2, Filter } from 'lucide-react';
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -91,10 +91,12 @@ export default function HuntMapPage() {
     return (
       <div className="h-screen bg-background flex flex-col overflow-hidden">
         <div className="shrink-0 bg-background py-4 px-4 border-b border-border">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-xl font-black uppercase tracking-tight truncate flex-1 text-center">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div />
+            <h1 className="text-xl font-black uppercase tracking-tight">
               Hunt
             </h1>
+            <div className="flex justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -108,9 +110,10 @@ export default function HuntMapPage() {
                 }
               }}
             >
-              <QrCode className="h-4 w-4 mr-1" />
+              <Camera className="h-4 w-4 mr-1" />
               Scan
             </Button>
+            </div>
           </div>
         </div>
 
@@ -141,7 +144,7 @@ export default function HuntMapPage() {
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="absolute top-2 right-2 h-8 w-8 rounded-md shadow-md"
+                        className="absolute top-2 right-2 z-[1000] h-8 w-8 rounded-md shadow-md"
                       >
                         <Filter className="h-4 w-4" />
                       </Button>
@@ -241,14 +244,16 @@ export default function HuntMapPage() {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <div className="shrink-0 bg-background py-4 px-4 border-b border-border">
-        <div className="flex items-center justify-between gap-2">
-          <button onClick={() => navigate('/hunts')} className="p-2 -ml-2">
-            <span className="text-lg font-bold">←</span>
-          </button>
-          <h1 className="text-xl font-black uppercase tracking-tight truncate flex-1">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="flex">
+            <button onClick={() => navigate('/hunts')} className="p-2 -ml-2">
+              <span className="text-lg font-bold">←</span>
+            </button>
+          </div>
+          <h1 className="text-xl font-black uppercase tracking-tight truncate text-center min-w-0">
             {hunt.name}
           </h1>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 justify-end">
             {canHostEvent && hunt.created_by === user?.id && (
               <Button
                 variant="outline"
@@ -263,7 +268,7 @@ export default function HuntMapPage() {
               size="sm"
               onClick={() => navigate(`/hunts/${huntId}/scan`)}
             >
-              <QrCode className="h-4 w-4 mr-1" />
+              <Camera className="h-4 w-4 mr-1" />
               Scan
             </Button>
           </div>
