@@ -15,7 +15,6 @@ import OfferParticipantsPage from "./pages/OfferParticipantsPage";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import NotFound from "./pages/NotFound";
-import HuntListPage from "./pages/HuntListPage";
 import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
@@ -42,7 +41,7 @@ const App = () => (
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
-              <Route path="/hunts" element={<HuntListPage />} />
+              <Route path="/hunts" element={<HuntMapPage />} />
               <Route path="/hunts/:huntId" element={<Navigate to="map" replace />} />
               <Route path="/hunts/:huntId/map" element={<HuntMapPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />

@@ -101,6 +101,40 @@ export function useTreasures(huntId: string | null) {
   });
 }
 
+export function useAllTreasures(huntId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['all-treasures', huntId],
+    enabled,
+    queryFn: async () => {
+      if (huntId) {
+        const { data, error } = await (supabase as any)
+          .from('treasures')
+          .select('*')
+          .eq('hunt_id', huntId)
+          .order('sort_order');
+        if (error) throw error;
+        return (data || []) as Treasure[];
+      }
+
+      const { data: hunts, error: huntsError } = await (supabase as any)
+        .from('hunts')
+        .select('id')
+        .eq('status', 'active');
+      if (huntsError) throw huntsError;
+      const huntIds = (hunts || []).map((h: { id: string }) => h.id);
+      if (huntIds.length === 0) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('treasures')
+        .select('*')
+        .in('hunt_id', huntIds)
+        .order('sort_order');
+      if (error) throw error;
+      return (data || []) as Treasure[];
+    },
+  });
+}
+
 export function useIsParticipant(huntId: string | null) {
   const { user } = useAuth();
 
