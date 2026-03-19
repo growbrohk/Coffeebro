@@ -149,7 +149,7 @@ export default function HuntScanPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
           <p className="text-muted-foreground">Join the hunt first to scan treasures.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate(`/hunts/${huntId}`)}>
+          <Button variant="outline" className="mt-4" onClick={() => navigate(`/hunts/${huntId}/map`)}>
             Back to Hunt
           </Button>
         </div>

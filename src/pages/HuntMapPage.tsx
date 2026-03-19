@@ -1,18 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useHunt, useTreasures, useIsParticipant } from '@/hooks/useHunts';
+import { useHunt, useTreasures, useIsParticipant, useJoinHunt } from '@/hooks/useHunts';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { HuntMap } from '@/components/HuntMap';
-import { MapPin, QrCode } from 'lucide-react';
+import { MapPin, QrCode, Loader2 } from 'lucide-react';
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { canHostEvent } = useUserRole();
   const [activeTab, setActiveTab] = useState<'map' | 'list'>('map');
   const { data: hunt, isLoading } = useHunt(huntId ?? null);
   const { data: treasures = [] } = useTreasures(huntId ?? null);
   const { data: isParticipant } = useIsParticipant(huntId ?? null);
+  const joinHunt = useJoinHunt();
+  const hasTriedJoin = useRef(false);
+
+  useEffect(() => {
+    if (user && huntId && !isParticipant && !hasTriedJoin.current) {
+      hasTriedJoin.current = true;
+      joinHunt.mutate(huntId);
+    }
+  }, [user, huntId, isParticipant]);
 
   if (isLoading || !hunt) {
     return (
@@ -22,19 +35,36 @@ export default function HuntMapPage() {
     );
   }
 
-  if (!isParticipant) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
-          <p className="text-muted-foreground">Join the hunt first to view the map.</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => navigate(`/hunts/${huntId}`)}
-          >
-            Back to Hunt
+          <p className="text-muted-foreground">Sign in to view this hunt.</p>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/hunts')}>
+            Back to Hunts
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (!isParticipant && !joinHunt.isPending) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="container px-4 py-8 text-center">
+          <p className="text-muted-foreground">Could not join hunt.</p>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/hunts')}>
+            Back to Hunts
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isParticipant && joinHunt.isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -42,21 +72,32 @@ export default function HuntMapPage() {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <div className="shrink-0 bg-background py-4 px-4 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
             <span className="text-lg font-bold">←</span>
           </button>
-          <h1 className="text-xl font-black uppercase tracking-tight">
+          <h1 className="text-xl font-black uppercase tracking-tight truncate flex-1">
             {hunt.name}
           </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/hunts/${huntId}/scan`)}
-          >
-            <QrCode className="h-4 w-4 mr-1" />
-            Scan
-          </Button>
+          <div className="flex items-center gap-1 shrink-0">
+            {canHostEvent && hunt.created_by === user?.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/host/hunts/${huntId}`)}
+              >
+                Manage
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/hunts/${huntId}/scan`)}
+            >
+              <QrCode className="h-4 w-4 mr-1" />
+              Scan
+            </Button>
+          </div>
         </div>
       </div>
 

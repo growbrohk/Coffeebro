@@ -57,7 +57,7 @@ export default function HuntListPage() {
             {hunts.map((hunt) => (
               <button
                 key={hunt.id}
-                onClick={() => navigate(`/hunts/${hunt.id}`)}
+                onClick={() => navigate(`/hunts/${hunt.id}/map`)}
                 className="w-full p-4 bg-muted/50 rounded-lg border border-border text-left hover:bg-muted transition-colors"
               >
                 <h3 className="font-bold uppercase">{hunt.name}</h3>

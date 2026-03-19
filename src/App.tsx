@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import CheckPage from "./pages/CheckPage";
@@ -16,7 +16,6 @@ import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import NotFound from "./pages/NotFound";
 import HuntListPage from "./pages/HuntListPage";
-import HuntDetailPage from "./pages/HuntDetailPage";
 import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
@@ -43,7 +42,7 @@ const App = () => (
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/hunts" element={<HuntListPage />} />
-              <Route path="/hunts/:huntId" element={<HuntDetailPage />} />
+              <Route path="/hunts/:huntId" element={<Navigate to="map" replace />} />
               <Route path="/hunts/:huntId/map" element={<HuntMapPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
