@@ -3,13 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   useHunt,
   useHunts,
   useTreasures,
@@ -21,13 +14,9 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
+import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { MapPin, Camera, Loader2, Filter } from 'lucide-react';
+import { MapPin, Camera, Loader2 } from 'lucide-react';
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -133,7 +122,7 @@ export default function HuntMapPage() {
               <TabsTrigger value="map">Map</TabsTrigger>
               <TabsTrigger value="list">List</TabsTrigger>
             </TabsList>
-            <div className="flex-1 min-h-0 mt-4 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 mt-4 overflow-hidden flex flex-col relative">
               {activeTab === 'map' ? (
                 <div className="flex-1 min-h-0 relative">
                   {treasuresLoading ? (
@@ -145,35 +134,6 @@ export default function HuntMapPage() {
                       <HuntMap treasures={treasures} />
                     </div>
                   )}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="absolute top-2 right-2 z-[1000] h-8 w-8 rounded-md shadow-md"
-                      >
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-2" align="end">
-                      <Select
-                        value={selectedCampaignId ?? 'all'}
-                        onValueChange={(v) => setSelectedCampaignId(v === 'all' ? null : v)}
-                      >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue placeholder="Campaign" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All</SelectItem>
-                          {hunts.map((h) => (
-                            <SelectItem key={h.id} value={h.id}>
-                              {h.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </PopoverContent>
-                  </Popover>
                 </div>
               ) : (
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
@@ -217,6 +177,12 @@ export default function HuntMapPage() {
                   </div>
                 </div>
               )}
+              <HuntFilter
+                hunts={hunts}
+                selectedCampaignId={selectedCampaignId}
+                onCampaignChange={setSelectedCampaignId}
+                className="absolute top-2 right-2 z-[1000] h-8 w-8 rounded-md shadow-md"
+              />
             </div>
           </Tabs>
         </div>
