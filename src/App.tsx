@@ -21,6 +21,7 @@ import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
 import CreateHuntPage from "./pages/CreateHuntPage";
+import HostHuntsPage from "./pages/HostHuntsPage";
 import HuntManagePage from "./pages/HuntManagePage";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/host/hunt/create" element={<CreateHuntPage />} />
+              <Route path="/host/hunts" element={<HostHuntsPage />} />
               <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />
               <Route path="/q" element={<QuizPage />} />
               <Route path="/q/result" element={<QuizResultPage />} />

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +24,7 @@ import { useHunt, useTreasures } from '@/hooks/useHunts';
 import { useOrgs } from '@/hooks/useOrgs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, MapPin, Plus, QrCode } from 'lucide-react';
+import { ArrowLeft, MapPin, Pencil, Plus, QrCode } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 function generateQrCodeId(): string {
@@ -37,6 +39,7 @@ function generateQrCodeId(): string {
 export default function HuntManagePage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: hunt, isLoading, isError, refetch } = useHunt(huntId ?? null);
@@ -45,6 +48,11 @@ export default function HuntManagePage() {
   const { toast } = useToast();
 
   const [addTreasureOpen, setAddTreasureOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editOrgId, setEditOrgId] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [treasureName, setTreasureName] = useState('');
   const [treasureAddress, setTreasureAddress] = useState('');
   const [treasureLat, setTreasureLat] = useState('');
@@ -60,6 +68,14 @@ export default function HuntManagePage() {
       setRewardOrgId(orgs[0].id);
     }
   }, [orgs, rewardOrgId]);
+
+  useEffect(() => {
+    if (hunt && editDialogOpen) {
+      setEditName(hunt.name);
+      setEditDescription(hunt.description ?? '');
+      setEditOrgId(hunt.org_id);
+    }
+  }, [hunt, editDialogOpen]);
 
   const resetTreasureForm = () => {
     setTreasureName('');
@@ -182,6 +198,39 @@ export default function HuntManagePage() {
     }
   };
 
+  const handleEditHunt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!huntId || !editName.trim()) return;
+
+    setIsEditSubmitting(true);
+    try {
+      const { error } = await (supabase as any)
+        .from('hunts')
+        .update({
+          name: editName.trim(),
+          description: editDescription.trim() || null,
+          org_id: editOrgId,
+        })
+        .eq('id', huntId);
+
+      if (error) throw error;
+
+      toast({ title: 'Hunt updated!' });
+      setEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['hunt', huntId] });
+      queryClient.invalidateQueries({ queryKey: ['my-hunts'] });
+      refetch();
+    } catch (err: unknown) {
+      toast({
+        title: 'Error',
+        description: (err as Error).message || 'Failed to update hunt.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
@@ -196,11 +245,23 @@ export default function HuntManagePage() {
       </div>
 
       <div className="container px-4 py-6 max-w-sm mx-auto space-y-6">
-        <div>
-          <h2 className="font-bold">{hunt.name}</h2>
-          <p className="text-sm text-muted-foreground">
-            Status: {hunt.status} · {treasures.length} treasures
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="font-bold">{hunt.name}</h2>
+            <p className="text-sm text-muted-foreground">
+              Status: {hunt.status} · {treasures.length} treasures
+            </p>
+          </div>
+          {hunt.status === 'draft' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+              className="shrink-0"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {hunt.status === 'draft' && (
@@ -339,6 +400,52 @@ export default function HuntManagePage() {
               </p>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Hunt</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditHunt} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Hunt Name *</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Central Park Coffee Hunt"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description (optional)</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Find all the treasures..."
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Organization *</Label>
+              <Select value={editOrgId} onValueChange={setEditOrgId} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orgs.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.org_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full" disabled={isEditSubmitting}>
+              {isEditSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

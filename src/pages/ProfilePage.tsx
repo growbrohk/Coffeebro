@@ -92,7 +92,18 @@ export default function ProfilePage() {
        });
      }
    };
- 
+
+   const handleManageHunts = () => {
+     if (canHostEvent) {
+       navigate('/host/hunts');
+     } else {
+       toast({
+         title: 'Access Required',
+         description: 'Please upgrade your access to manage hunts.',
+       });
+     }
+   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -227,7 +238,16 @@ export default function ProfilePage() {
            >
              Create Hunt
            </Button>
- 
+
+           <Button
+             onClick={handleManageHunts}
+             variant="outline"
+             className="w-full btn-run mb-4"
+             disabled={roleLoading}
+           >
+             Manage Hunts
+           </Button>
+
           <Button
             onClick={handleSignOut}
             className="w-full btn-run btn-run-no"

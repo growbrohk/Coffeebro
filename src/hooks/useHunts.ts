@@ -26,6 +26,27 @@ export interface Treasure {
   sort_order: number;
 }
 
+export function useMyHunts() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['my-hunts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      const { data, error } = await (supabase as any)
+        .from('hunts')
+        .select('*')
+        .eq('created_by', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as Hunt[];
+    },
+    enabled: !!user,
+  });
+}
+
 export function useHunts() {
   return useQuery({
     queryKey: ['hunts'],
