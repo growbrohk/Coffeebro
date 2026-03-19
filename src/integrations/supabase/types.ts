@@ -14,50 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
-      daily_runs: {
+      coffee_offers: {
         Row: {
+          coffee_types: string[] | null
           created_at: string
-          duration_minutes: number | null
+          created_by: string
+          description: string | null
+          event_date: string
+          event_time: string | null
           id: string
-          run_date: string
-          run_type: string | null
-          tiredness_score: number | null
-          user_id: string
+          location: string | null
+          name: string
+          offer_type: string
+          org_id: string
+          quantity_limit: number
+          redeem_before_time: string | null
         }
         Insert: {
+          coffee_types?: string[] | null
           created_at?: string
-          duration_minutes?: number | null
+          created_by: string
+          description?: string | null
+          event_date: string
+          event_time?: string | null
           id?: string
-          run_date?: string
-          run_type?: string | null
-          tiredness_score?: number | null
-          user_id: string
+          location?: string | null
+          name: string
+          offer_type?: string
+          org_id: string
+          quantity_limit?: number
+          redeem_before_time?: string | null
         }
         Update: {
+          coffee_types?: string[] | null
           created_at?: string
-          duration_minutes?: number | null
+          created_by?: string
+          description?: string | null
+          event_date?: string
+          event_time?: string | null
           id?: string
-          run_date?: string
-          run_type?: string | null
-          tiredness_score?: number | null
-          user_id?: string
+          location?: string | null
+          name?: string
+          offer_type?: string
+          org_id?: string
+          quantity_limit?: number
+          redeem_before_time?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "daily_runs_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "coffee_offers_org_id_fkey"
+            columns: ["org_id"]
             isOneToOne: false
-            referencedRelation: "leaderboard"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "daily_runs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      daily_coffees: {
+        Row: {
+          coffee_date: string
+          coffee_type: string | null
+          coffee_type_other: string | null
+          created_at: string
+          diary: string | null
+          id: string
+          place: string | null
+          rating: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coffee_date?: string
+          coffee_type?: string | null
+          coffee_type_other?: string | null
+          created_at?: string
+          diary?: string | null
+          id?: string
+          place?: string | null
+          rating?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coffee_date?: string
+          coffee_type?: string | null
+          coffee_type_other?: string | null
+          created_at?: string
+          diary?: string | null
+          id?: string
+          place?: string | null
+          rating?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       dm_messages: {
         Row: {
@@ -170,37 +220,101 @@ export type Database = {
           },
         ]
       }
-      event_registrations: {
+      hunt_claims: {
         Row: {
-          created_at: string
-          event_id: string
+          claimed_at: string
           id: string
-          status: string
-          updated_at: string
+          treasure_id: string
           user_id: string
         }
         Insert: {
-          created_at?: string
-          event_id: string
+          claimed_at?: string
           id?: string
-          status?: string
-          updated_at?: string
+          treasure_id: string
           user_id: string
         }
         Update: {
-          created_at?: string
-          event_id?: string
+          claimed_at?: string
           id?: string
-          status?: string
-          updated_at?: string
+          treasure_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: "hunt_claims_treasure_id_fkey"
+            columns: ["treasure_id"]
             isOneToOne: false
-            referencedRelation: "events"
+            referencedRelation: "treasures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hunt_participants: {
+        Row: {
+          hunt_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          hunt_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          hunt_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hunt_participants_hunt_id_fkey"
+            columns: ["hunt_id"]
+            isOneToOne: false
+            referencedRelation: "hunts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hunts: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          name: string
+          org_id: string
+          starts_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name: string
+          org_id: string
+          starts_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          starts_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hunts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
             referencedColumns: ["id"]
           },
         ]
@@ -241,18 +355,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          location: string | null
           org_name: string
           owner_user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          location?: string | null
           org_name: string
           owner_user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          location?: string | null
           org_name?: string
           owner_user_id?: string
         }
@@ -279,100 +396,148 @@ export type Database = {
         }
         Relationships: []
       }
-      events: {
+      quiz_results: {
         Row: {
+          answers: Json
           created_at: string
-          created_by: string | null
-          description: string | null
-          event_date: string
-          event_time: string | null
           id: string
-          location: string | null
-          name: string
-          org_id: string | null
+          result_type: string
+          scores: Json
+          session_token: string
+          store_id: string
+          user_id: string | null
         }
         Insert: {
+          answers: Json
           created_at?: string
-          created_by?: string | null
-          description?: string | null
-          event_date: string
-          event_time?: string | null
           id?: string
-          location?: string | null
-          name: string
-          org_id?: string | null
+          result_type: string
+          scores: Json
+          session_token: string
+          store_id: string
+          user_id?: string | null
         }
         Update: {
+          answers?: Json
           created_at?: string
-          created_by?: string | null
-          description?: string | null
-          event_date?: string
-          event_time?: string | null
           id?: string
-          location?: string | null
-          name?: string
-          org_id?: string | null
+          result_type?: string
+          scores?: Json
+          session_token?: string
+          store_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      quiz_sessions: {
+        Row: {
+          completed_at: string | null
+          id: string
+          session_token: string
+          started_at: string
+          store_id: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          id?: string
+          session_token: string
+          started_at?: string
+          store_id: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          id?: string
+          session_token?: string
+          started_at?: string
+          store_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      treasure_reward: {
+        Row: {
+          description: string | null
+          id: string
+          org_id: string
+          sort_order: number
+          title: string
+          treasure_id: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          org_id: string
+          sort_order?: number
+          title: string
+          treasure_id: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          org_id?: string
+          sort_order?: number
+          title?: string
+          treasure_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "events_org_id_fkey"
+            foreignKeyName: "treasure_reward_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasure_reward_treasure_id_fkey"
+            columns: ["treasure_id"]
+            isOneToOne: false
+            referencedRelation: "treasures"
             referencedColumns: ["id"]
           },
         ]
       }
-      coffee_offers: {
+      treasures: {
         Row: {
-          id: string
-          org_id: string
-          created_by: string
-          name: string
-          offer_type: string
-          event_date: string
-          event_time: string | null
-          location: string | null
+          address: string | null
           description: string | null
-          created_at: string
+          hunt_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          qr_code_id: string
+          sort_order: number
         }
         Insert: {
-          id?: string
-          org_id: string
-          created_by: string
-          name: string
-          offer_type?: string
-          event_date: string
-          event_time?: string | null
-          location?: string | null
+          address?: string | null
           description?: string | null
-          created_at?: string
+          hunt_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          qr_code_id: string
+          sort_order?: number
         }
         Update: {
-          id?: string
-          org_id?: string
-          created_by?: string
-          name?: string
-          offer_type?: string
-          event_date?: string
-          event_time?: string | null
-          location?: string | null
+          address?: string | null
           description?: string | null
-          created_at?: string
+          hunt_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          qr_code_id?: string
+          sort_order?: number
         }
         Relationships: [
           {
-            foreignKeyName: "coffee_offers_org_id_fkey"
-            columns: ["org_id"]
+            foreignKeyName: "treasures_hunt_id_fkey"
+            columns: ["hunt_id"]
             isOneToOne: false
-            referencedRelation: "orgs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coffee_offers_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "hunts"
             referencedColumns: ["id"]
           },
         ]
@@ -398,37 +563,102 @@ export type Database = {
         }
         Relationships: []
       }
-    }
-    Views: {
-      daily_runs_authed_read: {
+      vouchers: {
         Row: {
-          run_date: string | null
-          user_id: string | null
+          code: string
+          coffee_offer_id: string | null
+          created_at: string
+          expires_at: string | null
+          hunt_claim_id: string | null
+          id: string
+          org_id: string
+          owner_id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+          selected_coffee_type: string | null
+          source_type: string
+          status: string
+          treasure_reward_id: string | null
         }
         Insert: {
-          run_date?: string | null
-          user_id?: string | null
+          code: string
+          coffee_offer_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          hunt_claim_id?: string | null
+          id?: string
+          org_id: string
+          owner_id: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          selected_coffee_type?: string | null
+          source_type?: string
+          status?: string
+          treasure_reward_id?: string | null
         }
         Update: {
-          run_date?: string | null
-          user_id?: string | null
+          code?: string
+          coffee_offer_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          hunt_claim_id?: string | null
+          id?: string
+          org_id?: string
+          owner_id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          selected_coffee_type?: string | null
+          source_type?: string
+          status?: string
+          treasure_reward_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "daily_runs_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "vouchers_coffee_offer_id_fkey"
+            columns: ["coffee_offer_id"]
             isOneToOne: false
-            referencedRelation: "leaderboard"
-            referencedColumns: ["user_id"]
+            referencedRelation: "coffee_offers"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "daily_runs_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "vouchers_hunt_claim_id_fkey"
+            columns: ["hunt_claim_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
+            referencedRelation: "hunt_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_treasure_reward_id_fkey"
+            columns: ["treasure_reward_id"]
+            isOneToOne: false
+            referencedRelation: "treasure_reward"
+            referencedColumns: ["id"]
           },
         ]
+      }
+    }
+    Views: {
+      daily_coffees_authed_read: {
+        Row: {
+          coffee_date: string | null
+          user_id: string | null
+        }
+        Insert: {
+          coffee_date?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          coffee_date?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       leaderboard: {
         Row: {
@@ -447,14 +677,60 @@ export type Database = {
         Returns: boolean
       }
       can_host_event: { Args: { _user_id: string }; Returns: boolean }
-      can_view_event_participants: {
-        Args: { _event_id: string; _user_id: string }
-        Returns: boolean
-      }
       can_view_org: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      claim_quiz_result: {
+        Args: { p_session_token: string }
+        Returns: {
+          message: string
+          status: string
+        }[]
+      }
+      claim_treasure_atomic: {
+        Args: { p_qr_code_id: string }
+        Returns: {
+          message: string
+          status: string
+          voucher_data: Json
+        }[]
+      }
+      complete_quiz_anon: {
+        Args: {
+          p_answers: Json
+          p_result_type: string
+          p_scores: Json
+          p_session_token: string
+          p_store_id: string
+        }
+        Returns: {
+          message: string
+          status: string
+        }[]
+      }
+      get_quiz_result_by_session: {
+        Args: { p_session_token: string }
+        Returns: {
+          answers: Json
+          created_at: string
+          id: string
+          result_type: string
+          scores: Json
+          store_id: string
+          user_id: string
+        }[]
+      }
+      get_store_conversion_rates: {
+        Args: { p_org_ids: string[] }
+        Returns: {
+          conversion_rate: number
+          signups: number
+          starts: number
+          store_id: string
+        }[]
+      }
+      get_today_coffee_percentage: { Args: never; Returns: number }
       get_today_run_percentage: { Args: never; Returns: number }
       get_total_users: { Args: never; Returns: number }
       has_role: {
@@ -471,6 +747,43 @@ export type Database = {
       is_org_owner: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_offer_participants: {
+        Args: { p_offer_id: string }
+        Returns: {
+          created_at: string
+          owner_handle: string
+          owner_id: string
+          owner_name: string
+          redeemed_at: string
+          selected_coffee_type: string
+          status: string
+          voucher_id: string
+        }[]
+      }
+      mint_voucher_atomic: {
+        Args: { p_offer_id: string; p_selected_coffee_type: string }
+        Returns: {
+          code: string
+          remaining: number
+          total: number
+          voucher_id: string
+        }[]
+      }
+      redeem_voucher_atomic: {
+        Args: { p_code: string }
+        Returns: {
+          message: string
+          status: string
+          voucher_id: string
+        }[]
+      }
+      start_quiz_anon: {
+        Args: { p_session_token: string; p_store_id: string }
+        Returns: {
+          message: string
+          status: string
+        }[]
       }
     }
     Enums: {
