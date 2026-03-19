@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import type { Treasure } from '@/hooks/useHunts';
 import { MapPin } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -52,7 +52,7 @@ export function HuntMap({ treasures }: HuntMapProps) {
 
   if (treasures.length === 0) {
     return (
-      <div className="w-full h-full min-h-[300px] bg-muted/30 flex items-center justify-center">
+      <div className="w-full h-full min-h-[200px] bg-muted/30 flex items-center justify-center">
         <p className="text-muted-foreground">No treasures on this hunt yet.</p>
       </div>
     );
@@ -86,11 +86,11 @@ export function HuntMap({ treasures }: HuntMapProps) {
     treasuresWithCoords.reduce((a, t) => a + t.lng!, 0) / treasuresWithCoords.length;
 
   return (
-    <div className="w-full h-full min-h-[300px] rounded-lg overflow-hidden">
+    <div className="hunt-map-wrapper w-full h-full min-h-[200px] rounded-lg overflow-hidden">
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={13}
-        className="w-full h-full min-h-[300px]"
+        className="w-full h-full min-h-[200px]"
         scrollWheelZoom={true}
       >
         <TileLayer
@@ -100,6 +100,14 @@ export function HuntMap({ treasures }: HuntMapProps) {
         <FitBounds treasures={treasuresWithCoords} />
         {treasuresWithCoords.map((t) => (
           <Marker key={t.id} position={[t.lat!, t.lng!]} icon={markerIcon}>
+            <Tooltip
+              permanent
+              direction="right"
+              offset={[8, 0]}
+              className="hunt-map-marker-tooltip"
+            >
+              {t.name}
+            </Tooltip>
             <Popup>
               <div className="font-medium">{t.name}</div>
               {t.address && (

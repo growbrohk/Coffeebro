@@ -206,6 +206,10 @@
 }
 
 /* HuntMap - map styles to match app theme */
+.hunt-map-wrapper .leaflet-container {
+  height: 100% !important;
+}
+
 .hunt-map-marker {
   background: none !important;
   border: none !important;
@@ -218,6 +222,22 @@
   background: hsl(var(--primary));
   border: 2px solid hsl(var(--primary-foreground));
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.hunt-map-marker-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-size: 9px !important;
+  font-weight: 500 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  color: hsl(var(--foreground)) !important;
+  white-space: nowrap !important;
+}
+
+.hunt-map-marker-tooltip::before {
+  display: none !important;
 }
 
 .leaflet-popup-content-wrapper {
