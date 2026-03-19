@@ -15,8 +15,9 @@ function createMarkerIcon(scanned = false): L.DivIcon {
   const pinClass = scanned
     ? 'hunt-map-marker-pin hunt-map-marker-pin-scanned'
     : 'hunt-map-marker-pin';
+  const markerClass = scanned ? 'hunt-map-marker hunt-map-marker-scanned' : 'hunt-map-marker';
   return L.divIcon({
-    className: 'hunt-map-marker',
+    className: markerClass,
     html: `<div class="${pinClass}"></div>`,
     iconSize: [20, 20],
     iconAnchor: [10, 20],
@@ -118,6 +119,7 @@ export function HuntMap({ treasures }: HuntMapProps) {
             key={t.id}
             position={[t.lat!, t.lng!]}
             icon={t.scanned ? markerIconScanned : markerIcon}
+            zIndexOffset={t.scanned ? -1000 : 0}
             eventHandlers={t.scanned ? { click: () => {} } : undefined}
           >
             {!t.scanned && (
