@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,14 +43,28 @@ function generateQrCodeId(): string {
   return id;
 }
 
+function toDateOnly(iso: string | null | undefined): string {
+  if (!iso) return '';
+  return iso.slice(0, 10);
+}
+
+function toTimeOnly(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
 export default function CreateCoffeeOffer() {
   const { user } = useAuth();
+  const { offerId } = useParams<{ offerId: string }>();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: orgs, isLoading: orgsLoading } = useOrgs();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const isEditMode = !!offerId;
 
   const modeFromUrl = searchParams.get('mode');
   const huntIdFromUrl = searchParams.get('huntId');
@@ -69,6 +83,21 @@ export default function CreateCoffeeOffer() {
   );
   const { data: myHunts = [], isLoading: myHuntsLoading } = useMyHunts();
 
+  const { data: editOffer, isLoading: editLoading } = useQuery({
+    queryKey: ['offer-edit', offerId],
+    queryFn: async () => {
+      if (!offerId) return null;
+      const { data: offerData, error: offerErr } = await (supabase as any)
+        .from('offers')
+        .select('*, treasures(id, hunt_id, name, address, lat, lng, claim_limit, starts_at, ends_at, hunts(name))')
+        .eq('id', offerId)
+        .single();
+      if (offerErr) throw offerErr;
+      return offerData;
+    },
+    enabled: !!offerId,
+  });
+
   useEffect(() => {
     if (modeFromUrl === 'hunt' && huntIdFromUrl) {
       setSelectedMode('hunt');
@@ -81,6 +110,38 @@ export default function CreateCoffeeOffer() {
       setShowCreateHuntInline(true);
     }
   }, [isHuntMode, needsHuntPicker, myHunts.length, myHuntsLoading]);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (!editOffer || !isEditMode) return;
+    const o = editOffer as any;
+    setOrgId(o.org_id ?? '');
+    setOfferName(o.name ?? '');
+    setOfferType((o.offer_type ?? 'free') as OfferTypeValue);
+    setQuantityLimit(o.quantity_limit ?? 17);
+    setLocation(o.location ?? '');
+    setDescription(o.description ?? '');
+    setCoffeeTypes(Array.isArray(o.coffee_types) ? o.coffee_types : []);
+
+    if (o.source_type === 'calendar') {
+      setSelectedMode('calendar');
+      setDate(toDateOnly(o.event_date) ?? '');
+      setStartTime(o.event_time?.slice(0, 5) ?? '');
+      setRedeemBeforeTime(o.redeem_before_time?.slice(0, 5) ?? '');
+    } else {
+      setSelectedMode('hunt');
+      const t = Array.isArray(o.treasures) ? o.treasures[0] : o.treasures;
+      if (t) {
+        setSelectedHuntId(t.hunt_id ?? '');
+        setLat(t.lat != null ? String(t.lat) : '');
+        setLng(t.lng != null ? String(t.lng) : '');
+        setQuantityLimit(t.claim_limit ?? o.quantity_limit ?? 17);
+        setDate(toDateOnly(t.starts_at) ?? '');
+        setStartTime(toTimeOnly(t.starts_at) ?? '');
+        setEndTime(toTimeOnly(t.ends_at) ?? '');
+      }
+    }
+  }, [editOffer, isEditMode]);
 
   const [orgId, setOrgId] = useState('');
   const [offerName, setOfferName] = useState('');
@@ -186,10 +247,26 @@ export default function CreateCoffeeOffer() {
   };
 
   // Loading state
-  if (roleLoading) {
+  if (roleLoading || (isEditMode && editLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-lg font-semibold">Loading...</div>
+        <div className="animate-pulse text-lg font-semibold">
+          {isEditMode ? 'Loading offer...' : 'Loading...'}
+        </div>
+      </div>
+    );
+  }
+
+  // Edit mode: offer not found or access denied
+  if (isEditMode && !editLoading && !editOffer) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="container px-4 py-8 text-center">
+          <p className="text-muted-foreground">Offer not found or access denied.</p>
+          <Button variant="outline" className="mt-4" onClick={() => navigate('/host/offers')}>
+            Back to Manage Offers
+          </Button>
+        </div>
       </div>
     );
   }
@@ -308,6 +385,73 @@ export default function CreateCoffeeOffer() {
     setIsSubmitting(true);
 
     try {
+      if (isEditMode && editOffer) {
+        const o = editOffer as any;
+        if (o.source_type === 'calendar') {
+          const { error } = await (supabase as any)
+            .from('offers')
+            .update({
+              name: offerName.trim(),
+              offer_type: offerType,
+              event_date: date,
+              event_time: startTime.trim() || null,
+              redeem_before_time: redeemBeforeTime.trim() || null,
+              location: location.trim() || null,
+              description: description.trim() || null,
+              quantity_limit: quantityLimit,
+              coffee_types: coffeeTypes.length > 0 ? coffeeTypes : null,
+              org_id: orgId,
+            })
+            .eq('id', offerId);
+          if (error) throw error;
+          toast({ title: 'Offer updated!' });
+          queryClient.invalidateQueries({ queryKey: ['host-offers', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['coffee-offers'] });
+          navigate('/host/offers');
+        } else {
+          const t = Array.isArray(o.treasures) ? o.treasures[0] : o.treasures;
+          const treasureId = t?.id;
+          const { starts_at: startsAtVal, ends_at: endsAtVal } = buildHuntTimestamps(
+            date,
+            startTime,
+            endTime
+          );
+          if (treasureId) {
+            const { error: treasureError } = await (supabase as any)
+              .from('treasures')
+              .update({
+                name: offerName.trim(),
+                address: location.trim() || null,
+                lat: parseFloat(lat),
+                lng: parseFloat(lng),
+                claim_limit: quantityLimit,
+                starts_at: startsAtVal,
+                ends_at: endsAtVal,
+              })
+              .eq('id', treasureId);
+            if (treasureError) throw treasureError;
+          }
+          const { error: offerError } = await (supabase as any)
+            .from('offers')
+            .update({
+              name: offerName.trim(),
+              offer_type: offerType,
+              description: description.trim() || null,
+              quantity_limit: quantityLimit,
+              location: location.trim() || null,
+              org_id: orgId,
+            })
+            .eq('id', offerId);
+          if (offerError) throw offerError;
+          toast({ title: 'Offer updated!' });
+          queryClient.invalidateQueries({ queryKey: ['host-offers', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['treasures'] });
+          queryClient.invalidateQueries({ queryKey: ['all-treasures'] });
+          navigate('/host/offers');
+        }
+        return;
+      }
+
       if (isHuntMode) {
         const qrCodeId = generateQrCodeId();
         const { starts_at: startsAtVal, ends_at: endsAtVal } = buildHuntTimestamps(
@@ -389,30 +533,34 @@ export default function CreateCoffeeOffer() {
     }
   };
 
-  const submitButtonLabel = isHuntMode ? 'Add Treasure' : 'Create Coffee Offer';
+  const submitButtonLabel = isEditMode
+    ? 'Save Changes'
+    : isHuntMode
+      ? 'Add Treasure'
+      : 'Create Coffee Offer';
+
+  const handleBack = () => {
+    if (isEditMode) navigate('/host/offers');
+    else if (isHuntMode && effectiveHuntId) navigate(`/host/hunts/${effectiveHuntId}`);
+    else navigate(-1);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
         <div className="flex items-center justify-center relative">
-          <button
-            onClick={() =>
-              isHuntMode && effectiveHuntId
-                ? navigate(`/host/hunts/${effectiveHuntId}`)
-                : navigate(-1)
-            }
-            className="absolute left-0 p-2"
-          >
+          <button onClick={handleBack} className="absolute left-0 p-2">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-black uppercase tracking-tight">
-            Create Coffee Offer
+            {isEditMode ? 'Edit Coffee Offer' : 'Create Coffee Offer'}
           </h1>
         </div>
       </div>
 
       <div className="container px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
+          {!isEditMode && (
           <div className="space-y-2">
             <Label htmlFor="offerMode" className="text-sm font-semibold uppercase">
               Offer Mode
@@ -436,8 +584,9 @@ export default function CreateCoffeeOffer() {
               </SelectContent>
             </Select>
           </div>
+          )}
 
-          {isHuntMode && needsHuntPicker && (
+          {isHuntMode && needsHuntPicker && !isEditMode && (
             <div className="space-y-2">
               <Label htmlFor="hunt" className="text-sm font-semibold uppercase">
                 Hunt *
@@ -527,9 +676,22 @@ export default function CreateCoffeeOffer() {
             </div>
           )}
 
-          {isHuntMode && !needsHuntPicker && hunt && (
+          {isHuntMode && (effectiveHuntId || isEditMode) && (
             <p className="text-sm text-muted-foreground">
-              Adding to: <span className="font-medium text-foreground">{hunt.name}</span>
+              {isEditMode ? (
+                <>
+                  Editing hunt treasure:{' '}
+                  <span className="font-medium text-foreground">
+                    {(Array.isArray((editOffer as any)?.treasures)
+                      ? (editOffer as any).treasures[0]?.hunts?.name
+                      : (editOffer as any)?.treasures?.hunts?.name) ?? 'Hunt'}
+                  </span>
+                </>
+              ) : hunt ? (
+                <>
+                  Adding to: <span className="font-medium text-foreground">{hunt.name}</span>
+                </>
+              ) : null}
             </p>
           )}
 
@@ -558,7 +720,7 @@ export default function CreateCoffeeOffer() {
 
           <div className="space-y-2">
             <Label htmlFor="offerName" className="text-sm font-semibold uppercase">
-              Offer Name *
+              {isHuntMode ? 'Treasure Name' : 'Offer Name'} *
             </Label>
             <Input
               id="offerName"
@@ -753,7 +915,7 @@ export default function CreateCoffeeOffer() {
               (isHuntMode && (!location.trim() || !lat.trim() || !lng.trim()))
             }
           >
-            {isSubmitting ? 'Creating...' : submitButtonLabel}
+            {isSubmitting ? (isEditMode ? 'Saving...' : 'Creating...') : submitButtonLabel}
           </Button>
         </form>
       </div>

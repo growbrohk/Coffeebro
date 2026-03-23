@@ -84,11 +84,22 @@ export default function ProfilePage() {
 
    const handleCreateHunt = () => {
      if (canHostEvent) {
-       navigate('/host/hunt/create');
+       navigate('/host/offer/create?mode=hunt');
      } else {
        toast({
          title: 'Access Required',
          description: 'Please upgrade your access to create hunts.',
+       });
+     }
+   };
+
+   const handleManageOffer = () => {
+     if (canHostEvent) {
+       navigate('/host/offers');
+     } else {
+       toast({
+         title: 'Access Required',
+         description: 'Please upgrade your access to manage offers.',
        });
      }
    };
@@ -247,6 +258,17 @@ export default function ProfilePage() {
            >
              Manage Hunts
            </Button>
+
+           {canHostEvent && (
+             <Button
+               onClick={handleManageOffer}
+               variant="outline"
+               className="w-full btn-run mb-4"
+               disabled={roleLoading}
+             >
+               Manage Offer
+             </Button>
+           )}
 
           <Button
             onClick={handleSignOut}

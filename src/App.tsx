@@ -19,8 +19,8 @@ import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
 import TreasureDetailPage from "./pages/TreasureDetailPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
-import CreateHuntPage from "./pages/CreateHuntPage";
 import HostHuntsPage from "./pages/HostHuntsPage";
+import HostOffersPage from "./pages/HostOffersPage";
 import HuntManagePage from "./pages/HuntManagePage";
 
 const queryClient = new QueryClient();
@@ -40,6 +40,8 @@ const App = () => (
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
+              <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />
+              <Route path="/host/offers" element={<HostOffersPage />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/hunts" element={<HuntMapPage />} />
@@ -48,7 +50,7 @@ const App = () => (
               <Route path="/hunts/:huntId/treasures/:treasureId" element={<TreasureDetailPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
-              <Route path="/host/hunt/create" element={<CreateHuntPage />} />
+              <Route path="/host/hunt/create" element={<Navigate to="/host/offer/create?mode=hunt" replace />} />
               <Route path="/host/hunts" element={<HostHuntsPage />} />
               <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />
               <Route path="/q" element={<QuizPage />} />
