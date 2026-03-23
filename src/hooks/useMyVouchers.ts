@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-const OFFER_TYPE_LABELS: Record<string, string> = {
-  free: 'Free',
-  $17coffee: '$17 Coffee',
-  buy1get1free: 'Buy 1 Get 1 Free',
-};
+import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 
 export interface MyVoucher {
   id: string;

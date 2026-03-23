@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
+import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
 import type { Treasure } from '@/hooks/useHunts';
 import { MapPin, Camera, Loader2 } from 'lucide-react';
 
@@ -47,6 +48,7 @@ export default function HuntMapPage() {
   const joinHunt = useJoinHunt();
   const hasTriedJoin = useRef(false);
   const { toast } = useToast();
+  const { position: userPosition } = useGeolocation();
 
   const rawTreasures = isGlobalMode ? allTreasures : singleTreasures;
   const treasures = rawTreasures.map((t) => ({
@@ -82,6 +84,21 @@ export default function HuntMapPage() {
     });
     setSelectedTreasure(null);
   };
+
+  const distanceToSelected =
+    selectedTreasure &&
+    userPosition &&
+    selectedTreasure.lat != null &&
+    selectedTreasure.lng != null &&
+    Number.isFinite(selectedTreasure.lat) &&
+    Number.isFinite(selectedTreasure.lng)
+      ? haversineDistance(
+          userPosition.lat,
+          userPosition.lng,
+          selectedTreasure.lat,
+          selectedTreasure.lng
+        )
+      : null;
 
   useEffect(() => {
     if (user && huntId && !isParticipant && !hasTriedJoin.current) {
@@ -221,6 +238,7 @@ export default function HuntMapPage() {
                   onClose={() => setSelectedTreasure(null)}
                   onDirections={openInMaps}
                   onDetails={handleDetailsClick}
+                  distance={distanceToSelected}
                 />
               )}
               <HuntFilter
@@ -381,6 +399,7 @@ export default function HuntMapPage() {
                 onClose={() => setSelectedTreasure(null)}
                 onDirections={openInMaps}
                 onDetails={handleDetailsClick}
+                distance={distanceToSelected}
               />
             )}
           </div>

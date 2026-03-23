@@ -1,6 +1,28 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, MapPin, Navigation } from 'lucide-react';
+import { ArrowLeft, MapPin, Navigation, Clock, Users } from 'lucide-react';
 import { useTreasure } from '@/hooks/useHunts';
+import { useMyClaimedTreasureIds } from '@/hooks/useHunts';
+import { useTreasureReward } from '@/hooks/useTreasureReward';
+import { useTreasureClaimCount } from '@/hooks/useTreasureClaimCount';
+import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
+import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
+
+function formatClaimWindow(startsAt: string | null | undefined, endsAt: string | null | undefined): string | null {
+  if (!startsAt && !endsAt) return null;
+  const format = (s: string) => {
+    const d = new Date(s);
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+  if (startsAt && endsAt) return `${format(startsAt)} – ${format(endsAt)}`;
+  if (endsAt) return `Claim until ${format(endsAt)}`;
+  if (startsAt) return `Opens ${format(startsAt)}`;
+  return null;
+}
 
 export default function TreasureDetailPage() {
   const { huntId, treasureId } = useParams();
@@ -10,6 +32,13 @@ export default function TreasureDetailPage() {
   const fromTab = (location.state as { fromTab?: 'map' | 'list' })?.fromTab ?? 'map';
 
   const { data: treasure, isLoading } = useTreasure(treasureId ?? '', huntId ?? undefined);
+  const { data: claimedIds } = useMyClaimedTreasureIds();
+  const { data: rewards = [] } = useTreasureReward(treasureId ?? null);
+  const { data: claimCount = 0 } = useTreasureClaimCount(treasureId ?? null);
+  const { position: userPosition } = useGeolocation();
+
+  const isClaimed = treasure && claimedIds?.has(treasure.id);
+  const primary = rewards[0];
 
   const hasLocation =
     treasure &&
@@ -35,6 +64,31 @@ export default function TreasureDetailPage() {
       window.location.href = url;
     }
   };
+
+  const distanceM =
+    treasure &&
+    userPosition &&
+    treasure.lat != null &&
+    treasure.lng != null &&
+    Number.isFinite(treasure.lat) &&
+    Number.isFinite(treasure.lng)
+      ? haversineDistance(userPosition.lat, userPosition.lng, treasure.lat, treasure.lng)
+      : null;
+
+  const claimWindowText = treasure
+    ? formatClaimWindow(treasure.starts_at, treasure.ends_at)
+    : null;
+
+  const quotaText =
+    treasure?.claim_limit != null
+      ? `${claimCount}/${treasure.claim_limit} claimed`
+      : claimCount > 0
+        ? `${claimCount} claimed`
+        : null;
+
+  const offerTypeLabel = primary
+    ? OFFER_TYPE_LABELS[primary.offer_type] ?? primary.offer_type
+    : null;
 
   if (isLoading) {
     return (
@@ -88,10 +142,60 @@ export default function TreasureDetailPage() {
 
         {/* Treasure info */}
         <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <h2 className="text-2xl font-bold mb-2">{treasure.name}</h2>
+          <div className="flex items-start gap-2 mb-2">
+            <h2 className="text-2xl font-bold flex-1">{treasure.name}</h2>
+            {isClaimed && (
+              <span className="shrink-0 px-2 py-1 text-xs font-semibold uppercase rounded bg-primary/20 text-primary">
+                Claimed
+              </span>
+            )}
+          </div>
 
           {treasure.address && (
-            <p className="text-sm text-muted-foreground mb-4">{treasure.address}</p>
+            <p className="text-sm text-muted-foreground mb-2">{treasure.address}</p>
+          )}
+
+          {distanceM != null && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+              <MapPin className="w-4 h-4" strokeWidth={1.5} />
+              <span>
+                {(distanceM / 1000).toFixed(1)} km away
+              </span>
+            </div>
+          )}
+
+          {primary && (
+            <div className="space-y-1 mb-4">
+              <div className="text-sm font-medium text-foreground">
+                {primary.title}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {primary.org_name && (
+                  <span className="text-sm text-muted-foreground">
+                    {primary.org_name}
+                  </span>
+                )}
+                {offerTypeLabel && (
+                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-muted text-muted-foreground">
+                    {offerTypeLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {quotaText && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <Users className="w-4 h-4" strokeWidth={1.5} />
+              <span>{quotaText}</span>
+            </div>
+          )}
+
+          {claimWindowText && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+              <Clock className="w-4 h-4" strokeWidth={1.5} />
+              <span>{claimWindowText}</span>
+            </div>
           )}
 
           {treasure.description && (
