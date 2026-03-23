@@ -1,5 +1,5 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, MapPin, Navigation, Clock, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Navigation, Clock } from 'lucide-react';
 import { useTreasure } from '@/hooks/useHunts';
 import { useMyClaimedTreasureIds } from '@/hooks/useHunts';
 import { useTreasureReward } from '@/hooks/useTreasureReward';
@@ -81,10 +81,8 @@ export default function TreasureDetailPage() {
 
   const quotaText =
     treasure?.claim_limit != null
-      ? `${claimCount}/${treasure.claim_limit} claimed`
-      : claimCount > 0
-        ? `${claimCount} claimed`
-        : null;
+      ? `${Math.max(0, treasure.claim_limit - claimCount)} available`
+      : null;
 
   const offerTypeLabel = primary
     ? OFFER_TYPE_LABELS[primary.offer_type] ?? primary.offer_type
@@ -166,8 +164,13 @@ export default function TreasureDetailPage() {
 
           {primary && (
             <div className="space-y-1 mb-4">
-              <div className="text-sm font-medium text-foreground">
-                {primary.title}
+              <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                <span>{primary.title}</span>
+                {quotaText && (
+                  <span className="text-muted-foreground font-normal">
+                    · {quotaText}
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {primary.org_name && (
@@ -181,13 +184,6 @@ export default function TreasureDetailPage() {
                   </span>
                 )}
               </div>
-            </div>
-          )}
-
-          {quotaText && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Users className="w-4 h-4" strokeWidth={1.5} />
-              <span>{quotaText}</span>
             </div>
           )}
 

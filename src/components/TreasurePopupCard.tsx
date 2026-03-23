@@ -1,6 +1,7 @@
 import { ImageIcon, MapPin, Navigation, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTreasureReward } from '@/hooks/useTreasureReward';
+import { useTreasureClaimCount } from '@/hooks/useTreasureClaimCount';
 import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 import type { Treasure } from '@/hooks/useHunts';
 
@@ -27,10 +28,18 @@ export function TreasurePopupCard({
   formatDistance = (m) => `${(m / 1000).toFixed(1)} km`,
 }: TreasurePopupCardProps) {
   const { data: rewards = [] } = useTreasureReward(treasure.id);
+  const { data: claimCount = 0 } = useTreasureClaimCount(treasure.id);
   const primary = rewards[0];
   const offerTypeLabel = primary
     ? OFFER_TYPE_LABELS[primary.offer_type] ?? primary.offer_type
     : null;
+
+  const quotaText =
+    treasure.claim_limit != null
+      ? `${Math.max(0, treasure.claim_limit - claimCount)} available`
+      : claimCount > 0
+        ? `${claimCount} claimed`
+        : 'Unlimited';
 
   return (
     <div
@@ -69,7 +78,14 @@ export function TreasurePopupCard({
             </div>
             {primary && (
               <div className="text-sm text-muted-foreground space-y-0.5">
-                <div className="font-medium text-foreground">{primary.title}</div>
+                <div className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                  <span>{primary.title}</span>
+                  {quotaText && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      · {quotaText}
+                    </span>
+                  )}
+                </div>
                 <div>
                   {primary.org_name && <span>{primary.org_name}</span>}
                   {primary.org_name && offerTypeLabel && ' · '}
