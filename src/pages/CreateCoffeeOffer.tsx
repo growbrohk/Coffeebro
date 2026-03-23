@@ -21,27 +21,18 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
-import { useHunt } from '@/hooks/useHunts';
+import { useHunt, useMyHunts } from '@/hooks/useHunts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
 import QRCode from 'react-qr-code';
-
-const OFFER_TYPES = [
-  { value: 'free', label: 'Free' },
-  { value: '$17coffee', label: '$17 Coffee' },
-  { value: 'buy1get1free', label: 'Buy 1 Get 1 Free' },
-] as const;
-
-type OfferTypeValue = (typeof OFFER_TYPES)[number]['value'];
-
-function isValidHHMM(value: string): boolean {
-  if (!value) return true;
-  if (!/^\d{2}:\d{2}$/.test(value)) return false;
-  const [h, m] = value.split(':').map(Number);
-  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-}
+import {
+  OFFER_TYPES,
+  type OfferTypeValue,
+  validateOfferForm,
+  buildHuntTimestamps,
+} from '@/lib/offerForm';
 
 function generateQrCodeId(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -56,37 +47,50 @@ export default function CreateCoffeeOffer() {
   const { user } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: orgs, isLoading: orgsLoading } = useOrgs();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const mode = searchParams.get('mode');
-  const huntId = searchParams.get('huntId');
-  const isHuntMode = mode === 'hunt' && !!huntId;
+  const modeFromUrl = searchParams.get('mode');
+  const huntIdFromUrl = searchParams.get('huntId');
 
-  const { data: hunt, isLoading: huntLoading } = useHunt(isHuntMode ? huntId : null);
+  const [selectedMode, setSelectedMode] = useState<'calendar' | 'hunt'>(
+    modeFromUrl === 'hunt' ? 'hunt' : 'calendar'
+  );
+  const [selectedHuntId, setSelectedHuntId] = useState<string>(huntIdFromUrl ?? '');
+
+  const effectiveHuntId = huntIdFromUrl || selectedHuntId || '';
+  const isHuntMode = selectedMode === 'hunt';
+  const needsHuntPicker = isHuntMode && !effectiveHuntId;
+
+  const { data: hunt, isLoading: huntLoading } = useHunt(
+    isHuntMode && effectiveHuntId ? effectiveHuntId : null
+  );
+  const { data: myHunts = [], isLoading: myHuntsLoading } = useMyHunts();
+
+  useEffect(() => {
+    if (modeFromUrl === 'hunt' && huntIdFromUrl) {
+      setSelectedMode('hunt');
+      setSelectedHuntId(huntIdFromUrl);
+    }
+  }, [modeFromUrl, huntIdFromUrl]);
 
   const [orgId, setOrgId] = useState('');
+  const [offerName, setOfferName] = useState('');
   const [offerType, setOfferType] = useState<OfferTypeValue>('free');
-  const [eventDate, setEventDate] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [redeemBeforeTime, setRedeemBeforeTime] = useState('');
   const [quantityLimit, setQuantityLimit] = useState(17);
+  const [date, setDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [redeemBeforeTime, setRedeemBeforeTime] = useState('');
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [coffeeTypes, setCoffeeTypes] = useState<string[]>([]);
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastAutoLocationRef = useRef<string>('');
-
-  // Hunt mode fields
-  const [treasureName, setTreasureName] = useState('');
-  const [treasureAddress, setTreasureAddress] = useState('');
-  const [treasureLat, setTreasureLat] = useState('');
-  const [treasureLng, setTreasureLng] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
-  const [claimLimit, setClaimLimit] = useState('');
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [createdTreasure, setCreatedTreasure] = useState<{
     qr_code_id: string;
@@ -100,10 +104,9 @@ export default function CreateCoffeeOffer() {
       setOrgId(first.id);
       const loc = first.location ?? '';
       setLocation(loc);
-      if (isHuntMode) setTreasureAddress(loc);
       lastAutoLocationRef.current = loc;
     }
-  }, [orgs, orgId, isHuntMode]);
+  }, [orgs, orgId]);
 
   // Auto-fill location from org when org changes (do not overwrite user edits)
   const handleOrgChange = (newOrgId: string) => {
@@ -116,16 +119,10 @@ export default function CreateCoffeeOffer() {
         setLocation(newLoc);
         lastAutoLocationRef.current = newLoc;
       }
-      if (isHuntMode && (treasureAddress === '' || treasureAddress === lastAutoLocationRef.current)) {
-        setTreasureAddress(newLoc);
-      }
     } else {
       if (location === '' || location === lastAutoLocationRef.current) {
         setLocation('');
         lastAutoLocationRef.current = '';
-      }
-      if (isHuntMode && (treasureAddress === '' || treasureAddress === lastAutoLocationRef.current)) {
-        setTreasureAddress('');
       }
     }
   };
@@ -141,8 +138,8 @@ export default function CreateCoffeeOffer() {
     );
   }
 
-  // Hunt mode: validate hunt exists and user is creator
-  if (isHuntMode && huntLoading) {
+  // Hunt mode with huntId: validate hunt exists and user is creator
+  if (isHuntMode && effectiveHuntId && huntLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading hunt...</div>
@@ -150,7 +147,7 @@ export default function CreateCoffeeOffer() {
     );
   }
 
-  if (isHuntMode && (!hunt || (user && hunt.created_by !== user.id))) {
+  if (isHuntMode && effectiveHuntId && (!hunt || (user && hunt.created_by !== user.id))) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
@@ -169,7 +166,7 @@ export default function CreateCoffeeOffer() {
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
           <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            {isHuntMode ? 'Create Coffee Treasure' : 'Create Coffee Offer'}
+            Create Coffee Offer
           </h1>
         </div>
         <div className="container px-4 py-8">
@@ -197,7 +194,7 @@ export default function CreateCoffeeOffer() {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-2xl font-black uppercase tracking-tight">
-              {isHuntMode ? 'Create Coffee Treasure' : 'Create Coffee Offer'}
+              Create Coffee Offer
             </h1>
           </div>
         </div>
@@ -217,26 +214,6 @@ export default function CreateCoffeeOffer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate time format if provided (standalone only)
-    if (!isHuntMode) {
-      if (eventTime && !isValidHHMM(eventTime)) {
-        toast({
-          title: 'Invalid time',
-          description: 'Start reg time must be HH:MM (24-hour, e.g. 09:00).',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (redeemBeforeTime && !isValidHHMM(redeemBeforeTime)) {
-        toast({
-          title: 'Invalid time',
-          description: 'Redeem before must be HH:MM (24-hour, e.g. 12:00).',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
     const selectedOrg = orgs?.find((o) => o.id === orgId);
     if (!selectedOrg?.org_name) {
       toast({
@@ -247,86 +224,85 @@ export default function CreateCoffeeOffer() {
       return;
     }
 
-    if (!orgId) {
+    const validation = validateOfferForm(
+      isHuntMode ? 'hunt' : 'calendar',
+      {
+        orgId,
+        offerName,
+        location,
+        lat,
+        lng,
+        date,
+        startTime,
+        endTime,
+        redeemBeforeTime,
+      },
+      effectiveHuntId
+    );
+
+    if (!validation.valid) {
       toast({
         title: 'Missing fields',
-        description: 'Please select an organization.',
+        description: validation.message,
         variant: 'destructive',
       });
       return;
-    }
-
-    if (isHuntMode) {
-      if (!treasureName.trim()) {
-        toast({
-          title: 'Missing fields',
-          description: 'Treasure name is required.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (!huntId) return;
-    } else {
-      if (!eventDate) {
-        toast({
-          title: 'Missing fields',
-          description: 'Please fill in the date.',
-          variant: 'destructive',
-        });
-        return;
-      }
     }
 
     setIsSubmitting(true);
 
     try {
       if (isHuntMode) {
-        // Hunt mode: create treasure + treasure_reward
         const qrCodeId = generateQrCodeId();
-        const rewardTitle = `${selectedOrg.org_name} ${OFFER_TYPES.find((o) => o.value === offerType)?.label ?? offerType}`;
+        const { starts_at: startsAtVal, ends_at: endsAtVal } = buildHuntTimestamps(
+          date,
+          startTime,
+          endTime
+        );
 
         const { data: treasure, error: treasureError } = await (supabase as any)
           .from('treasures')
           .insert({
-            hunt_id: huntId,
+            hunt_id: effectiveHuntId,
             qr_code_id: qrCodeId,
-            name: treasureName.trim(),
-            address: treasureAddress.trim() || null,
-            lat: treasureLat ? parseFloat(treasureLat) : null,
-            lng: treasureLng ? parseFloat(treasureLng) : null,
-            claim_limit: claimLimit ? parseInt(claimLimit, 10) : null,
-            starts_at: startsAt ? (startsAt.length === 16 ? `${startsAt}:00` : startsAt) : null,
-            ends_at: endsAt ? (endsAt.length === 16 ? `${endsAt}:00` : endsAt) : null,
+            name: offerName.trim(),
+            address: location.trim() || null,
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+            claim_limit: quantityLimit,
+            starts_at: startsAtVal,
+            ends_at: endsAtVal,
           })
           .select('id')
           .single();
 
         if (treasureError) throw treasureError;
 
-        const { error: rewardError } = await (supabase as any).from('treasure_reward').insert({
+        const { error: offerError } = await (supabase as any).from('offers').insert({
+          source_type: 'hunt',
           treasure_id: treasure.id,
-          title: rewardTitle,
           org_id: orgId,
+          name: offerName.trim(),
           offer_type: offerType,
           description: description.trim() || null,
+          quantity_limit: quantityLimit,
+          location: location.trim() || null,
         });
 
-        if (rewardError) throw rewardError;
+        if (offerError) throw offerError;
 
         toast({ title: 'Treasure added!' });
-        setCreatedTreasure({ qr_code_id: qrCodeId, name: treasureName.trim() });
+        setCreatedTreasure({ qr_code_id: qrCodeId, name: offerName.trim() });
         setQrDialogOpen(true);
-        queryClient.invalidateQueries({ queryKey: ['treasures', huntId] });
+        queryClient.invalidateQueries({ queryKey: ['treasures', effectiveHuntId] });
         queryClient.invalidateQueries({ queryKey: ['all-treasures'] });
       } else {
-        // Standalone mode: create coffee_offer
-        const finalName = `${selectedOrg.org_name} ${OFFER_TYPES.find((o) => o.value === offerType)?.label ?? offerType}`;
-
-        const { error } = await supabase.from('coffee_offers').insert({
-          name: finalName,
+        const { error } = await (supabase as any).from('offers').insert({
+          source_type: 'calendar',
+          name: offerName.trim(),
           offer_type: offerType,
-          event_date: eventDate,
-          event_time: eventTime.trim() || null,
+          event_date: date,
+          event_time: startTime.trim() || null,
           redeem_before_time: redeemBeforeTime.trim() || null,
           location: location.trim() || null,
           description: description.trim() || null,
@@ -357,24 +333,98 @@ export default function CreateCoffeeOffer() {
     }
   };
 
-  const pageTitle = isHuntMode ? 'Create Coffee Treasure' : 'Create Coffee Offer';
+  const submitButtonLabel = isHuntMode ? 'Add Treasure' : 'Create Coffee Offer';
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
         <div className="flex items-center justify-center relative">
           <button
-            onClick={() => (isHuntMode && huntId ? navigate(`/host/hunts/${huntId}`) : navigate(-1))}
+            onClick={() =>
+              isHuntMode && effectiveHuntId
+                ? navigate(`/host/hunts/${effectiveHuntId}`)
+                : navigate(-1)
+            }
             className="absolute left-0 p-2"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-black uppercase tracking-tight">{pageTitle}</h1>
+          <h1 className="text-2xl font-black uppercase tracking-tight">
+            Create Coffee Offer
+          </h1>
         </div>
       </div>
 
       <div className="container px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
+          <div className="space-y-2">
+            <Label htmlFor="offerMode" className="text-sm font-semibold uppercase">
+              Offer Mode
+            </Label>
+            <Select
+              value={selectedMode}
+              onValueChange={(v) => {
+                setSelectedMode(v as 'calendar' | 'hunt');
+                if (v === 'calendar') {
+                  setSearchParams({});
+                  setSelectedHuntId('');
+                }
+              }}
+            >
+              <SelectTrigger className="h-12 text-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="calendar">Calendar</SelectItem>
+                <SelectItem value="hunt">Hunt</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isHuntMode && needsHuntPicker && (
+            <div className="space-y-2">
+              <Label htmlFor="hunt" className="text-sm font-semibold uppercase">
+                Hunt *
+              </Label>
+              <Select
+                value={selectedHuntId}
+                onValueChange={setSelectedHuntId}
+                disabled={myHuntsLoading}
+              >
+                <SelectTrigger className="h-12 text-lg">
+                  <SelectValue
+                    placeholder={
+                      myHuntsLoading
+                        ? 'Loading hunts...'
+                        : myHunts.length === 0
+                          ? 'No hunts — create one first'
+                          : 'Select a hunt'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {myHunts.map((h) => (
+                    <SelectItem key={h.id} value={h.id}>
+                      {h.name}
+                      {h.status !== 'active' ? ` (${h.status})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {myHunts.length === 0 && !myHuntsLoading && (
+                <p className="text-sm text-muted-foreground">
+                  Create a hunt first from your profile, then add treasures here.
+                </p>
+              )}
+            </div>
+          )}
+
+          {isHuntMode && !needsHuntPicker && hunt && (
+            <p className="text-sm text-muted-foreground">
+              Adding to: <span className="font-medium text-foreground">{hunt.name}</span>
+            </p>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="org" className="text-sm font-semibold uppercase">
               Organization *
@@ -396,6 +446,20 @@ export default function CreateCoffeeOffer() {
                 No organizations available. Contact an admin to create one.
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="offerName" className="text-sm font-semibold uppercase">
+              Offer Name *
+            </Label>
+            <Input
+              id="offerName"
+              value={offerName}
+              onChange={(e) => setOfferName(e.target.value)}
+              placeholder={isHuntMode ? 'Stop 1' : 'Stumptown Free Coffee'}
+              className="h-12 text-lg"
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -437,152 +501,82 @@ export default function CreateCoffeeOffer() {
             </div>
           )}
 
-          {isHuntMode ? (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="treasureName" className="text-sm font-semibold uppercase">
-                  Treasure Name *
-                </Label>
-                <Input
-                  id="treasureName"
-                  value={treasureName}
-                  onChange={(e) => setTreasureName(e.target.value)}
-                  placeholder="Stop 1"
-                  className="h-12 text-lg"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="treasureAddress" className="text-sm font-semibold uppercase">
-                  Address (optional)
-                </Label>
-                <Input
-                  id="treasureAddress"
-                  value={treasureAddress}
-                  onChange={(e) => setTreasureAddress(e.target.value)}
-                  placeholder="123 Main St"
-                  className="h-12 text-lg"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold uppercase">Lat (optional)</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={treasureLat}
-                    onChange={(e) => setTreasureLat(e.target.value)}
-                    placeholder="40.7128"
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold uppercase">Lng (optional)</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={treasureLng}
-                    onChange={(e) => setTreasureLng(e.target.value)}
-                    placeholder="-74.0060"
-                    className="h-12"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold uppercase">Claim limit (optional)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={claimLimit}
-                  onChange={(e) => setClaimLimit(e.target.value)}
-                  placeholder="Unlimited"
-                  className="h-12 text-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold uppercase">Starts at (optional)</Label>
-                <Input
-                  type="datetime-local"
-                  value={startsAt}
-                  onChange={(e) => setStartsAt(e.target.value)}
-                  className="h-12 text-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold uppercase">Ends at (optional)</Label>
-                <Input
-                  type="datetime-local"
-                  value={endsAt}
-                  onChange={(e) => setEndsAt(e.target.value)}
-                  className="h-12 text-lg"
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="eventDate" className="text-sm font-semibold uppercase">
-                  Date *
-                </Label>
-                <Input
-                  id="eventDate"
-                  type="date"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="h-12 text-lg"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventTime" className="text-sm font-semibold uppercase">
-                  Start reg time (HH:MM)
-                </Label>
-                <Input
-                  id="eventTime"
-                  type="time"
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  className="h-12 text-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="redeemBeforeTime" className="text-sm font-semibold uppercase">
-                  Redeem before (HH:MM)
-                </Label>
-                <Input
-                  id="redeemBeforeTime"
-                  type="time"
-                  value={redeemBeforeTime}
-                  onChange={(e) => setRedeemBeforeTime(e.target.value)}
-                  className="h-12 text-lg"
-                />
-              </div>
-            </>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="quantityLimit" className="text-sm font-semibold uppercase">
+              Quantity Limit
+            </Label>
+            <Input
+              id="quantityLimit"
+              type="number"
+              min={1}
+              value={quantityLimit}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setQuantityLimit(isNaN(v) ? 17 : Math.max(1, v));
+              }}
+              className="h-12 text-lg"
+            />
+            <p className="text-xs text-muted-foreground">Default: 17</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="date" className="text-sm font-semibold uppercase">
+              Date {!isHuntMode && '*'}
+            </Label>
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-12 text-lg"
+              required={!isHuntMode}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="startTime" className="text-sm font-semibold uppercase">
+              Start Time (HH:MM)
+            </Label>
+            <Input
+              id="startTime"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="h-12 text-lg"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endTime" className="text-sm font-semibold uppercase">
+              End Time (HH:MM)
+            </Label>
+            <Input
+              id="endTime"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="h-12 text-lg"
+            />
+          </div>
 
           {!isHuntMode && (
             <div className="space-y-2">
-              <Label htmlFor="quantityLimit" className="text-sm font-semibold uppercase">
-                Quantity limit
+              <Label htmlFor="redeemBeforeTime" className="text-sm font-semibold uppercase">
+                Redeem Before (HH:MM)
               </Label>
               <Input
-                id="quantityLimit"
-                type="number"
-                min={1}
-                value={quantityLimit}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  setQuantityLimit(isNaN(v) ? 17 : Math.max(1, v));
-                }}
+                id="redeemBeforeTime"
+                type="time"
+                value={redeemBeforeTime}
+                onChange={(e) => setRedeemBeforeTime(e.target.value)}
                 className="h-12 text-lg"
               />
-              <p className="text-xs text-muted-foreground">Default: 17</p>
             </div>
           )}
 
           <div className="space-y-2">
             <Label htmlFor="location" className="text-sm font-semibold uppercase">
-              Location (optional)
+              Location {isHuntMode ? '*' : '(optional)'}
             </Label>
             <Input
               id="location"
@@ -607,12 +601,51 @@ export default function CreateCoffeeOffer() {
             />
           </div>
 
+          {isHuntMode && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="lat" className="text-sm font-semibold uppercase">
+                  Lat *
+                </Label>
+                <Input
+                  id="lat"
+                  type="number"
+                  step="any"
+                  value={lat}
+                  onChange={(e) => setLat(e.target.value)}
+                  placeholder="40.7128"
+                  className="h-12"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lng" className="text-sm font-semibold uppercase">
+                  Long *
+                </Label>
+                <Input
+                  id="lng"
+                  type="number"
+                  step="any"
+                  value={lng}
+                  onChange={(e) => setLng(e.target.value)}
+                  placeholder="-74.0060"
+                  className="h-12"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full btn-run btn-run-yes"
-            disabled={isSubmitting}
+            disabled={
+              isSubmitting ||
+              (isHuntMode && !effectiveHuntId) ||
+              (isHuntMode && (!location.trim() || !lat.trim() || !lng.trim()))
+            }
           >
-            {isSubmitting ? 'Creating...' : pageTitle}
+            {isSubmitting ? 'Creating...' : submitButtonLabel}
           </Button>
         </form>
       </div>
@@ -637,7 +670,7 @@ export default function CreateCoffeeOffer() {
                   onClick={() => {
                     setQrDialogOpen(false);
                     setCreatedTreasure(null);
-                    if (huntId) navigate(`/host/hunts/${huntId}`);
+                    if (effectiveHuntId) navigate(`/host/hunts/${effectiveHuntId}`);
                   }}
                 >
                   Back to Hunt
@@ -647,13 +680,13 @@ export default function CreateCoffeeOffer() {
                   onClick={() => {
                     setQrDialogOpen(false);
                     setCreatedTreasure(null);
-                    setTreasureName('');
-                    setTreasureAddress('');
-                    setTreasureLat('');
-                    setTreasureLng('');
-                    setStartsAt('');
-                    setEndsAt('');
-                    setClaimLimit('');
+                    setOfferName('');
+                    setLocation('');
+                    setLat('');
+                    setLng('');
+                    setDate('');
+                    setStartTime('');
+                    setEndTime('');
                   }}
                 >
                   Add Another

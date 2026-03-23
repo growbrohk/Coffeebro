@@ -36,12 +36,10 @@ export function useMyVouchers() {
           created_at,
           redeemed_at,
           expires_at,
-          coffee_offer_id,
-          treasure_reward_id,
+          offer_id,
           org_id,
           orgs(org_name),
-          coffee_offers(name, offer_type),
-          treasure_reward(title, offer_type)
+          offers(name, offer_type)
         `)
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
@@ -51,12 +49,9 @@ export function useMyVouchers() {
       const result: MyVoucher[] = (vouchers || []).map((v: any) => {
         let title = 'Voucher';
         let offerType: string | undefined;
-        if (v.source_type === 'coffee_offer' && v.coffee_offers) {
-          title = v.coffee_offers.name || title;
-          offerType = v.coffee_offers.offer_type;
-        } else if (v.source_type === 'hunt_stop' && v.treasure_reward) {
-          title = v.treasure_reward.title || title;
-          offerType = v.treasure_reward.offer_type;
+        if (v.offers) {
+          title = v.offers.name || title;
+          offerType = v.offers.offer_type;
         }
         return {
           id: v.id,

@@ -28,15 +28,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ImageIcon, MapPin, Pencil, Plus, QrCode, Trash2 } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import { OFFER_TYPES } from '@/lib/offerForm';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-const OFFER_TYPES = [
-  { value: 'free', label: 'Free' },
-  { value: '$17coffee', label: '$17 Coffee' },
-  { value: 'buy1get1free', label: 'Buy 1 Get 1 Free' },
-] as const;
 
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -293,11 +288,11 @@ export default function HuntManagePage() {
 
       const primaryReward = treasureRewards[0];
       if (primaryReward && primaryReward.offer_type !== editTreasureOfferType) {
-        const { error: rewardError } = await (supabase as any)
-          .from('treasure_reward')
+        const { error: offerError } = await (supabase as any)
+          .from('offers')
           .update({ offer_type: editTreasureOfferType })
           .eq('id', primaryReward.id);
-        if (rewardError) throw rewardError;
+        if (offerError) throw offerError;
       }
 
       toast({ title: 'Treasure updated!' });

@@ -25,9 +25,10 @@ export function useMonthlyCoffeeOffers(year: number, month: number) {
       const startDate = localYMD(new Date(year, month, 1));
       const endDate = localYMD(new Date(year, month + 1, 0));
 
-      const { data, error } = await supabase
-        .from('coffee_offers')
+      const { data, error } = await (supabase as any)
+        .from('offers')
         .select('id, name, offer_type, event_date, event_time, location, description, org_id, created_by, created_at, quantity_limit, redeem_before_time, coffee_types')
+        .eq('source_type', 'calendar')
         .gte('event_date', startDate)
         .lte('event_date', endDate)
         .order('event_date', { ascending: true });

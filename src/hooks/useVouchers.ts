@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface Voucher {
   id: string;
-  coffee_offer_id: string;
+  offer_id: string;
   org_id: string;
   owner_id: string;
   code: string;
@@ -36,7 +36,7 @@ export function useMyVoucherForOffer(offerId: string | null) {
       const { data, error } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('coffee_offer_id', offerId)
+        .eq('offer_id', offerId)
         .eq('owner_id', user.id)
         .maybeSingle();
 
@@ -59,7 +59,7 @@ export function useVoucherCountForOffer(offerId: string | null) {
       const { count, error } = await supabase
         .from('vouchers')
         .select('*', { count: 'exact', head: true })
-        .eq('coffee_offer_id', offerId)
+        .eq('offer_id', offerId)
         .in('status', ['active', 'redeemed']);
 
       if (error) throw error;
