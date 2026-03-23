@@ -76,6 +76,12 @@ export default function CreateCoffeeOffer() {
     }
   }, [modeFromUrl, huntIdFromUrl]);
 
+  useEffect(() => {
+    if (isHuntMode && needsHuntPicker && myHunts.length === 0 && !myHuntsLoading) {
+      setShowCreateHuntInline(true);
+    }
+  }, [isHuntMode, needsHuntPicker, myHunts.length, myHuntsLoading]);
+
   const [orgId, setOrgId] = useState('');
   const [offerName, setOfferName] = useState('');
   const [offerType, setOfferType] = useState<OfferTypeValue>('free');
@@ -96,6 +102,12 @@ export default function CreateCoffeeOffer() {
     qr_code_id: string;
     name: string;
   } | null>(null);
+
+  // Inline hunt creation (when in Hunt mode with no hunt selected)
+  const [showCreateHuntInline, setShowCreateHuntInline] = useState(false);
+  const [newHuntName, setNewHuntName] = useState('');
+  const [newHuntDescription, setNewHuntDescription] = useState('');
+  const [isCreatingHunt, setIsCreatingHunt] = useState(false);
 
   // Default org to first in allowed list when orgs load
   useEffect(() => {
@@ -128,6 +140,50 @@ export default function CreateCoffeeOffer() {
   };
 
   const handleLocationChange = (value: string) => setLocation(value);
+
+  const handleCreateHuntInline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !orgId || !newHuntName.trim()) {
+      toast({
+        title: 'Missing fields',
+        description: 'Select organization and enter hunt name.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsCreatingHunt(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from('hunts')
+        .insert({
+          org_id: orgId,
+          created_by: user.id,
+          name: newHuntName.trim(),
+          description: newHuntDescription.trim() || null,
+          status: 'draft',
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+      const huntId = data?.id;
+      if (huntId) {
+        setSelectedHuntId(huntId);
+        setShowCreateHuntInline(false);
+        setNewHuntName('');
+        setNewHuntDescription('');
+        queryClient.invalidateQueries({ queryKey: ['my-hunts', user.id] });
+        toast({ title: 'Hunt created! Now add your treasure.' });
+      }
+    } catch (err: unknown) {
+      toast({
+        title: 'Error',
+        description: (err as Error).message || 'Failed to create hunt.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingHunt(false);
+    }
+  };
 
   // Loading state
   if (roleLoading) {
@@ -386,35 +442,87 @@ export default function CreateCoffeeOffer() {
               <Label htmlFor="hunt" className="text-sm font-semibold uppercase">
                 Hunt *
               </Label>
-              <Select
-                value={selectedHuntId}
-                onValueChange={setSelectedHuntId}
-                disabled={myHuntsLoading}
-              >
-                <SelectTrigger className="h-12 text-lg">
-                  <SelectValue
-                    placeholder={
-                      myHuntsLoading
-                        ? 'Loading hunts...'
-                        : myHunts.length === 0
-                          ? 'No hunts — create one first'
-                          : 'Select a hunt'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {myHunts.map((h) => (
-                    <SelectItem key={h.id} value={h.id}>
-                      {h.name}
-                      {h.status !== 'active' ? ` (${h.status})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {myHunts.length === 0 && !myHuntsLoading && (
-                <p className="text-sm text-muted-foreground">
-                  Create a hunt first from your profile, then add treasures here.
-                </p>
+              {showCreateHuntInline ? (
+                <div className="rounded-lg border border-border p-4 space-y-3 bg-muted/30">
+                  <p className="text-sm font-medium">Create new hunt</p>
+                  <form onSubmit={handleCreateHuntInline} className="space-y-3">
+                    <Input
+                      placeholder="Hunt name (e.g. Central Park Coffee Hunt)"
+                      value={newHuntName}
+                      onChange={(e) => setNewHuntName(e.target.value)}
+                      className="h-12 text-lg"
+                      required
+                    />
+                    <Textarea
+                      placeholder="Description (optional)"
+                      value={newHuntDescription}
+                      onChange={(e) => setNewHuntDescription(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setShowCreateHuntInline(false);
+                          setNewHuntName('');
+                          setNewHuntDescription('');
+                        }}
+                        disabled={isCreatingHunt}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1"
+                        disabled={isCreatingHunt || !newHuntName.trim()}
+                      >
+                        {isCreatingHunt ? 'Creating...' : 'Create Hunt'}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <>
+                  <Select
+                    value={selectedHuntId}
+                    onValueChange={(v) => {
+                      if (v === '__new__') {
+                        setShowCreateHuntInline(true);
+                      } else {
+                        setSelectedHuntId(v);
+                      }
+                    }}
+                    disabled={myHuntsLoading}
+                  >
+                    <SelectTrigger className="h-12 text-lg">
+                      <SelectValue
+                        placeholder={
+                          myHuntsLoading
+                            ? 'Loading hunts...'
+                            : myHunts.length === 0
+                              ? 'Select or create a hunt'
+                              : 'Select a hunt'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {myHunts.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>
+                          {h.name}
+                          {h.status !== 'active' ? ` (${h.status})` : ''}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__new__">+ Create new hunt</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {myHunts.length === 0 && !myHuntsLoading && (
+                    <p className="text-sm text-muted-foreground">
+                      Select &quot;Create new hunt&quot; above to create one and add your first treasure.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}

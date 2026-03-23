@@ -267,14 +267,10 @@ export default function HuntManagePage() {
         lng: editTreasureLng ? parseFloat(editTreasureLng) : null,
         claim_limit: editTreasureClaimLimit ? parseInt(editTreasureClaimLimit, 10) : null,
         starts_at: editTreasureStartsAt
-          ? editTreasureStartsAt.length >= 16
-            ? `${editTreasureStartsAt}:00`
-            : editTreasureStartsAt
+          ? new Date(editTreasureStartsAt).toISOString()
           : null,
         ends_at: editTreasureEndsAt
-          ? editTreasureEndsAt.length >= 16
-            ? `${editTreasureEndsAt}:00`
-            : editTreasureEndsAt
+          ? new Date(editTreasureEndsAt).toISOString()
           : null,
         clue_image: editTreasureClueImage.trim() || null,
       };

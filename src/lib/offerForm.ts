@@ -86,15 +86,20 @@ export function validateOfferForm(
   return { valid: true };
 }
 
-/** Build starts_at/ends_at for hunt from date + times */
+/** Build starts_at/ends_at for hunt from date + times (local time -> UTC ISO) */
 export function buildHuntTimestamps(
   date: string,
   startTime: string,
   endTime: string
 ): { starts_at: string | null; ends_at: string | null } {
-  const startsAt =
-    date && startTime ? `${date}T${startTime.length === 5 ? startTime + ':00' : startTime}` : null;
-  const endsAt = date && endTime ? `${date}T${endTime.length === 5 ? endTime + ':00' : endTime}` : null;
+  const toUtcIso = (dateStr: string, timeStr: string) => {
+    const [y, mo, day] = dateStr.split('-').map(Number);
+    const [h, min] = timeStr.split(':').map(Number);
+    const local = new Date(y, mo - 1, day, h, min || 0, 0);
+    return local.toISOString();
+  };
+  const startsAt = date && startTime ? toUtcIso(date, startTime) : null;
+  const endsAt = date && endTime ? toUtcIso(date, endTime) : null;
   return { starts_at: startsAt, ends_at: endsAt };
 }
 

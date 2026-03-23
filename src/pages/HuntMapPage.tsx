@@ -38,7 +38,11 @@ export default function HuntMapPage() {
 
   const { data: hunts = [], isLoading: huntsLoading } = useHunts();
   const { data: hunt, isLoading: huntLoading } = useHunt(huntId ?? null);
-  const { data: singleTreasures = [] } = useTreasures(huntId ?? null);
+  const isCreator = !!user && !!hunt && hunt.created_by === user.id;
+  const { data: singleTreasures = [] } = useTreasures(
+    huntId ?? null,
+    !isCreator
+  );
   const { data: allTreasures = [], isLoading: allTreasuresLoading } = useAllTreasures(
     isGlobalMode ? selectedCampaignId : null,
     isGlobalMode
