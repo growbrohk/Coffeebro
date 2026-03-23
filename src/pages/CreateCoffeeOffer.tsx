@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
@@ -562,10 +563,10 @@ export default function CreateCoffeeOffer() {
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
           {!isEditMode && (
           <div className="space-y-2">
-            <Label htmlFor="offerMode" className="text-sm font-semibold uppercase">
+            <Label className="text-sm font-semibold uppercase">
               Offer Mode
             </Label>
-            <Select
+            <Tabs
               value={selectedMode}
               onValueChange={(v) => {
                 setSelectedMode(v as 'calendar' | 'hunt');
@@ -575,14 +576,15 @@ export default function CreateCoffeeOffer() {
                 }
               }}
             >
-              <SelectTrigger className="h-12 text-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="calendar">Calendar</SelectItem>
-                <SelectItem value="hunt">Hunt</SelectItem>
-              </SelectContent>
-            </Select>
+              <TabsList className="grid w-full grid-cols-2 h-12">
+                <TabsTrigger value="calendar" className="text-lg">
+                  Calendar
+                </TabsTrigger>
+                <TabsTrigger value="hunt" className="text-lg">
+                  Hunt
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
           )}
 
