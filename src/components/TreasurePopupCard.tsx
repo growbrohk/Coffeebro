@@ -21,10 +21,10 @@ export function TreasurePopupCard({
 }: TreasurePopupCardProps) {
   return (
     <div
-      className="absolute left-0 right-0 z-[1100] animate-slide-up"
+      className="fixed right-4 left-4 sm:left-auto sm:w-[360px] z-[1100] animate-slide-up"
       style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
     >
-      <div className="bg-white rounded-t-3xl shadow-lg mx-4 mb-4 overflow-hidden">
+      <div className="bg-white rounded-t-3xl shadow-lg overflow-hidden">
         {/* Header with thumbnail and info */}
         <div className="flex items-start gap-3 p-4 pb-3">
           {/* Thumbnail Image */}
