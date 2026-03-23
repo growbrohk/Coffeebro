@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import type { Treasure } from '@/hooks/useHunts';
 import { MapPin } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -26,6 +26,7 @@ function createMarkerIcon(scanned = false): L.DivIcon {
 
 interface HuntMapProps {
   treasures: Treasure[];
+  onSelectTreasure?: (treasure: Treasure) => void;
 }
 
 function FitBounds({ treasures }: { treasures: Treasure[] }) {
@@ -45,7 +46,7 @@ function FitBounds({ treasures }: { treasures: Treasure[] }) {
   return null;
 }
 
-export function HuntMap({ treasures }: HuntMapProps) {
+export function HuntMap({ treasures, onSelectTreasure }: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
@@ -120,25 +121,29 @@ export function HuntMap({ treasures }: HuntMapProps) {
             position={[t.lat!, t.lng!]}
             icon={t.scanned ? markerIconScanned : markerIcon}
             zIndexOffset={t.scanned ? -1000 : 0}
-            eventHandlers={t.scanned ? { click: () => {} } : undefined}
+            eventHandlers={
+              t.scanned
+                ? { click: () => {} }
+                : onSelectTreasure
+                  ? { click: () => onSelectTreasure(t) }
+                  : undefined
+            }
           >
             {!t.scanned && (
-              <>
-                <Tooltip
-                  permanent
-                  direction="right"
-                  offset={[8, 0]}
-                  className="hunt-map-marker-tooltip"
-                >
-                  {t.name}
-                </Tooltip>
-                <Popup>
-                  <div className="font-medium">{t.name}</div>
-                  {t.address && (
-                    <div className="text-sm text-muted-foreground">{t.address}</div>
-                  )}
-                </Popup>
-              </>
+              <Tooltip
+                permanent
+                direction="right"
+                offset={[8, 0]}
+                className="hunt-map-marker-tooltip"
+                interactive={true}
+                eventHandlers={
+                  onSelectTreasure
+                    ? { click: () => onSelectTreasure(t) }
+                    : undefined
+                }
+              >
+                {t.name}
+              </Tooltip>
             )}
           </Marker>
         ))}

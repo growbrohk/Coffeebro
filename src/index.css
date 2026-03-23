@@ -236,6 +236,7 @@
 .hunt-map-marker {
   background: none !important;
   border: none !important;
+  cursor: pointer !important;
 }
 
 .hunt-map-marker-pin {
@@ -245,6 +246,7 @@
   background: hsl(var(--primary));
   border: 2px solid hsl(var(--primary-foreground));
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: auto !important;
 }
 
 .hunt-map-marker-scanned {
@@ -268,6 +270,8 @@
   font-family: 'Montserrat', sans-serif !important;
   color: hsl(var(--foreground)) !important;
   white-space: nowrap !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .hunt-map-marker-tooltip::before {

@@ -17,6 +17,7 @@ import QuizResultPage from "./pages/QuizResultPage";
 import NotFound from "./pages/NotFound";
 import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
+import TreasureDetailPage from "./pages/TreasureDetailPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
 import CreateHuntPage from "./pages/CreateHuntPage";
 import HostHuntsPage from "./pages/HostHuntsPage";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/hunts" element={<HuntMapPage />} />
               <Route path="/hunts/:huntId" element={<Navigate to="map" replace />} />
               <Route path="/hunts/:huntId/map" element={<HuntMapPage />} />
+              <Route path="/hunts/:huntId/treasures/:treasureId" element={<TreasureDetailPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/host/hunt/create" element={<CreateHuntPage />} />

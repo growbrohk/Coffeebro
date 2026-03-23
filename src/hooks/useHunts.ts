@@ -107,6 +107,30 @@ export function useHunt(huntId: string | null) {
   });
 }
 
+export function useTreasure(treasureId: string | null, huntId?: string | null) {
+  return useQuery({
+    queryKey: ['treasure', treasureId, huntId],
+    queryFn: async () => {
+      if (!treasureId) return null;
+
+      let query = (supabase as any)
+        .from('treasures')
+        .select('*')
+        .eq('id', treasureId);
+
+      if (huntId) {
+        query = query.eq('hunt_id', huntId);
+      }
+
+      const { data, error } = await query.single();
+
+      if (error) throw error;
+      return data as Treasure;
+    },
+    enabled: !!treasureId,
+  });
+}
+
 export function useTreasures(huntId: string | null, activeOnly = true) {
   return useQuery({
     queryKey: ['treasures', huntId, activeOnly],

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -16,15 +16,22 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
+import { TreasurePopupCard } from '@/components/TreasurePopupCard';
+import type { Treasure } from '@/hooks/useHunts';
 import { MapPin, Camera, Loader2 } from 'lucide-react';
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { canHostEvent } = useUserRole();
-  const [activeTab, setActiveTab] = useState<'map' | 'list'>('map');
+  const initialTabFromState = (location.state as { initialTab?: 'map' | 'list' })?.initialTab;
+  const [activeTab, setActiveTab] = useState<'map' | 'list'>(
+    initialTabFromState ?? 'map'
+  );
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
+  const [selectedTreasure, setSelectedTreasure] = useState<Treasure | null>(null);
 
   const isGlobalMode = !huntId;
 
@@ -47,6 +54,34 @@ export default function HuntMapPage() {
     scanned: claimedIds?.has(t.id) ?? false,
   }));
   const treasuresLoading = isGlobalMode ? allTreasuresLoading : false;
+
+  const hasLocation =
+    selectedTreasure &&
+    selectedTreasure.lat != null &&
+    selectedTreasure.lng != null &&
+    Number.isFinite(selectedTreasure.lat) &&
+    Number.isFinite(selectedTreasure.lng);
+
+  const openInMaps = () => {
+    if (!selectedTreasure || !hasLocation) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${selectedTreasure.lat},${selectedTreasure.lng}`;
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIOS) {
+      window.location.href = url;
+      return;
+    }
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) window.location.href = url;
+  };
+
+  const handleDetailsClick = () => {
+    if (!selectedTreasure) return;
+    const targetHuntId = selectedTreasure.hunt_id;
+    navigate(`/hunts/${targetHuntId}/treasures/${selectedTreasure.id}`, {
+      state: { fromTab: activeTab },
+    });
+    setSelectedTreasure(null);
+  };
 
   useEffect(() => {
     if (user && huntId && !isParticipant && !hasTriedJoin.current) {
@@ -131,7 +166,10 @@ export default function HuntMapPage() {
                     </div>
                   ) : (
                     <div className="absolute inset-0">
-                      <HuntMap treasures={treasures} />
+                      <HuntMap
+                        treasures={treasures}
+                        onSelectTreasure={(t) => setSelectedTreasure(t)}
+                      />
                     </div>
                   )}
                 </div>
@@ -161,7 +199,7 @@ export default function HuntMapPage() {
                       ) : (
                         <button
                           key={t.id}
-                          onClick={() => navigate(`/hunts/${t.hunt_id}/map`)}
+                          onClick={() => setSelectedTreasure(t)}
                           className="w-full flex items-start gap-2 p-3 bg-muted/30 rounded-lg border border-border text-left hover:bg-muted transition-colors"
                         >
                           <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -176,6 +214,14 @@ export default function HuntMapPage() {
                     )}
                   </div>
                 </div>
+              )}
+              {selectedTreasure && (
+                <TreasurePopupCard
+                  treasure={selectedTreasure}
+                  onClose={() => setSelectedTreasure(null)}
+                  onDirections={openInMaps}
+                  onDetails={handleDetailsClick}
+                />
               )}
               <HuntFilter
                 hunts={hunts}
@@ -277,42 +323,65 @@ export default function HuntMapPage() {
             <TabsTrigger value="map">Map</TabsTrigger>
             <TabsTrigger value="list">List</TabsTrigger>
           </TabsList>
-          <div className="flex-1 min-h-0 mt-4 overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 mt-4 overflow-hidden flex flex-col relative">
             {activeTab === 'map' ? (
               <div className="flex-1 min-h-0 relative">
                 <div className="absolute inset-0">
-                  <HuntMap treasures={treasures} />
+                  <HuntMap
+                    treasures={treasures}
+                    onSelectTreasure={(t) => setSelectedTreasure(t)}
+                  />
                 </div>
               </div>
             ) : (
               <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
                 <p className="text-sm font-semibold">{treasures.length} treasures</p>
                 <div className="space-y-2">
-                  {treasures.map((t) => (
-                    <div
-                      key={t.id}
-                      className={`flex items-start gap-2 p-3 rounded-lg border border-border ${
-                        t.scanned ? 'bg-muted/20 opacity-75' : 'bg-muted/30'
-                      }`}
-                    >
-                      <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
-                      <div>
-                        <p className={`font-medium ${t.scanned ? 'text-muted-foreground' : ''}`}>
-                          {t.scanned && (
+                  {treasures.map((t) =>
+                    t.scanned ? (
+                      <div
+                        key={t.id}
+                        className="flex items-start gap-2 p-3 rounded-lg border border-border bg-muted/20 opacity-75"
+                      >
+                        <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-muted-foreground">
                             <span className="mr-2 text-[10px] font-medium uppercase">
                               Scanned
                             </span>
+                            {t.name}
+                          </p>
+                          {t.address && (
+                            <p className="text-sm text-muted-foreground">{t.address}</p>
                           )}
-                          {t.name}
-                        </p>
-                        {t.address && (
-                          <p className="text-sm text-muted-foreground">{t.address}</p>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <button
+                        key={t.id}
+                        onClick={() => setSelectedTreasure(t)}
+                        className="w-full flex items-start gap-2 p-3 rounded-lg border border-border bg-muted/30 text-left hover:bg-muted transition-colors"
+                      >
+                        <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{t.name}</p>
+                          {t.address && (
+                            <p className="text-sm text-muted-foreground">{t.address}</p>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
+            )}
+            {selectedTreasure && (
+              <TreasurePopupCard
+                treasure={selectedTreasure}
+                onClose={() => setSelectedTreasure(null)}
+                onDirections={openInMaps}
+                onDetails={handleDetailsClick}
+              />
             )}
           </div>
         </Tabs>
