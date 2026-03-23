@@ -501,6 +501,7 @@ export type Database = {
       treasures: {
         Row: {
           address: string | null
+          clue_image: string | null
           description: string | null
           hunt_id: string
           id: string
@@ -512,6 +513,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          clue_image?: string | null
           description?: string | null
           hunt_id: string
           id?: string
@@ -523,6 +525,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          clue_image?: string | null
           description?: string | null
           hunt_id?: string
           id?: string

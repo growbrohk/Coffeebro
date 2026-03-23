@@ -27,6 +27,7 @@ export interface Treasure {
   claim_limit?: number | null;
   starts_at?: string | null;
   ends_at?: string | null;
+  clue_image?: string | null;
   scanned?: boolean;
 }
 
