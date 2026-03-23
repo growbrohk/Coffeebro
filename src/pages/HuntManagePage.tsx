@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useHunt, useTreasures, type Treasure } from '@/hooks/useHunts';
+import { useTreasureReward } from '@/hooks/useTreasureReward';
 import { useOrgs } from '@/hooks/useOrgs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +31,12 @@ import QRCode from 'react-qr-code';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+const OFFER_TYPES = [
+  { value: 'free', label: 'Free' },
+  { value: '$17coffee', label: '$17 Coffee' },
+  { value: 'buy1get1free', label: 'Buy 1 Get 1 Free' },
+] as const;
 
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -63,6 +70,7 @@ export default function HuntManagePage() {
 
   const [editTreasureDialogOpen, setEditTreasureDialogOpen] = useState(false);
   const [editingTreasure, setEditingTreasure] = useState<Treasure | null>(null);
+  const { data: treasureRewards = [] } = useTreasureReward(editingTreasure?.id ?? null);
   const [editTreasureName, setEditTreasureName] = useState('');
   const [editTreasureDescription, setEditTreasureDescription] = useState('');
   const [editTreasureAddress, setEditTreasureAddress] = useState('');
@@ -72,6 +80,7 @@ export default function HuntManagePage() {
   const [editTreasureStartsAt, setEditTreasureStartsAt] = useState('');
   const [editTreasureEndsAt, setEditTreasureEndsAt] = useState('');
   const [editTreasureClueImage, setEditTreasureClueImage] = useState('');
+  const [editTreasureOfferType, setEditTreasureOfferType] = useState<string>('free');
   const [editTreasurePhotoMode, setEditTreasurePhotoMode] = useState<'link' | 'upload'>('link');
   const [editTreasureUploading, setEditTreasureUploading] = useState(false);
   const [isEditTreasureSubmitting, setIsEditTreasureSubmitting] = useState(false);
@@ -98,8 +107,10 @@ export default function HuntManagePage() {
       setEditTreasureStartsAt(toDatetimeLocal(editingTreasure.starts_at));
       setEditTreasureEndsAt(toDatetimeLocal(editingTreasure.ends_at));
       setEditTreasureClueImage(editingTreasure.clue_image ?? '');
+      const primary = treasureRewards[0];
+      setEditTreasureOfferType(primary?.offer_type ?? 'free');
     }
-  }, [editingTreasure, editTreasureDialogOpen]);
+  }, [editingTreasure, editTreasureDialogOpen, treasureRewards]);
 
   if (isError) {
     return (
@@ -280,11 +291,21 @@ export default function HuntManagePage() {
 
       if (error) throw error;
 
+      const primaryReward = treasureRewards[0];
+      if (primaryReward && primaryReward.offer_type !== editTreasureOfferType) {
+        const { error: rewardError } = await (supabase as any)
+          .from('treasure_reward')
+          .update({ offer_type: editTreasureOfferType })
+          .eq('id', primaryReward.id);
+        if (rewardError) throw rewardError;
+      }
+
       toast({ title: 'Treasure updated!' });
       setEditTreasureDialogOpen(false);
       setEditingTreasure(null);
       queryClient.invalidateQueries({ queryKey: ['treasures', huntId] });
       queryClient.invalidateQueries({ queryKey: ['all-treasures'] });
+      queryClient.invalidateQueries({ queryKey: ['treasure-reward', editingTreasure.id] });
     } catch (err: unknown) {
       toast({
         title: 'Error',
@@ -473,6 +494,24 @@ export default function HuntManagePage() {
                 placeholder="A clue about this location..."
                 className="min-h-[80px]"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Offer type</Label>
+              <Select
+                value={editTreasureOfferType}
+                onValueChange={(v) => setEditTreasureOfferType(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select offer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OFFER_TYPES.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Address (optional)</Label>
