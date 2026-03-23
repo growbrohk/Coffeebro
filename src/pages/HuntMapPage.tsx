@@ -36,16 +36,16 @@ export default function HuntMapPage() {
 
   const isGlobalMode = !huntId;
 
-  const { data: hunts = [], isLoading: huntsLoading } = useHunts();
+  const { data: hunts = [], isLoading: huntsLoading, isError: huntsError, refetch: refetchHunts } = useHunts();
   const { data: hunt, isLoading: huntLoading } = useHunt(huntId ?? null);
   const isCreator = !!user && !!hunt && hunt.created_by === user.id;
   const { data: singleTreasures = [] } = useTreasures(
     huntId ?? null,
     !isCreator
   );
-  const { data: allTreasures = [], isLoading: allTreasuresLoading } = useAllTreasures(
+  const { data: allTreasures = [], isLoading: allTreasuresLoading, isError: allTreasuresError, refetch: refetchAllTreasures } = useAllTreasures(
     isGlobalMode ? selectedCampaignId : null,
-    isGlobalMode
+    isGlobalMode && !!user
   );
   const { data: isParticipant } = useIsParticipant(huntId ?? null);
   const { data: claimedIds } = useMyClaimedTreasureIds();
@@ -121,6 +121,21 @@ export default function HuntMapPage() {
       );
     }
 
+    if (huntsError || allTreasuresError) {
+      const handleRetry = () => {
+        refetchHunts();
+        if (user) refetchAllTreasures();
+      };
+      return (
+        <div className="min-h-screen bg-background pb-24 flex flex-col items-center justify-center gap-4 px-4">
+          <p className="text-muted-foreground text-center">Failed to load hunts. Please try again.</p>
+          <Button variant="outline" onClick={handleRetry}>
+            Retry
+          </Button>
+        </div>
+      );
+    }
+
     if (!user) {
       return (
         <div className="min-h-screen bg-background pb-24">
@@ -190,6 +205,7 @@ export default function HuntMapPage() {
                       <HuntMap
                         treasures={treasures}
                         onSelectTreasure={(t) => setSelectedTreasure(t)}
+                        emptyMessage={hunts.length === 0 ? 'No active hunts right now. Check back later or create one as a host.' : undefined}
                       />
                     </div>
                   )}
@@ -197,6 +213,16 @@ export default function HuntMapPage() {
               ) : (
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
                   <p className="text-sm font-semibold">{treasures.length} treasures</p>
+                  {treasures.length === 0 && hunts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+                      <p className="text-muted-foreground">No active hunts right now. Check back later or create one as a host.</p>
+                      {canHostEvent && (
+                        <Button variant="outline" onClick={() => navigate('/host/offer/create?mode=hunt')}>
+                          Create Hunt
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
                   <div className="space-y-2">
                     {treasures.map((t) =>
                       t.scanned ? (
@@ -234,6 +260,7 @@ export default function HuntMapPage() {
                       )
                     )}
                   </div>
+                  )}
                 </div>
               )}
               {selectedTreasure && (

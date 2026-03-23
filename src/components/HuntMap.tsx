@@ -27,6 +27,8 @@ function createMarkerIcon(scanned = false): L.DivIcon {
 interface HuntMapProps {
   treasures: Treasure[];
   onSelectTreasure?: (treasure: Treasure) => void;
+  /** Custom message when no treasures. Default: "No treasures on this hunt yet." */
+  emptyMessage?: string;
 }
 
 function FitBounds({ treasures }: { treasures: Treasure[] }) {
@@ -46,7 +48,7 @@ function FitBounds({ treasures }: { treasures: Treasure[] }) {
   return null;
 }
 
-export function HuntMap({ treasures, onSelectTreasure }: HuntMapProps) {
+export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
@@ -59,7 +61,9 @@ export function HuntMap({ treasures, onSelectTreasure }: HuntMapProps) {
   if (treasures.length === 0) {
     return (
       <div className="w-full h-full min-h-[200px] bg-muted/30 flex items-center justify-center">
-        <p className="text-muted-foreground">No treasures on this hunt yet.</p>
+        <p className="text-muted-foreground">
+          {emptyMessage ?? 'No treasures on this hunt yet.'}
+        </p>
       </div>
     );
   }
