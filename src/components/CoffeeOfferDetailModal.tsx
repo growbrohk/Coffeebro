@@ -29,12 +29,13 @@ export function CoffeeOfferDetailModal({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { canHostEvent } = useUserRole();
+  const offerId = offer?.id ?? '';
 
   // Fetch user's voucher for this offer
-  const { data: myVoucher, refetch: refetchVoucher } = useMyVoucherForOffer(offer.id);
+  const { data: myVoucher, refetch: refetchVoucher } = useMyVoucherForOffer(offerId);
   
   // Fetch voucher count for sold-out check
-  const { data: voucherCount = 0, refetch: refetchCount } = useVoucherCountForOffer(offer.id);
+  const { data: voucherCount = 0, refetch: refetchCount } = useVoucherCountForOffer(offerId);
   
   // Mint voucher mutation
   const mintVoucher = useMintVoucher();
