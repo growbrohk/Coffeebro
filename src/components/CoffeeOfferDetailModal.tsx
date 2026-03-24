@@ -22,8 +22,6 @@ export function CoffeeOfferDetailModal({
   open,
   onOpenChange,
 }: CoffeeOfferDetailModalProps) {
-  if (!offer) return null;
-
   const [showFullTerms, setShowFullTerms] = useState(false);
   const [selectedCoffeeType, setSelectedCoffeeType] = useState<string | null>(null);
   const [mintedCode, setMintedCode] = useState<string | null>(null);
@@ -43,12 +41,14 @@ export function CoffeeOfferDetailModal({
 
   // Reset minted code when offer changes or modal closes
   useEffect(() => {
-    if (!open || !offer) {
+    if (!open) {
       setMintedCode(null);
       setSelectedCoffeeType(null);
       setQrOpen(false);
     }
-  }, [open, offer?.id]);
+  }, [open]);
+
+  if (!offer) return null;
 
   const hasVoucher = !!myVoucher;
   const isSoldOut = offer.quantity_limit != null && voucherCount >= offer.quantity_limit;
@@ -136,8 +136,8 @@ export function CoffeeOfferDetailModal({
         title: 'Grabbed!',
         description: `Your voucher code: ${result.code}`,
       });
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to grab voucher';
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to grab voucher';
       
       // Map error codes to user-friendly messages
       let userMessage = errorMessage;
