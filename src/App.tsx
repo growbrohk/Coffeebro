@@ -22,6 +22,7 @@ import MyVouchersPage from "./pages/MyVouchersPage";
 import HostHuntsPage from "./pages/HostHuntsPage";
 import HostOffersPage from "./pages/HostOffersPage";
 import HuntManagePage from "./pages/HuntManagePage";
+import CreateOfferPresetPage from "./pages/CreateOfferPresetPage";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,10 @@ const App = () => (
               <Route path="/users/:userId" element={<UserCalendarPage />} />
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />
+              <Route path="/host/offer-campaign/create" element={<CreateCoffeeOffer />} />
+              <Route path="/host/offer-campaign/:offerId/edit" element={<CreateCoffeeOffer />} />
+              <Route path="/host/preset-offer/create" element={<CreateOfferPresetPage />} />
+              <Route path="/host/preset-offer/:presetId/edit" element={<CreateOfferPresetPage />} />
               <Route path="/host/offers" element={<HostOffersPage />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
@@ -50,7 +55,7 @@ const App = () => (
               <Route path="/hunts/:huntId/treasures/:treasureId" element={<TreasureDetailPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
-              <Route path="/host/hunt/create" element={<Navigate to="/host/offer/create?mode=hunt" replace />} />
+              <Route path="/host/hunt/create" element={<Navigate to="/host/offer-campaign/create?mode=hunt" replace />} />
               <Route path="/host/hunts" element={<HostHuntsPage />} />
               <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />
               <Route path="/q" element={<QuizPage />} />

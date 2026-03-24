@@ -25,7 +25,7 @@ export default function HostOffersPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
           <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            Manage Offers
+            Manage Campaigns
           </h1>
         </div>
         <div className="container px-4 py-8">
@@ -49,7 +49,7 @@ export default function HostOffersPage() {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-2xl font-black uppercase tracking-tight">
-              Manage Offers
+              Manage Campaigns
             </h1>
           </div>
         </div>
@@ -73,13 +73,13 @@ export default function HostOffersPage() {
           <button onClick={() => navigate(-1)} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-black uppercase tracking-tight">
-            Manage Offers
+            <h1 className="text-xl font-black uppercase tracking-tight">
+            Manage Campaigns
           </h1>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/host/offer/create')}
+            onClick={() => navigate('/host/offer-campaign/create')}
             className="gap-1"
           >
             <Plus className="w-5 h-5" />
@@ -98,14 +98,14 @@ export default function HostOffersPage() {
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">You haven't created any offers yet.</p>
             <p className="text-sm text-muted-foreground mt-2 mb-6">
-              Create a calendar offer or add a treasure to a hunt.
+              Create an offer campaign (calendar or hunt).
             </p>
             <Button
               className="w-full btn-run btn-run-yes"
-              onClick={() => navigate('/host/offer/create')}
+              onClick={() => navigate('/host/offer-campaign/create')}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Create Coffee Offer
+              Create Offer Campaign
             </Button>
           </div>
         ) : (
@@ -116,7 +116,7 @@ export default function HostOffersPage() {
                 className="p-4 bg-muted/50 rounded-lg border border-border"
               >
                 <button
-                  onClick={() => navigate(`/host/offer/${offer.id}/edit`)}
+                  onClick={() => navigate(`/host/offer-campaign/${offer.id}/edit`)}
                   className="w-full text-left hover:opacity-80 transition-opacity"
                 >
                   <div className="flex items-start gap-2">

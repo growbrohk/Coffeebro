@@ -390,7 +390,7 @@ export default function HuntManagePage() {
           <Button
             variant="outline"
             className="w-full mt-2"
-            onClick={() => huntId && navigate(`/host/offer/create?mode=hunt&huntId=${huntId}`)}
+            onClick={() => huntId && navigate(`/host/offer-campaign/create?mode=hunt&huntId=${huntId}`)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Treasure

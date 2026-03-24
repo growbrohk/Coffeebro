@@ -17,6 +17,7 @@ declare
   v_remaining integer;
   v_voucher_id uuid;
   v_code text;
+  v_expires_at timestamptz;
   v_chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 begin
   v_user_id := auth.uid();
@@ -24,7 +25,7 @@ begin
     raise exception using errcode = 'P0001', message = 'NOT_AUTHENTICATED';
   end if;
 
-  select id, org_id, quantity_limit, coffee_types
+  select id, org_id, quantity_limit, coffee_types, redeem_duration_days
   into v_offer_record
   from public.offers
   where id = p_offer_id
@@ -73,9 +74,29 @@ begin
     exit when not exists (select 1 from public.vouchers where code = v_code);
   end loop;
 
+  v_expires_at := now() + make_interval(days => coalesce(v_offer_record.redeem_duration_days, 7));
+
   begin
-    insert into public.vouchers (offer_id, org_id, owner_id, code, selected_coffee_type, status)
-    values (p_offer_id, v_offer_record.org_id, v_user_id, v_code, p_selected_coffee_type, 'active')
+    insert into public.vouchers (
+      offer_id,
+      org_id,
+      owner_id,
+      code,
+      selected_coffee_type,
+      status,
+      source_type,
+      expires_at
+    )
+    values (
+      p_offer_id,
+      v_offer_record.org_id,
+      v_user_id,
+      v_code,
+      p_selected_coffee_type,
+      'active',
+      'coffee_offer',
+      v_expires_at
+    )
     returning id into v_voucher_id;
   exception
     when unique_violation then

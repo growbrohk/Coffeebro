@@ -92,7 +92,7 @@ export default function HostHuntsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/host/offer/create?mode=hunt')}
+            onClick={() => navigate('/host/offer-campaign/create?mode=hunt')}
             className="gap-1"
           >
             <Plus className="w-5 h-5" />
@@ -115,7 +115,7 @@ export default function HostHuntsPage() {
             </p>
             <Button
               className="w-full btn-run btn-run-yes"
-              onClick={() => navigate('/host/offer/create?mode=hunt')}
+              onClick={() => navigate('/host/offer-campaign/create?mode=hunt')}
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Hunt

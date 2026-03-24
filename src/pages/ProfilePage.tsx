@@ -71,24 +71,24 @@ export default function ProfilePage() {
     ? leaderboard.findIndex(e => e.username === profile.username) + 1 
     : null;
 
-   const handleCreateCoffeeOffer = () => {
+   const handleCreateOfferPreset = () => {
      if (canHostEvent) {
-       navigate('/host/offer/create');
+       navigate('/host/preset-offer/create');
      } else {
        toast({
          title: 'Access Required',
-         description: 'Please upgrade your access to create coffee offers.',
+         description: 'Please upgrade your access to create offer presets.',
        });
      }
    };
 
-   const handleCreateHunt = () => {
+   const handleCreateOfferCampaign = () => {
      if (canHostEvent) {
-       navigate('/host/offer/create?mode=hunt');
+       navigate('/host/offer-campaign/create');
      } else {
        toast({
          title: 'Access Required',
-         description: 'Please upgrade your access to create hunts.',
+         description: 'Please upgrade your access to create offer campaigns.',
        });
      }
    };
@@ -234,20 +234,20 @@ export default function ProfilePage() {
           )}
 
            <Button
-             onClick={handleCreateCoffeeOffer}
+             onClick={handleCreateOfferPreset}
              className="w-full btn-run mb-4 bg-orange-500 hover:bg-orange-600 text-white"
              disabled={roleLoading}
            >
-             Create Coffee Offer
+             Create Offer Preset
            </Button>
 
            <Button
-             onClick={handleCreateHunt}
+             onClick={handleCreateOfferCampaign}
              variant="outline"
              className="w-full btn-run mb-4"
              disabled={roleLoading}
            >
-             Create Hunt
+             Create Offer Campaign
            </Button>
 
            <Button
@@ -266,7 +266,7 @@ export default function ProfilePage() {
                className="w-full btn-run mb-4"
                disabled={roleLoading}
              >
-               Manage Offer
+               Manage Campaigns
              </Button>
            )}
 

@@ -35,6 +35,15 @@ import {
   buildHuntTimestamps,
 } from '@/lib/offerForm';
 
+interface PresetOffer {
+  id: string;
+  org_id: string;
+  name: string;
+  offer_type: OfferTypeValue;
+  description: string | null;
+  coffee_types: string[] | null;
+}
+
 function generateQrCodeId(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let id = 'hunt_';
@@ -90,7 +99,7 @@ export default function CreateCoffeeOffer() {
       if (!offerId) return null;
       const { data: offerData, error: offerErr } = await (supabase as any)
         .from('offers')
-        .select('*, treasures(id, hunt_id, name, address, lat, lng, claim_limit, starts_at, ends_at, hunts(name))')
+        .select('*, treasures(id, hunt_id, name, address, lat, lng, claim_limit, starts_at, ends_at, allocation_mode, per_scan_voucher_amount, allow_duplicate_vouchers, hunts(name))')
         .eq('id', offerId)
         .single();
       if (offerErr) throw offerErr;
@@ -123,6 +132,8 @@ export default function CreateCoffeeOffer() {
     setLocation(o.location ?? '');
     setDescription(o.description ?? '');
     setCoffeeTypes(Array.isArray(o.coffee_types) ? o.coffee_types : []);
+    setPresetOfferId(o.preset_offer_id ?? '');
+    setRedeemDurationDays(o.redeem_duration_days ?? 7);
 
     if (o.source_type === 'calendar') {
       setSelectedMode('calendar');
@@ -137,6 +148,9 @@ export default function CreateCoffeeOffer() {
         setLat(t.lat != null ? String(t.lat) : '');
         setLng(t.lng != null ? String(t.lng) : '');
         setQuantityLimit(t.claim_limit ?? o.quantity_limit ?? 17);
+        setAllocationMode((t.allocation_mode ?? 'fixed') as 'fixed' | 'random');
+        setPerScanVoucherAmount(t.per_scan_voucher_amount ?? 1);
+        setAllowDuplicateVouchers(!!t.allow_duplicate_vouchers);
         setDate(toDateOnly(t.starts_at) ?? '');
         setStartTime(toTimeOnly(t.starts_at) ?? '');
         setEndTime(toTimeOnly(t.ends_at) ?? '');
@@ -157,6 +171,14 @@ export default function CreateCoffeeOffer() {
   const [coffeeTypes, setCoffeeTypes] = useState<string[]>([]);
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [presetOfferId, setPresetOfferId] = useState('');
+  const [redeemDurationDays, setRedeemDurationDays] = useState(7);
+  const [allocationMode, setAllocationMode] = useState<'fixed' | 'random'>('fixed');
+  const [perScanVoucherAmount, setPerScanVoucherAmount] = useState(1);
+  const [allowDuplicateVouchers, setAllowDuplicateVouchers] = useState(false);
+  const [rewardRows, setRewardRows] = useState<
+    Array<{ id: string; presetOfferId: string; quota: number; fixedCount: number; weight: number }>
+  >([{ id: crypto.randomUUID(), presetOfferId: '', quota: 17, fixedCount: 1, weight: 1 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastAutoLocationRef = useRef<string>('');
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
@@ -170,6 +192,30 @@ export default function CreateCoffeeOffer() {
   const [newHuntName, setNewHuntName] = useState('');
   const [newHuntDescription, setNewHuntDescription] = useState('');
   const [isCreatingHunt, setIsCreatingHunt] = useState(false);
+
+  const { data: presetOffers = [] } = useQuery({
+    queryKey: ['preset-offers', user?.id, orgId],
+    enabled: !!user && !!orgId,
+    queryFn: async (): Promise<PresetOffer[]> => {
+      const { data, error } = await (supabase as any)
+        .from('preset_offers')
+        .select('id, org_id, name, offer_type, description, coffee_types')
+        .eq('created_by', user.id)
+        .eq('org_id', orgId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as PresetOffer[];
+    },
+  });
+
+  useEffect(() => {
+    const preset = presetOffers.find((p) => p.id === presetOfferId);
+    if (!preset) return;
+    setOfferType(preset.offer_type);
+    setDescription(preset.description ?? '');
+    setCoffeeTypes(Array.isArray(preset.coffee_types) ? preset.coffee_types : []);
+  }, [presetOfferId, presetOffers]);
 
   // Default org to first in allowed list when orgs load
   useEffect(() => {
@@ -186,6 +232,7 @@ export default function CreateCoffeeOffer() {
   const handleOrgChange = (newOrgId: string) => {
     const newOrg = orgs?.find((o) => o.id === newOrgId);
     setOrgId(newOrgId);
+    setPresetOfferId('');
 
     if (newOrg?.location) {
       const newLoc = newOrg.location;
@@ -300,7 +347,7 @@ export default function CreateCoffeeOffer() {
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
           <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            Create Coffee Offer
+            Create Offer Campaign
           </h1>
         </div>
         <div className="container px-4 py-8">
@@ -328,7 +375,7 @@ export default function CreateCoffeeOffer() {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-2xl font-black uppercase tracking-tight">
-              Create Coffee Offer
+              Create Offer Campaign
             </h1>
           </div>
         </div>
@@ -353,6 +400,25 @@ export default function CreateCoffeeOffer() {
       toast({
         title: 'Missing fields',
         description: 'Please select an organization with a valid name.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!presetOfferId) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please select an offer preset.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const selectedPreset = presetOffers.find((p) => p.id === presetOfferId);
+    if (!selectedPreset) {
+      toast({
+        title: 'Missing preset',
+        description: 'Selected offer preset was not found. Refresh and try again.',
         variant: 'destructive',
       });
       return;
@@ -392,15 +458,21 @@ export default function CreateCoffeeOffer() {
           const { error } = await (supabase as any)
             .from('offers')
             .update({
-              name: offerName.trim(),
-              offer_type: offerType,
+              name: selectedPreset.name,
+              campaign_title: offerName.trim() || null,
+              offer_type: selectedPreset.offer_type,
               event_date: date,
               event_time: startTime.trim() || null,
               redeem_before_time: redeemBeforeTime.trim() || null,
               location: location.trim() || null,
-              description: description.trim() || null,
+              description: selectedPreset.description,
               quantity_limit: quantityLimit,
-              coffee_types: coffeeTypes.length > 0 ? coffeeTypes : null,
+              coffee_types:
+                selectedPreset.coffee_types && selectedPreset.coffee_types.length > 0
+                  ? selectedPreset.coffee_types
+                  : null,
+              redeem_duration_days: redeemDurationDays,
+              preset_offer_id: selectedPreset.id,
               org_id: orgId,
             })
             .eq('id', offerId);
@@ -435,10 +507,13 @@ export default function CreateCoffeeOffer() {
           const { error: offerError } = await (supabase as any)
             .from('offers')
             .update({
-              name: offerName.trim(),
-              offer_type: offerType,
-              description: description.trim() || null,
+              name: selectedPreset.name,
+              campaign_title: offerName.trim() || null,
+              offer_type: selectedPreset.offer_type,
+              description: selectedPreset.description,
               quantity_limit: quantityLimit,
+              redeem_duration_days: redeemDurationDays,
+              preset_offer_id: selectedPreset.id,
               location: location.trim() || null,
               org_id: orgId,
             })
@@ -473,24 +548,62 @@ export default function CreateCoffeeOffer() {
             claim_limit: quantityLimit,
             starts_at: startsAtVal,
             ends_at: endsAtVal,
+            allocation_mode: allocationMode,
+            per_scan_voucher_amount: perScanVoucherAmount,
+            allow_duplicate_vouchers: allowDuplicateVouchers,
           })
           .select('id')
           .single();
 
         if (treasureError) throw treasureError;
 
-        const { error: offerError } = await (supabase as any).from('offers').insert({
-          source_type: 'hunt',
-          treasure_id: treasure.id,
-          org_id: orgId,
-          name: offerName.trim(),
-          offer_type: offerType,
-          description: description.trim() || null,
-          quantity_limit: quantityLimit,
-          location: location.trim() || null,
-        });
+        const rowsToCreate =
+          rewardRows.filter((r) => r.presetOfferId).length > 0
+            ? rewardRows.filter((r) => r.presetOfferId)
+            : [{ id: crypto.randomUUID(), presetOfferId: selectedPreset.id, quota: quantityLimit, fixedCount: 1, weight: 1 }];
 
-        if (offerError) throw offerError;
+        for (let idx = 0; idx < rowsToCreate.length; idx++) {
+          const row = rowsToCreate[idx];
+          const rowPreset = presetOffers.find((p) => p.id === row.presetOfferId);
+          if (!rowPreset) continue;
+
+          const { data: createdOffer, error: offerError } = await (supabase as any)
+            .from('offers')
+            .insert({
+              source_type: 'hunt',
+              treasure_id: treasure.id,
+              org_id: orgId,
+              name: rowPreset.name,
+              campaign_title: offerName.trim() || null,
+              offer_type: rowPreset.offer_type,
+              description: rowPreset.description,
+              quantity_limit: row.quota,
+              coffee_types:
+                rowPreset.coffee_types && rowPreset.coffee_types.length > 0 ? rowPreset.coffee_types : null,
+              redeem_duration_days: redeemDurationDays,
+              preset_offer_id: rowPreset.id,
+              location: location.trim() || null,
+              sort_order: idx,
+            })
+            .select('id')
+            .single();
+
+          if (offerError) throw offerError;
+
+          const { error: allocError } = await (supabase as any).from('treasure_offer_allocations').upsert(
+            {
+              treasure_id: treasure.id,
+              offer_id: createdOffer.id,
+              sort_order: idx,
+              fixed_count: Math.max(1, row.fixedCount),
+              allocation_weight: Math.max(1, row.weight),
+              is_active: true,
+            },
+            { onConflict: 'treasure_id,offer_id' }
+          );
+
+          if (allocError) throw allocError;
+        }
 
         toast({ title: 'Treasure added!' });
         setCreatedTreasure({ qr_code_id: qrCodeId, name: offerName.trim() });
@@ -500,15 +613,21 @@ export default function CreateCoffeeOffer() {
       } else {
         const { error } = await (supabase as any).from('offers').insert({
           source_type: 'calendar',
-          name: offerName.trim(),
-          offer_type: offerType,
+          name: selectedPreset.name,
+          campaign_title: offerName.trim() || null,
+          offer_type: selectedPreset.offer_type,
           event_date: date,
           event_time: startTime.trim() || null,
           redeem_before_time: redeemBeforeTime.trim() || null,
           location: location.trim() || null,
-          description: description.trim() || null,
+          description: selectedPreset.description,
           quantity_limit: quantityLimit,
-          coffee_types: coffeeTypes.length > 0 ? coffeeTypes : null,
+          coffee_types:
+            selectedPreset.coffee_types && selectedPreset.coffee_types.length > 0
+              ? selectedPreset.coffee_types
+              : null,
+          redeem_duration_days: redeemDurationDays,
+          preset_offer_id: selectedPreset.id,
           created_by: user.id,
           org_id: orgId,
         });
@@ -538,7 +657,7 @@ export default function CreateCoffeeOffer() {
     ? 'Save Changes'
     : isHuntMode
       ? 'Add Treasure'
-      : 'Create Coffee Offer';
+      : 'Create Offer Campaign';
 
   const handleBack = () => {
     if (isEditMode) navigate('/host/offers');
@@ -554,7 +673,7 @@ export default function CreateCoffeeOffer() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-black uppercase tracking-tight">
-            {isEditMode ? 'Edit Coffee Offer' : 'Create Coffee Offer'}
+            {isEditMode ? 'Edit Offer Campaign' : 'Create Offer Campaign'}
           </h1>
         </div>
       </div>
@@ -722,7 +841,7 @@ export default function CreateCoffeeOffer() {
 
           <div className="space-y-2">
             <Label htmlFor="offerName" className="text-sm font-semibold uppercase">
-              {isHuntMode ? 'Treasure Name' : 'Offer Name'} *
+              {isHuntMode ? 'Campaign / Treasure Name' : 'Campaign Name'} *
             </Label>
             <Input
               id="offerName"
@@ -735,43 +854,59 @@ export default function CreateCoffeeOffer() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="offerType" className="text-sm font-semibold uppercase">
-              Offer Type *
+            <Label htmlFor="presetOffer" className="text-sm font-semibold uppercase">
+              Offer Preset *
             </Label>
             <Select
-              value={offerType}
-              onValueChange={(v) => setOfferType(v as OfferTypeValue)}
+              value={presetOfferId}
+              onValueChange={(v) => setPresetOfferId(v)}
             >
               <SelectTrigger className="h-12 text-lg">
-                <SelectValue />
+                <SelectValue placeholder="Select preset offer" />
               </SelectTrigger>
               <SelectContent>
-                {OFFER_TYPES.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
+                {presetOffers.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Create or edit presets from Profile → Create Offer Preset.
+            </p>
           </div>
 
-          {offerType === '$17coffee' && (
-            <div className="space-y-2">
-              <CoffeeTypeSelect
-                value={coffeeTypes}
-                onChange={setCoffeeTypes}
-                maxSelected={2}
-                label="Coffee type (choose up to 2)"
-                onMaxReached={() => {
-                  toast({
-                    title: 'Maximum reached',
-                    description: 'You can choose up to 2 coffee types',
-                    variant: 'destructive',
-                  });
-                }}
-              />
+          {presetOfferId && (
+            <div className="rounded-lg border border-border p-3 bg-muted/30 space-y-1">
+              <p className="text-sm font-semibold">
+                {OFFER_TYPES.find((x) => x.value === offerType)?.label ?? offerType}
+              </p>
+              {coffeeTypes.length > 0 && (
+                <p className="text-xs text-muted-foreground">Coffee types: {coffeeTypes.join(', ')}</p>
+              )}
+              {description && <p className="text-xs text-muted-foreground">{description}</p>}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="redeemDurationDays" className="text-sm font-semibold uppercase">
+              Redeem Period (Days)
+            </Label>
+            <Input
+              id="redeemDurationDays"
+              type="number"
+              min={1}
+              max={90}
+              value={redeemDurationDays}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                setRedeemDurationDays(isNaN(v) ? 7 : Math.min(90, Math.max(1, v)));
+              }}
+              className="h-12 text-lg"
+            />
+            <p className="text-xs text-muted-foreground">Default 7 days from claim</p>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="quantityLimit" className="text-sm font-semibold uppercase">
@@ -860,52 +995,186 @@ export default function CreateCoffeeOffer() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-semibold uppercase">
-              Description (optional)
-            </Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Join us for a morning run..."
-              className="min-h-[100px] text-lg"
-            />
-          </div>
+          {!presetOfferId && (
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-sm font-semibold uppercase">
+                Description (optional)
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Join us for a morning run..."
+                className="min-h-[100px] text-lg"
+              />
+            </div>
+          )}
 
           {isHuntMode && (
-            <div className="grid grid-cols-2 gap-2">
+            <>
               <div className="space-y-2">
-                <Label htmlFor="lat" className="text-sm font-semibold uppercase">
-                  Lat *
-                </Label>
+                <Label className="text-sm font-semibold uppercase">Treasure Allocation Mode</Label>
+                <Select value={allocationMode} onValueChange={(v) => setAllocationMode(v as 'fixed' | 'random')}>
+                  <SelectTrigger className="h-12 text-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Fixed</SelectItem>
+                    <SelectItem value="random">Random</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold uppercase">Per Scan Voucher Amount</Label>
                 <Input
-                  id="lat"
                   type="number"
-                  step="any"
-                  value={lat}
-                  onChange={(e) => setLat(e.target.value)}
-                  placeholder="40.7128"
-                  className="h-12"
-                  required
+                  min={1}
+                  max={20}
+                  value={perScanVoucherAmount}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setPerScanVoucherAmount(isNaN(v) ? 1 : Math.min(20, Math.max(1, v)));
+                  }}
+                  className="h-12 text-lg"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lng" className="text-sm font-semibold uppercase">
-                  Long *
-                </Label>
-                <Input
-                  id="lng"
-                  type="number"
-                  step="any"
-                  value={lng}
-                  onChange={(e) => setLng(e.target.value)}
-                  placeholder="-74.0060"
-                  className="h-12"
-                  required
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={allowDuplicateVouchers}
+                  onChange={(e) => setAllowDuplicateVouchers(e.target.checked)}
                 />
+                Allow duplicate vouchers in one scan
+              </label>
+
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold uppercase">Reward Pool</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setRewardRows((prev) => [
+                        ...prev,
+                        { id: crypto.randomUUID(), presetOfferId: '', quota: 17, fixedCount: 1, weight: 1 },
+                      ])
+                    }
+                  >
+                    + Add
+                  </Button>
+                </div>
+                {rewardRows.map((row) => (
+                  <div key={row.id} className="grid grid-cols-4 gap-2 items-center">
+                    <Select
+                      value={row.presetOfferId}
+                      onValueChange={(v) =>
+                        setRewardRows((prev) => prev.map((x) => (x.id === row.id ? { ...x, presetOfferId: v } : x)))
+                      }
+                    >
+                      <SelectTrigger className="col-span-2 h-10">
+                        <SelectValue placeholder="Preset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {presetOffers.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={row.quota}
+                      onChange={(e) =>
+                        setRewardRows((prev) =>
+                          prev.map((x) =>
+                            x.id === row.id ? { ...x, quota: Math.max(1, parseInt(e.target.value || '1', 10)) } : x
+                          )
+                        )
+                      }
+                      className="h-10"
+                      title="Quota"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRewardRows((prev) => prev.filter((x) => x.id !== row.id))}
+                    >
+                      Remove
+                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={row.fixedCount}
+                      onChange={(e) =>
+                        setRewardRows((prev) =>
+                          prev.map((x) =>
+                            x.id === row.id ? { ...x, fixedCount: Math.max(1, parseInt(e.target.value || '1', 10)) } : x
+                          )
+                        )
+                      }
+                      className="h-10 col-span-2"
+                      title="Fixed count"
+                    />
+                    <Input
+                      type="number"
+                      min={1}
+                      value={row.weight}
+                      onChange={(e) =>
+                        setRewardRows((prev) =>
+                          prev.map((x) =>
+                            x.id === row.id ? { ...x, weight: Math.max(1, parseInt(e.target.value || '1', 10)) } : x
+                          )
+                        )
+                      }
+                      className="h-10 col-span-2"
+                      title="Random weight"
+                    />
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  Quota = max mint count for this reward; Fixed Count used in fixed mode; Weight used in random mode.
+                </p>
               </div>
-            </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="lat" className="text-sm font-semibold uppercase">
+                    Lat *
+                  </Label>
+                  <Input
+                    id="lat"
+                    type="number"
+                    step="any"
+                    value={lat}
+                    onChange={(e) => setLat(e.target.value)}
+                    placeholder="40.7128"
+                    className="h-12"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lng" className="text-sm font-semibold uppercase">
+                    Long *
+                  </Label>
+                  <Input
+                    id="lng"
+                    type="number"
+                    step="any"
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    placeholder="-74.0060"
+                    className="h-12"
+                    required
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <Button
@@ -913,6 +1182,7 @@ export default function CreateCoffeeOffer() {
             className="w-full btn-run btn-run-yes"
             disabled={
               isSubmitting ||
+              !presetOfferId ||
               (isHuntMode && !effectiveHuntId) ||
               (isHuntMode && (!location.trim() || !lat.trim() || !lng.trim()))
             }

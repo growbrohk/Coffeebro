@@ -217,7 +217,7 @@ export default function HuntMapPage() {
                     <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
                       <p className="text-muted-foreground">No active hunts right now. Check back later or create one as a host.</p>
                       {canHostEvent && (
-                        <Button variant="outline" onClick={() => navigate('/host/offer/create?mode=hunt')}>
+                        <Button variant="outline" onClick={() => navigate('/host/offer-campaign/create?mode=hunt')}>
                           Create Hunt
                         </Button>
                       )}

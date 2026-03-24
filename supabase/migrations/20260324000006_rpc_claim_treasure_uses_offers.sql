@@ -10,11 +10,19 @@ declare
   v_treasure record;
   v_hunt record;
   v_claim_id uuid;
-  v_offer record;
   v_code text;
   v_chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   v_vouchers jsonb := '[]'::jsonb;
   v_voucher_id uuid;
+  v_expires_at timestamptz;
+  v_draw_count integer;
+  v_selected_offer_ids uuid[] := '{}'::uuid[];
+  v_working_offer_id uuid;
+  v_total_weight integer;
+  v_pick integer;
+  v_running integer;
+  v_row record;
+  v_offer record;
 begin
   v_user_id := auth.uid();
   if v_user_id is null then
@@ -72,43 +80,203 @@ begin
   values (v_treasure.id, v_user_id)
   returning id into v_claim_id;
 
-  -- Mint voucher for each offer linked to this treasure
-  for v_offer in
-    select * from public.offers
-    where treasure_id = v_treasure.id
-      and source_type = 'hunt'
-    order by sort_order
-  loop
+  if coalesce(v_treasure.allocation_mode, 'fixed') = 'fixed' then
+    for v_row in
+      select
+        ta.offer_id,
+        ta.fixed_count,
+        o.org_id,
+        o.redeem_duration_days
+      from public.treasure_offer_allocations ta
+      join public.offers o on o.id = ta.offer_id
+      where ta.treasure_id = v_treasure.id
+        and ta.is_active = true
+        and o.source_type = 'hunt'
+      order by ta.sort_order, ta.created_at, ta.id
     loop
-      v_code := '';
-      for i in 1..8 loop
-        v_code := v_code || substr(v_chars, floor(random()*62)::int + 1, 1);
+      if not coalesce(v_treasure.allow_duplicate_vouchers, false) then
+        if v_row.fixed_count > 1 then
+          return query select 'INVALID_CONFIG'::text, 'Fixed count > 1 requires duplicates enabled'::text, null::jsonb;
+          return;
+        end if;
+      end if;
+
+      for v_draw_count in 1..v_row.fixed_count loop
+        -- Enforce offer quantity limit as remaining allocation source of truth
+        if exists (
+          select 1
+          from public.offers o2
+          where o2.id = v_row.offer_id
+            and o2.quantity_limit is not null
+            and (
+              select count(*)
+              from public.vouchers v
+              where v.offer_id = o2.id
+                and v.status in ('active', 'redeemed')
+            ) >= o2.quantity_limit
+        ) then
+          continue;
+        end if;
+
+        loop
+          v_code := '';
+          for i in 1..8 loop
+            v_code := v_code || substr(v_chars, floor(random()*62)::int + 1, 1);
+          end loop;
+          exit when not exists (select 1 from public.vouchers where code = v_code);
+        end loop;
+
+        v_expires_at := now() + make_interval(days => greatest(1, coalesce(v_row.redeem_duration_days, 7)));
+
+        insert into public.vouchers (
+          offer_id,
+          org_id,
+          owner_id,
+          code,
+          status,
+          source_type,
+          hunt_claim_id,
+          expires_at
+        )
+        values (
+          v_row.offer_id,
+          v_row.org_id,
+          v_user_id,
+          v_code,
+          'active',
+          'hunt_stop',
+          v_claim_id,
+          v_expires_at
+        )
+        returning id into v_voucher_id;
+
+        v_vouchers := v_vouchers || jsonb_build_object('id', v_voucher_id, 'code', v_code);
       end loop;
-      exit when not exists (select 1 from public.vouchers where code = v_code);
+    end loop;
+  else
+    v_draw_count := greatest(1, coalesce(v_treasure.per_scan_voucher_amount, 1));
+
+    for i in 1..v_draw_count loop
+      v_working_offer_id := null;
+      v_total_weight := 0;
+
+      for v_row in
+        select
+          ta.offer_id,
+          ta.allocation_weight
+        from public.treasure_offer_allocations ta
+        join public.offers o on o.id = ta.offer_id
+        where ta.treasure_id = v_treasure.id
+          and ta.is_active = true
+          and o.source_type = 'hunt'
+          and (
+            o.quantity_limit is null
+            or (
+              select count(*)
+              from public.vouchers v
+              where v.offer_id = o.id
+                and v.status in ('active', 'redeemed')
+            ) < o.quantity_limit
+          )
+          and (
+            coalesce(v_treasure.allow_duplicate_vouchers, false) = true
+            or not (ta.offer_id = any(v_selected_offer_ids))
+          )
+        order by ta.sort_order, ta.created_at, ta.id
+      loop
+        v_total_weight := v_total_weight + greatest(1, coalesce(v_row.allocation_weight, 1));
+      end loop;
+
+      if v_total_weight <= 0 then
+        exit;
+      end if;
+
+      v_pick := floor(random() * v_total_weight)::int + 1;
+      v_running := 0;
+
+      for v_row in
+        select
+          ta.offer_id,
+          ta.allocation_weight
+        from public.treasure_offer_allocations ta
+        join public.offers o on o.id = ta.offer_id
+        where ta.treasure_id = v_treasure.id
+          and ta.is_active = true
+          and o.source_type = 'hunt'
+          and (
+            o.quantity_limit is null
+            or (
+              select count(*)
+              from public.vouchers v
+              where v.offer_id = o.id
+                and v.status in ('active', 'redeemed')
+            ) < o.quantity_limit
+          )
+          and (
+            coalesce(v_treasure.allow_duplicate_vouchers, false) = true
+            or not (ta.offer_id = any(v_selected_offer_ids))
+          )
+        order by ta.sort_order, ta.created_at, ta.id
+      loop
+        v_running := v_running + greatest(1, coalesce(v_row.allocation_weight, 1));
+        if v_pick <= v_running then
+          v_working_offer_id := v_row.offer_id;
+          exit;
+        end if;
+      end loop;
+
+      if v_working_offer_id is null then
+        exit;
+      end if;
+
+      v_selected_offer_ids := array_append(v_selected_offer_ids, v_working_offer_id);
     end loop;
 
-    insert into public.vouchers (
-      offer_id,
-      org_id,
-      owner_id,
-      code,
-      status,
-      source_type,
-      hunt_claim_id
-    )
-    values (
-      v_offer.id,
-      v_offer.org_id,
-      v_user_id,
-      v_code,
-      'active',
-      'hunt_stop',
-      v_claim_id
-    )
-    returning id into v_voucher_id;
+    for v_offer in
+      select id, org_id, redeem_duration_days
+      from public.offers
+      where id = any(v_selected_offer_ids)
+    loop
+      loop
+        v_code := '';
+        for i in 1..8 loop
+          v_code := v_code || substr(v_chars, floor(random()*62)::int + 1, 1);
+        end loop;
+        exit when not exists (select 1 from public.vouchers where code = v_code);
+      end loop;
 
-    v_vouchers := v_vouchers || jsonb_build_object('id', v_voucher_id, 'code', v_code);
-  end loop;
+      v_expires_at := now() + make_interval(days => greatest(1, coalesce(v_offer.redeem_duration_days, 7)));
+
+      insert into public.vouchers (
+        offer_id,
+        org_id,
+        owner_id,
+        code,
+        status,
+        source_type,
+        hunt_claim_id,
+        expires_at
+      )
+      values (
+        v_offer.id,
+        v_offer.org_id,
+        v_user_id,
+        v_code,
+        'active',
+        'hunt_stop',
+        v_claim_id,
+        v_expires_at
+      )
+      returning id into v_voucher_id;
+
+      v_vouchers := v_vouchers || jsonb_build_object('id', v_voucher_id, 'code', v_code);
+    end loop;
+  end if;
+
+  if jsonb_array_length(v_vouchers) = 0 then
+    return query select 'POOL_EXHAUSTED'::text, 'No vouchers available for this treasure'::text, null::jsonb;
+    return;
+  end if;
 
   return query select 'OK'::text, 'Treasure claimed!'::text, v_vouchers;
 end;
