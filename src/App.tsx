@@ -45,10 +45,10 @@ const App = () => (
               <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer-campaign/create" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer-campaign/:offerId/edit" element={<CreateCoffeeOffer />} />
+              <Route path="/host/offer-campaign" element={<HostOffersPage />} />
               <Route path="/host/preset-offers" element={<OfferPresetsPage />} />
               <Route path="/host/preset-offer/create" element={<CreateOfferPresetPage />} />
               <Route path="/host/preset-offer/:presetId" element={<CreateOfferPresetPage />} />
-              <Route path="/host/offers" element={<HostOffersPage />} />
               <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/hunts" element={<HuntMapPage />} />

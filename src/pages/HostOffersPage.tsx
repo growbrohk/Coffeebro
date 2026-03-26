@@ -25,12 +25,12 @@ export default function HostOffersPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
           <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            Manage Campaigns
+            Offer campaigns
           </h1>
         </div>
         <div className="container px-4 py-8">
           <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
-            <p className="font-bold uppercase mb-4">Sign in to manage offers.</p>
+            <p className="font-bold uppercase mb-4">Sign in to manage offer campaigns.</p>
             <Button onClick={() => navigate('/profile')} variant="outline" className="btn-run">
               Go to Profile
             </Button>
@@ -49,14 +49,14 @@ export default function HostOffersPage() {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-2xl font-black uppercase tracking-tight">
-              Manage Campaigns
+              Offer campaigns
             </h1>
           </div>
         </div>
         <div className="container px-4 py-8">
           <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
             <p className="font-bold uppercase mb-2">Access Required</p>
-            <p className="text-sm mb-4">Host access is required to manage offers.</p>
+            <p className="text-sm mb-4">Host access is required to manage offer campaigns.</p>
             <Button onClick={() => navigate('/profile')} variant="outline" className="btn-run">
               Back to Profile
             </Button>
@@ -74,7 +74,7 @@ export default function HostOffersPage() {
             <ArrowLeft className="w-6 h-6" />
           </button>
             <h1 className="text-xl font-black uppercase tracking-tight">
-            Manage Campaigns
+            Offer campaigns
           </h1>
           <Button
             variant="ghost"
@@ -91,12 +91,12 @@ export default function HostOffersPage() {
       <div className="container px-4 py-6">
         {isLoading ? (
           <div className="max-w-sm mx-auto text-center py-12">
-            <div className="animate-pulse text-muted-foreground">Loading offers...</div>
+            <div className="animate-pulse text-muted-foreground">Loading offer campaigns…</div>
           </div>
         ) : offers.length === 0 ? (
           <div className="max-w-sm mx-auto text-center py-12">
             <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">You haven't created any offers yet.</p>
+            <p className="text-muted-foreground">You haven&apos;t created any offer campaigns yet.</p>
             <p className="text-sm text-muted-foreground mt-2 mb-6">
               Create an offer campaign (calendar or hunt).
             </p>

@@ -82,24 +82,13 @@ export default function ProfilePage() {
      }
    };
 
-   const handleCreateOfferCampaign = () => {
+   const handleOfferCampaignHub = () => {
      if (canHostEvent) {
-       navigate('/host/offer-campaign/create');
+       navigate('/host/offer-campaign');
      } else {
        toast({
          title: 'Access Required',
-         description: 'Please upgrade your access to create offer campaigns.',
-       });
-     }
-   };
-
-   const handleManageOffer = () => {
-     if (canHostEvent) {
-       navigate('/host/offers');
-     } else {
-       toast({
-         title: 'Access Required',
-         description: 'Please upgrade your access to manage offers.',
+         description: 'Please upgrade your access to create or manage offer campaigns.',
        });
      }
    };
@@ -242,12 +231,12 @@ export default function ProfilePage() {
            </Button>
 
            <Button
-             onClick={handleCreateOfferCampaign}
+             onClick={handleOfferCampaignHub}
              variant="outline"
              className="w-full btn-run mb-4"
              disabled={roleLoading}
            >
-             Create Offer Campaign
+             Create / manage offer campaign
            </Button>
 
            <Button
@@ -258,17 +247,6 @@ export default function ProfilePage() {
            >
              Manage Hunts
            </Button>
-
-           {canHostEvent && (
-             <Button
-               onClick={handleManageOffer}
-               variant="outline"
-               className="w-full btn-run mb-4"
-               disabled={roleLoading}
-             >
-               Manage Campaigns
-             </Button>
-           )}
 
           <Button
             onClick={handleSignOut}
