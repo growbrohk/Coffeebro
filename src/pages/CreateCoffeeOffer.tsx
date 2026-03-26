@@ -311,7 +311,11 @@ export default function CreateCoffeeOffer() {
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
           <p className="text-muted-foreground">Offer not found or access denied.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate('/host/offer-campaign')}>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => navigate('/host/offer-campaign', { replace: true })}
+          >
             Back to offer campaigns
           </Button>
         </div>
@@ -480,7 +484,7 @@ export default function CreateCoffeeOffer() {
           toast({ title: 'Offer updated!' });
           queryClient.invalidateQueries({ queryKey: ['host-offers', user?.id] });
           queryClient.invalidateQueries({ queryKey: ['coffee-offers'] });
-          navigate('/host/offer-campaign');
+          navigate('/host/offer-campaign', { replace: true });
         } else {
           const t = Array.isArray(o.treasures) ? o.treasures[0] : o.treasures;
           const treasureId = t?.id;
@@ -523,7 +527,7 @@ export default function CreateCoffeeOffer() {
           queryClient.invalidateQueries({ queryKey: ['host-offers', user?.id] });
           queryClient.invalidateQueries({ queryKey: ['treasures'] });
           queryClient.invalidateQueries({ queryKey: ['all-treasures'] });
-          navigate('/host/offer-campaign');
+          navigate('/host/offer-campaign', { replace: true });
         }
         return;
       }
@@ -660,9 +664,13 @@ export default function CreateCoffeeOffer() {
       : 'Create Offer Campaign';
 
   const handleBack = () => {
-    if (isEditMode) navigate('/host/offer-campaign');
-    else if (isHuntMode && effectiveHuntId) navigate(`/host/hunts/${effectiveHuntId}`);
-    else navigate(-1);
+    if (isEditMode) {
+      navigate('/host/offer-campaign', { replace: true });
+    } else if (isHuntMode && effectiveHuntId) {
+      navigate(`/host/hunts/${effectiveHuntId}`);
+    } else {
+      navigate('/host/offer-campaign', { replace: true });
+    }
   };
 
   return (

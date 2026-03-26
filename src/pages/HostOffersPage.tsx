@@ -45,7 +45,7 @@ export default function HostOffersPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
           <div className="flex items-center justify-center relative">
-            <button onClick={() => navigate(-1)} className="absolute left-0 p-2">
+            <button type="button" onClick={() => navigate('/profile')} className="absolute left-0 p-2">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <h1 className="text-2xl font-black uppercase tracking-tight">
@@ -70,7 +70,7 @@ export default function HostOffersPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+          <button type="button" onClick={() => navigate('/profile')} className="p-2 -ml-2">
             <ArrowLeft className="w-6 h-6" />
           </button>
             <h1 className="text-xl font-black uppercase tracking-tight">
