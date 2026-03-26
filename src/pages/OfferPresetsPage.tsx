@@ -125,10 +125,12 @@ export default function OfferPresetsPage() {
           </div>
         ) : (
           <div className="space-y-3 max-w-sm mx-auto">
-            {presets.map((preset) => (
+            {presets
+              .filter((p) => p.id)
+              .map((preset) => (
               <div key={preset.id} className="p-4 bg-muted/50 rounded-lg border border-border">
                 <Link
-                  to={`/host/preset-offer/${preset.id}/edit`}
+                  to={`/host/preset-offer/${preset.id}`}
                   className="block w-full text-left hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md -m-1 p-1"
                 >
                   <div className="flex items-start gap-2">

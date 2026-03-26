@@ -875,7 +875,7 @@ export default function CreateCoffeeOffer() {
             {presetOfferId ? (
               <p className="text-sm">
                 <Link
-                  to={`/host/preset-offer/${presetOfferId}/edit`}
+                  to={`/host/preset-offer/${presetOfferId}`}
                   className="font-medium text-primary underline underline-offset-2 hover:opacity-90"
                 >
                   Edit this preset
@@ -1149,7 +1149,7 @@ export default function CreateCoffeeOffer() {
                     </div>
                     {row.presetOfferId ? (
                       <Link
-                        to={`/host/preset-offer/${row.presetOfferId}/edit`}
+                        to={`/host/preset-offer/${row.presetOfferId}`}
                         className="text-xs font-medium text-primary underline underline-offset-2 hover:opacity-90"
                       >
                         Edit preset

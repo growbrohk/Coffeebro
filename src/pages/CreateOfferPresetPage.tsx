@@ -33,7 +33,12 @@ export default function CreateOfferPresetPage() {
   const [coffeeTypes, setCoffeeTypes] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: editPreset, isLoading: editLoading } = useQuery({
+  const {
+    data: editPreset,
+    isLoading: editLoading,
+    isError: editQueryError,
+    isFetched: editFetched,
+  } = useQuery({
     queryKey: ['preset-offer-edit', presetId],
     enabled: !!presetId,
     queryFn: async () => {
@@ -77,6 +82,32 @@ export default function CreateOfferPresetPage() {
           <p className="text-muted-foreground">Host access is required.</p>
           <Button variant="outline" className="mt-4" onClick={() => navigate('/profile')}>
             Back to Profile
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const editLoadFailed =
+    isEditMode && !editLoading && editFetched && (editQueryError || editPreset == null);
+
+  if (editLoadFailed) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
+          <div className="flex items-center justify-center relative">
+            <button type="button" onClick={() => navigate('/host/preset-offers')} className="absolute left-0 p-2">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <h1 className="text-2xl font-black uppercase tracking-tight">Offer preset</h1>
+          </div>
+        </div>
+        <div className="container px-4 py-8 text-center max-w-sm mx-auto">
+          <p className="text-muted-foreground">
+            This preset could not be loaded. It may have been removed or you may not have access.
+          </p>
+          <Button variant="outline" className="mt-4 w-full btn-run" onClick={() => navigate('/host/preset-offers')}>
+            Back to offer presets
           </Button>
         </div>
       </div>
