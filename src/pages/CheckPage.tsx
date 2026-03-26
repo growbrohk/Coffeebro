@@ -1,72 +1,21 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ProgressBar';
-import { CoffeeModal } from '@/components/CoffeeModal';
-import { CoffeeDetailsSheet, CoffeeDetails } from '@/components/CoffeeDetailsSheet';
+import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMonthCoffeeCount, useTodayCoffees, useAddCoffee, useTodayPercentage } from '@/hooks/useCoffees';
-import { useNavigate } from 'react-router-dom';
-
-// Temporary type until database types are regenerated
-type CoffeeRow = {
-  id: string;
-  user_id: string;
-  coffee_date: string;
-  rating: number | null;
-  coffee_type: string | null;
-  coffee_type_other: string | null;
-  place: string | null;
-  diary: string | null;
-  created_at: string;
-  updated_at: string;
-};
+import { useMonthCoffeeCount, useTodayCoffees } from '@/hooks/useCoffees';
+import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 
 export default function CheckPage() {
   const { user, loading } = useAuth();
   const { data: monthCount = 0, isLoading: countLoading } = useMonthCoffeeCount();
   const { data: todayCoffees = [], isLoading: todayLoading } = useTodayCoffees();
-  const { data: percentage } = useTodayPercentage();
-  const addCoffee = useAddCoffee();
-  const navigate = useNavigate();
-  const [showModal, setShowModal] = useState(false);
-  const [showDetailsSheet, setShowDetailsSheet] = useState(false);
+  const logCoffee = useLogCoffeeEntry();
 
   const isLoading = loading || (user && (countLoading || todayLoading));
 
-  const handleAddCoffee = () => {
-    // If not logged in, redirect to profile with message
-    if (!user) {
-      navigate('/profile?msg=tracking');
-      return;
-    }
-    
-    // Open the details sheet
-    setShowDetailsSheet(true);
-  };
-
-  const handleDetailsSave = async (details: CoffeeDetails) => {
-    try {
-      await addCoffee.mutateAsync({
-        rating: details.rating,
-        coffee_type: details.coffee_type,
-        coffee_type_other: details.coffee_type_other,
-        place: details.place,
-        diary: details.diary,
-      });
-      setShowDetailsSheet(false);
-      setShowModal(true);
-    } catch (error) {
-      console.error('Error adding coffee:', error);
-    }
-  };
-
-  const percentBeat = 100 - (percentage || 0);
-
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <ProgressBar monthCount={monthCount} />
-
-      <div className="container flex flex-col items-center justify-center px-4 pt-16">
+    <div className="min-h-screen bg-background pb-24 flex flex-col">
+      <div className="container flex flex-col flex-1 items-center justify-center px-4 pt-16">
         {isLoading ? (
           <div className="animate-pulse text-lg font-semibold">Loading...</div>
         ) : (
@@ -77,12 +26,12 @@ export default function CheckPage() {
 
             <div className="w-full max-w-sm space-y-6">
               <Button
-                onClick={handleAddCoffee}
+                onClick={logCoffee.startLogCoffee}
                 className="btn-run btn-run-yes w-full"
-                disabled={addCoffee.isPending}
+                disabled={logCoffee.addCoffeePending}
                 size="lg"
               >
-                {addCoffee.isPending ? 'Saving...' : '+ Add Coffee'}
+                {logCoffee.addCoffeePending ? 'Saving...' : '+ Add Coffee'}
               </Button>
 
               {/* Today's coffees list */}
@@ -99,7 +48,7 @@ export default function CheckPage() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium">
-                            {coffee.coffee_type === 'Other' 
+                            {coffee.coffee_type === 'Other'
                               ? coffee.coffee_type_other || 'Coffee'
                               : coffee.coffee_type || 'Coffee'}
                           </span>
@@ -124,17 +73,16 @@ export default function CheckPage() {
         )}
       </div>
 
-      <CoffeeDetailsSheet
-        open={showDetailsSheet}
-        onOpenChange={setShowDetailsSheet}
-        onSave={handleDetailsSave}
-        isPending={addCoffee.isPending}
-      />
+      <ProgressBar placement="bottom" monthCount={monthCount} />
 
-      <CoffeeModal
-        open={showModal}
-        onOpenChange={setShowModal}
-        percentBeat={percentBeat}
+      <LogCoffeeEntryModals
+        detailsSheetOpen={logCoffee.detailsSheetOpen}
+        onDetailsSheetOpenChange={logCoffee.setDetailsSheetOpen}
+        celebrationOpen={logCoffee.celebrationOpen}
+        onCelebrationOpenChange={logCoffee.setCelebrationOpen}
+        onDetailsSave={logCoffee.handleDetailsSave}
+        addCoffeePending={logCoffee.addCoffeePending}
+        percentBeat={logCoffee.percentBeat}
       />
     </div>
   );

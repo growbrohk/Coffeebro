@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LogCoffeeNavButton } from '@/components/LogCoffeeNavButton';
 import { ProgressBar } from '@/components/ProgressBar';
+import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMonthCoffeeCount, useMonthCoffeeDayCounts } from '@/hooks/useCoffees';
+import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 import { useMonthlyCoffeeOffers, groupCoffeeOffersByDate, type CoffeeOffer } from '@/hooks/useCoffeeOffers';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
@@ -17,7 +20,8 @@ const MONTHS = [
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function CalendarPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const logCoffee = useLogCoffeeEntry();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedCoffeeOffer, setSelectedCoffeeOffer] = useState<CoffeeOffer | null>(null);
   const [coffeeOfferModalOpen, setCoffeeOfferModalOpen] = useState(false);
@@ -67,7 +71,20 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <ProgressBar monthCount={monthCount.data || 0} />
+      <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div />
+          <h1 className="text-2xl font-black uppercase tracking-tight text-center truncate min-w-0">
+            Calendar
+          </h1>
+          <div className="flex justify-end">
+            <LogCoffeeNavButton
+              onClick={logCoffee.startLogCoffee}
+              disabled={logCoffee.addCoffeePending}
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="container px-4 py-6">
         {/* Month Navigation */}
@@ -156,6 +173,18 @@ export default function CalendarPage() {
           </div>
         </div>
       </div>
+
+      <ProgressBar placement="bottom" monthCount={monthCount.data || 0} />
+
+      <LogCoffeeEntryModals
+        detailsSheetOpen={logCoffee.detailsSheetOpen}
+        onDetailsSheetOpenChange={logCoffee.setDetailsSheetOpen}
+        celebrationOpen={logCoffee.celebrationOpen}
+        onCelebrationOpenChange={logCoffee.setCelebrationOpen}
+        onDetailsSave={logCoffee.handleDetailsSave}
+        addCoffeePending={logCoffee.addCoffeePending}
+        percentBeat={logCoffee.percentBeat}
+      />
 
       {/* Coffee Offer Detail Modal */}
       <CoffeeOfferDetailModal
