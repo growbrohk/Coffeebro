@@ -1,14 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
+import { useUserRole } from '@/hooks/useUserRole';
 import { RedeemCodeCard } from '@/components/RedeemCodeCard';
+import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
 import { Ticket } from 'lucide-react';
 
 export default function MyVouchersPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: vouchers = [], isLoading } = useMyVouchers();
+
+  const showHostScan = Boolean(user && !roleLoading && canHostEvent);
 
   if (loading || isLoading) {
     return (
@@ -22,9 +27,17 @@ export default function MyVouchersPage() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-          <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            My Vouchers
-          </h1>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div />
+            <h1 className="text-xl font-black uppercase tracking-tight truncate text-center min-w-0">
+              My Vouchers
+            </h1>
+            <div className="flex justify-end">
+              {showHostScan && (
+                <ScanNavButton onClick={() => navigate('/scan')} />
+              )}
+            </div>
+          </div>
         </div>
         <div className="container px-4 py-8">
           <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
@@ -41,9 +54,17 @@ export default function MyVouchersPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-        <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-          My Vouchers
-        </h1>
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div />
+          <h1 className="text-xl font-black uppercase tracking-tight truncate text-center min-w-0">
+            My Vouchers
+          </h1>
+          <div className="flex justify-end">
+            {showHostScan && (
+              <ScanNavButton onClick={() => navigate('/scan')} />
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="container px-4 py-6">

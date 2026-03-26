@@ -16,10 +16,11 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useToast } from '@/hooks/use-toast';
 import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
+import { ScanNavButton } from '@/components/ScanNavButton';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
 import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
 import type { Treasure } from '@/hooks/useHunts';
-import { MapPin, Camera, Loader2 } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -163,22 +164,16 @@ export default function HuntMapPage() {
               Hunt
             </h1>
             <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-              onClick={() => {
-                const targetHuntId = selectedCampaignId ?? hunts[0]?.id;
-                if (targetHuntId) {
-                  navigate(`/hunts/${targetHuntId}/scan`);
-                } else {
-                  toast({ title: 'Select a campaign to scan', variant: 'destructive' });
-                }
-              }}
-            >
-              <Camera className="h-4 w-4 mr-1" />
-              Scan
-            </Button>
+              <ScanNavButton
+                onClick={() => {
+                  const targetHuntId = selectedCampaignId ?? hunts[0]?.id;
+                  if (targetHuntId) {
+                    navigate(`/hunts/${targetHuntId}/scan`);
+                  } else {
+                    toast({ title: 'Select a campaign to scan', variant: 'destructive' });
+                  }
+                }}
+              />
             </div>
           </div>
         </div>
@@ -350,14 +345,7 @@ export default function HuntMapPage() {
                 Manage
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/hunts/${huntId}/scan`)}
-            >
-              <Camera className="h-4 w-4 mr-1" />
-              Scan
-            </Button>
+            <ScanNavButton onClick={() => navigate(`/hunts/${huntId}/scan`)} />
           </div>
         </div>
       </div>
