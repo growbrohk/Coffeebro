@@ -73,7 +73,7 @@ export default function ProfilePage() {
 
    const handleCreateOfferPreset = () => {
      if (canHostEvent) {
-       navigate('/host/preset-offer/create');
+       navigate('/host/preset-offers');
      } else {
        toast({
          title: 'Access Required',
@@ -238,7 +238,7 @@ export default function ProfilePage() {
              className="w-full btn-run mb-4 bg-orange-500 hover:bg-orange-600 text-white"
              disabled={roleLoading}
            >
-             Create Offer Preset
+             Create / manage offer
            </Button>
 
            <Button

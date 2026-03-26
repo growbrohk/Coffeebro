@@ -116,7 +116,8 @@ export default function CreateOfferPresetPage() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['preset-offers', user.id] });
-      navigate('/host/offers');
+      queryClient.invalidateQueries({ queryKey: ['preset-offers-list', user.id] });
+      navigate('/host/preset-offers');
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -132,7 +133,7 @@ export default function CreateOfferPresetPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
         <div className="flex items-center justify-center relative">
-          <button onClick={() => navigate('/host/offers')} className="absolute left-0 p-2">
+          <button type="button" onClick={() => navigate('/host/preset-offers')} className="absolute left-0 p-2">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-2xl font-black uppercase tracking-tight">

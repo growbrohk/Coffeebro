@@ -23,6 +23,7 @@ import HostHuntsPage from "./pages/HostHuntsPage";
 import HostOffersPage from "./pages/HostOffersPage";
 import HuntManagePage from "./pages/HuntManagePage";
 import CreateOfferPresetPage from "./pages/CreateOfferPresetPage";
+import OfferPresetsPage from "./pages/OfferPresetsPage";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer-campaign/create" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer-campaign/:offerId/edit" element={<CreateCoffeeOffer />} />
+              <Route path="/host/preset-offers" element={<OfferPresetsPage />} />
               <Route path="/host/preset-offer/create" element={<CreateOfferPresetPage />} />
               <Route path="/host/preset-offer/:presetId/edit" element={<CreateOfferPresetPage />} />
               <Route path="/host/offers" element={<HostOffersPage />} />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -872,8 +872,18 @@ export default function CreateCoffeeOffer() {
                 ))}
               </SelectContent>
             </Select>
+            {presetOfferId ? (
+              <p className="text-sm">
+                <Link
+                  to={`/host/preset-offer/${presetOfferId}/edit`}
+                  className="font-medium text-primary underline underline-offset-2 hover:opacity-90"
+                >
+                  Edit this preset
+                </Link>
+              </p>
+            ) : null}
             <p className="text-xs text-muted-foreground">
-              Create or edit presets from Profile → Create Offer Preset.
+              Create or edit presets from Profile → Create / manage offer.
             </p>
           </div>
 
@@ -1067,7 +1077,8 @@ export default function CreateCoffeeOffer() {
                   </Button>
                 </div>
                 {rewardRows.map((row) => (
-                  <div key={row.id} className="grid grid-cols-4 gap-2 items-center">
+                  <div key={row.id} className="space-y-1">
+                    <div className="grid grid-cols-4 gap-2 items-center">
                     <Select
                       value={row.presetOfferId}
                       onValueChange={(v) =>
@@ -1135,6 +1146,15 @@ export default function CreateCoffeeOffer() {
                       className="h-10 col-span-2"
                       title="Random weight"
                     />
+                    </div>
+                    {row.presetOfferId ? (
+                      <Link
+                        to={`/host/preset-offer/${row.presetOfferId}/edit`}
+                        className="text-xs font-medium text-primary underline underline-offset-2 hover:opacity-90"
+                      >
+                        Edit preset
+                      </Link>
+                    ) : null}
                   </div>
                 ))}
                 <p className="text-xs text-muted-foreground">
