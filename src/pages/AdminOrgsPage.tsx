@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, ImageIcon, MapPin, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs, type Org } from '@/hooks/useOrgs';
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { OpeningHoursEditor } from '@/components/admin/OpeningHoursEditor';
 import {
@@ -28,6 +29,9 @@ import {
 } from '@/lib/openingHours';
 import { HK_DISTRICTS } from '@/data/hkDistricts';
 import { HK_MTR_STATIONS } from '@/data/hkMtrStations';
+
+const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
+const PREVIEW_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 const HK_AREA_OPTIONS = [
   { value: '__none__', label: 'Not set' },
@@ -68,6 +72,7 @@ type Draft = {
   district: string;
   mtr_station: string;
   openingHours: Record<OpeningDayKey, DayHours>;
+  preview_photo_url: string;
   owner_user_id: string;
   hostSearch: string;
 };
@@ -85,6 +90,7 @@ function emptyDraft(): Draft {
     district: '',
     mtr_station: '',
     openingHours: defaultWeeklyOpeningHours(),
+    preview_photo_url: '',
     owner_user_id: '',
     hostSearch: '',
   };
@@ -103,9 +109,21 @@ function draftFromOrg(org: Org): Draft {
     district: org.district ?? '',
     mtr_station: org.mtr_station ?? '',
     openingHours: weeklyFromJson(org.opening_hours),
+    preview_photo_url: org.preview_photo_url ?? '',
     owner_user_id: org.owner_user_id ?? '',
     hostSearch: '',
   };
+}
+
+async function uploadOrgPreviewToStorage(orgId: string, file: File): Promise<string> {
+  const path = `org-preview/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from('treasure-images').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 export default function AdminOrgsPage() {
@@ -120,6 +138,34 @@ export default function AdminOrgsPage() {
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [debouncedHostQ, setDebouncedHostQ] = useState('');
+  const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
+  const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
+  const [pendingOrgPreviewFile, setPendingOrgPreviewFile] = useState<File | null>(null);
+  const [pendingOrgPreviewUrl, setPendingOrgPreviewUrl] = useState<string | null>(null);
+  const orgPreviewFileRef = useRef<HTMLInputElement>(null);
+  const pendingOrgObjectUrlRef = useRef<string | null>(null);
+
+  const revokePendingOrgPreview = () => {
+    if (pendingOrgObjectUrlRef.current) {
+      URL.revokeObjectURL(pendingOrgObjectUrlRef.current);
+      pendingOrgObjectUrlRef.current = null;
+    }
+    setPendingOrgPreviewUrl(null);
+  };
+
+  useEffect(() => {
+    revokePendingOrgPreview();
+    setPendingOrgPreviewFile(null);
+  }, [activeOrgId]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingOrgObjectUrlRef.current) {
+        URL.revokeObjectURL(pendingOrgObjectUrlRef.current);
+        pendingOrgObjectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedHostQ(draft.hostSearch.trim()), 300);
@@ -215,6 +261,69 @@ export default function AdminOrgsPage() {
     setActiveOrgId('new');
   };
 
+  const handleOrgPreviewFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!PREVIEW_MIME.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please use JPEG, PNG, WebP, or GIF.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (file.size > MAX_PREVIEW_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Maximum size is 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const existingOrgId =
+      typeof activeOrgId === 'string' && activeOrgId !== 'new' && activeOrgId !== 'idle' ? activeOrgId : null;
+
+    if (existingOrgId) {
+      setPreviewPhotoUploading(true);
+      try {
+        const url = await uploadOrgPreviewToStorage(existingOrgId, file);
+        patchDraft({ preview_photo_url: url });
+        setPreviewPhotoMode('link');
+        revokePendingOrgPreview();
+        setPendingOrgPreviewFile(null);
+        toast({ title: 'Photo uploaded!' });
+        queryClient.invalidateQueries({ queryKey: ['orgs'] });
+      } catch (err: unknown) {
+        toast({
+          title: 'Upload failed',
+          description: err instanceof Error ? err.message : 'Could not upload photo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setPreviewPhotoUploading(false);
+      }
+    } else {
+      revokePendingOrgPreview();
+      setPendingOrgPreviewFile(file);
+      const url = URL.createObjectURL(file);
+      pendingOrgObjectUrlRef.current = url;
+      setPendingOrgPreviewUrl(url);
+      patchDraft({ preview_photo_url: '' });
+    }
+  };
+
+  const clearOrgPreviewPhoto = () => {
+    patchDraft({ preview_photo_url: '' });
+    setPendingOrgPreviewFile(null);
+    revokePendingOrgPreview();
+    if (orgPreviewFileRef.current) orgPreviewFileRef.current.value = '';
+  };
+
+  const previewPhotoSrc = (pendingOrgPreviewUrl || draft.preview_photo_url.trim()) as string;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = draft.org_name.trim();
@@ -231,6 +340,9 @@ export default function AdminOrgsPage() {
     const lng = parseCoord(draft.lngStr);
     const openingPayload = weeklyToJson(draft.openingHours);
 
+    const previewUrlForRow =
+      pendingOrgPreviewFile && activeOrgId === 'new' ? null : draft.preview_photo_url.trim() || null;
+
     const row = {
       org_name: name,
       location: draft.location.trim() || null,
@@ -243,6 +355,7 @@ export default function AdminOrgsPage() {
       hk_area: draft.hk_area.trim() || null,
       district: draft.district.trim() || null,
       mtr_station: draft.mtr_station.trim() || null,
+      preview_photo_url: previewUrlForRow,
       owner_user_id: draft.owner_user_id,
     };
 
@@ -264,6 +377,22 @@ export default function AdminOrgsPage() {
           role: 'owner',
         });
         if (hostErr) throw hostErr;
+
+        let finalPreviewUrl = previewUrlForRow;
+        if (pendingOrgPreviewFile) {
+          const uploaded = await uploadOrgPreviewToStorage(orgId, pendingOrgPreviewFile);
+          const { error: photoErr } = await supabase
+            .from('orgs')
+            .update({ preview_photo_url: uploaded })
+            .eq('id', orgId);
+          if (photoErr) throw photoErr;
+          finalPreviewUrl = uploaded;
+        }
+
+        revokePendingOrgPreview();
+        setPendingOrgPreviewFile(null);
+        if (orgPreviewFileRef.current) orgPreviewFileRef.current.value = '';
+        if (finalPreviewUrl) patchDraft({ preview_photo_url: finalPreviewUrl });
 
         toast({ title: 'Organization created' });
         queryClient.invalidateQueries({ queryKey: ['orgs'] });
@@ -346,14 +475,27 @@ export default function AdminOrgsPage() {
                   <button
                     type="button"
                     onClick={() => handleSelectOrg(o.id)}
-                    className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted ${
+                    className={`flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted ${
                       activeOrgId === o.id ? 'bg-muted' : ''
                     }`}
                   >
-                    {o.org_name}
-                    {o.mtr_station ? (
-                      <span className="block text-xs font-normal text-muted-foreground">{o.mtr_station}</span>
-                    ) : null}
+                    {o.preview_photo_url ? (
+                      <img
+                        src={o.preview_photo_url}
+                        alt=""
+                        className="mt-0.5 h-10 w-10 shrink-0 rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/50">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      {o.org_name}
+                      {o.mtr_station ? (
+                        <span className="block text-xs font-normal text-muted-foreground">{o.mtr_station}</span>
+                      ) : null}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -431,6 +573,81 @@ export default function AdminOrgsPage() {
                   onChange={(e) => patchDraft({ phone: e.target.value })}
                   className="h-11"
                 />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  <Label className="text-foreground">Preview photo</Label>
+                </div>
+                <Tabs
+                  value={previewPhotoMode}
+                  onValueChange={(v) => setPreviewPhotoMode(v as 'link' | 'upload')}
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger type="button" value="link">
+                      Image URL
+                    </TabsTrigger>
+                    <TabsTrigger type="button" value="upload">
+                      Upload
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="link" className="mt-3 space-y-2">
+                    <Input
+                      value={draft.preview_photo_url}
+                      onChange={(e) => {
+                        revokePendingOrgPreview();
+                        setPendingOrgPreviewFile(null);
+                        patchDraft({ preview_photo_url: e.target.value });
+                      }}
+                      placeholder="https://…"
+                      className="h-11"
+                      type="url"
+                      autoComplete="off"
+                    />
+                  </TabsContent>
+                  <TabsContent value="upload" className="mt-3 space-y-2">
+                    <input
+                      ref={orgPreviewFileRef}
+                      type="file"
+                      accept={PREVIEW_MIME.join(',')}
+                      className="hidden"
+                      onChange={handleOrgPreviewFileChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={previewPhotoUploading}
+                      onClick={() => orgPreviewFileRef.current?.click()}
+                    >
+                      {previewPhotoUploading
+                        ? 'Uploading…'
+                        : activeOrgId === 'new'
+                          ? 'Choose photo (uploads after save)'
+                          : 'Choose photo'}
+                    </Button>
+                    {activeOrgId === 'new' ? (
+                      <p className="text-xs text-muted-foreground">
+                        For a new organization, the file is uploaded right after the org is created.
+                      </p>
+                    ) : null}
+                  </TabsContent>
+                </Tabs>
+                {previewPhotoSrc ? (
+                  <div className="relative overflow-hidden rounded-lg border border-border">
+                    <img src={previewPhotoSrc} alt="" className="aspect-video w-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute right-2 top-2 gap-1 shadow-sm"
+                      onClick={clearOrgPreviewPhoto}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </section>
 

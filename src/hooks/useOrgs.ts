@@ -18,6 +18,7 @@ export interface Org {
   hk_area?: string | null;
   district?: string | null;
   mtr_station?: string | null;
+  preview_photo_url?: string | null;
 }
  
  export function useOrgs() {
