@@ -1,31 +1,16 @@
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Navigation, Clock, ScanLine } from 'lucide-react';
+import { ArrowLeft, MapPin, Navigation } from 'lucide-react';
 import { useTreasure } from '@/hooks/useHunts';
 import { useMyClaimedTreasureIds } from '@/hooks/useHunts';
 import { useTreasureReward } from '@/hooks/useTreasureReward';
-import { useTreasureClaimCount } from '@/hooks/useTreasureClaimCount';
 import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
-import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
+import { formatHuntRedemptionPeriod } from '@/lib/formatHuntRedemption';
+import { pinKindForTreasure } from '@/lib/huntMapPinKind';
 
-function formatTreasureClaimWindow(
-  startsAt: string | null | undefined,
-  endsAt: string | null | undefined
-): string | null {
-  if (!startsAt && !endsAt) return null;
-  const format = (s: string) => {
-    const d = new Date(s);
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-  if (startsAt && endsAt) return `${format(startsAt)} – ${format(endsAt)}`;
-  if (endsAt) return `Claim until ${format(endsAt)}`;
-  if (startsAt) return `Opens ${format(startsAt)}`;
-  return null;
-}
+import huntPinStar from '@/assets/hunt-pin-star.svg';
+import huntPinGrab from '@/assets/hunt-pin-grab.svg';
+
+const ORANGE = '#F58220';
 
 interface TreasureDetailPanelProps {
   huntId: string;
@@ -37,11 +22,12 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
   const { data: treasure, isLoading } = useTreasure(treasureId || null, huntId || undefined);
   const { data: claimedIds } = useMyClaimedTreasureIds();
   const { data: rewards = [] } = useTreasureReward(treasureId || null);
-  const { data: claimCount = 0 } = useTreasureClaimCount(treasureId || null);
   const { position: userPosition } = useGeolocation();
 
-  const isClaimed = treasure && claimedIds?.has(treasure.id);
   const primary = rewards[0];
+  const pinKind = pinKindForTreasure(primary?.offer_type ?? null);
+
+  const isClaimed = treasure && claimedIds?.has(treasure.id);
 
   const hasLocation =
     treasure &&
@@ -52,20 +38,14 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
 
   const openInMaps = () => {
     if (!treasure || !hasLocation) return;
-
     const url = `https://www.google.com/maps/search/?api=1&query=${treasure.lat},${treasure.lng}`;
-
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
     if (isIOS) {
       window.location.href = url;
       return;
     }
-
     const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) {
-      window.location.href = url;
-    }
+    if (!win) window.location.href = url;
   };
 
   const distanceM =
@@ -78,14 +58,13 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
       ? haversineDistance(userPosition.lat, userPosition.lng, treasure.lat, treasure.lng)
       : null;
 
-  const claimWindowText = treasure ? formatTreasureClaimWindow(treasure.starts_at, treasure.ends_at) : null;
-
-  const quotaText =
-    treasure?.claim_limit != null ? `${Math.max(0, treasure.claim_limit - claimCount)} available` : null;
-
-  const offerTypeLabel = primary
-    ? OFFER_TYPE_LABELS[primary.offer_type] ?? primary.offer_type
+  const redemption = treasure
+    ? formatHuntRedemptionPeriod(treasure.starts_at, treasure.ends_at)
     : null;
+
+  const goBack = () => {
+    navigate(`/hunts/${huntId}/map`, { state: { initialTab: 'map' } });
+  };
 
   if (!treasureId) {
     return null;
@@ -94,105 +73,162 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   if (!treasure) {
-    return <p className="text-center text-muted-foreground py-8">Treasure not found</p>;
+    return <p className="py-8 text-center text-muted-foreground">Treasure not found</p>;
   }
 
+  const clue = (treasure as { clue_image?: string | null }).clue_image;
+
+  const footerPillClass =
+    'inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white active:scale-[0.99] transition-transform';
+  const footerStyle = { backgroundColor: ORANGE };
+
   return (
-    <div>
-      <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted animate-fade-in">
-        {(treasure as { clue_image?: string | null }).clue_image ? (
-          <img
-            src={(treasure as { clue_image?: string | null }).clue_image!}
-            alt={`Clue for ${treasure.name}`}
-            className="w-full h-full object-cover"
-          />
+    <div className="pb-32">
+      <div className="relative w-full aspect-[4/3] bg-muted">
+        {clue ? (
+          <img src={clue} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <MapPin className="w-12 h-12 text-muted-foreground" />
+          <div className="flex h-full w-full items-center justify-center">
+            <MapPin className="h-14 w-14 text-muted-foreground/50" />
           </div>
+        )}
+        <button
+          type="button"
+          onClick={goBack}
+          className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-foreground shadow-sm"
+          aria-label="Back"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="px-4 pt-5">
+        {pinKind === 'coffee_shop' ? (
+          <>
+            <h1 className="text-xl font-bold text-foreground">{treasure.name}</h1>
+            {treasure.address && (
+              <p className="mt-2 text-sm text-foreground">{treasure.address}</p>
+            )}
+            {distanceM != null && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                {(distanceM / 1000).toFixed(1)} km away
+              </p>
+            )}
+            {isClaimed && (
+              <span className="mt-2 inline-block rounded bg-muted px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
+                Claimed
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <h1 className="text-xl font-bold leading-snug" style={{ color: ORANGE }}>
+              {primary?.title ?? 'Offer'}
+            </h1>
+            <p className="mt-3 text-lg font-bold text-foreground">{treasure.name}</p>
+            {treasure.address && (
+              <p className="mt-1 text-sm text-foreground">{treasure.address}</p>
+            )}
+            {redemption && (
+              <p className="mt-3 text-sm text-foreground">redemption period: {redemption}</p>
+            )}
+            <p className="mt-3 text-sm text-foreground">
+              <span className="font-medium">game play: </span>
+              grab the coupon on coffeebro
+            </p>
+            {primary?.description ? (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-foreground">terms &amp; conditions:</p>
+                <p className="mt-1 text-sm leading-relaxed text-foreground">
+                  {primary.description}
+                </p>
+              </div>
+            ) : null}
+            {distanceM != null && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {(distanceM / 1000).toFixed(1)} km away
+              </p>
+            )}
+            {isClaimed && (
+              <span className="mt-2 inline-block rounded bg-muted px-2 py-1 text-xs font-semibold uppercase text-muted-foreground">
+                Claimed
+              </span>
+            )}
+          </>
         )}
       </div>
 
-      <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-        <div className="flex items-start gap-2 mb-2">
-          <h2 className="text-2xl font-bold flex-1">{treasure.name}</h2>
-          {isClaimed && (
-            <span className="shrink-0 px-2 py-1 text-xs font-semibold uppercase rounded bg-primary/20 text-primary">
-              Claimed
-            </span>
-          )}
-        </div>
-
-        {treasure.address && <p className="text-sm text-muted-foreground mb-2">{treasure.address}</p>}
-
-        {distanceM != null && (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-            <MapPin className="w-4 h-4" strokeWidth={1.5} />
-            <span>{(distanceM / 1000).toFixed(1)} km away</span>
-          </div>
-        )}
-
-        {primary && (
-          <div className="space-y-1 mb-4">
-            <div className="text-sm font-medium text-orange-900 dark:text-orange-200 flex items-center gap-1.5 flex-wrap">
-              <span>{primary.title}</span>
-              {quotaText && (
-                <span className="text-muted-foreground font-normal">· {quotaText}</span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {primary.org_name && (
-                <span className="text-sm text-muted-foreground">{primary.org_name}</span>
-              )}
-              {offerTypeLabel && (
-                <span className="px-2 py-0.5 text-xs font-semibold rounded bg-muted text-muted-foreground">
-                  {offerTypeLabel}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {claimWindowText && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <Clock className="w-4 h-4" strokeWidth={1.5} />
-            <span>{claimWindowText}</span>
-          </div>
-        )}
-
-        {treasure.description && <p className="text-sm text-foreground mb-6">{treasure.description}</p>}
-
-        <div className="flex gap-2 w-full">
-          <button
-            type="button"
-            onClick={() => huntId && navigate(`/hunts/${huntId}/scan`)}
-            disabled={!huntId}
-            className="flex-1 flex items-center justify-center gap-2 py-4 rounded-full font-medium border-2 border-border bg-background text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <ScanLine className="w-5 h-5" />
-            Scan
-          </button>
-          {hasLocation ? (
+      <div
+        className="fixed left-0 right-0 z-[100] flex gap-2 border-t border-border bg-background px-3 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+        style={{
+          bottom: 'calc(4.5rem + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="mx-auto flex w-full max-w-[430px] gap-2">
+          {pinKind === 'coffee_shop' ? (
             <button
               type="button"
               onClick={openInMaps}
-              className="flex-1 flex items-center justify-center gap-2 py-4 bg-orange-600 text-white rounded-full font-medium hover:bg-orange-700 transition-colors dark:hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+              disabled={!hasLocation}
+              className={footerPillClass}
+              style={footerStyle}
             >
-              <Navigation className="w-5 h-5" />
-              <span className="hidden min-[380px]:inline">Open in Google Maps</span>
-              <span className="min-[380px]:hidden">Maps</span>
+              <Navigation className="h-4 w-4 text-white" />
+              directions
             </button>
+          ) : pinKind === 'grab' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => huntId && navigate(`/hunts/${huntId}/scan`)}
+                disabled={!huntId}
+                className={footerPillClass}
+                style={footerStyle}
+              >
+                <img src={huntPinGrab} alt="" className="h-4 w-4 object-contain brightness-0 invert" />
+                grab now
+              </button>
+              <button
+                type="button"
+                onClick={openInMaps}
+                disabled={!hasLocation}
+                className={footerPillClass}
+                style={footerStyle}
+              >
+                <Navigation className="h-4 w-4 text-white" />
+                directions
+              </button>
+            </>
           ) : (
-            <div className="flex-1 flex items-center justify-center gap-2 px-2 py-4 bg-muted text-muted-foreground rounded-full font-medium text-center text-sm">
-              <MapPin className="w-5 h-5 shrink-0" />
-              <span className="leading-tight">No location</span>
-            </div>
+            <>
+              <button
+                type="button"
+                onClick={() => huntId && navigate(`/hunts/${huntId}/scan`)}
+                disabled={!huntId}
+                className={footerPillClass}
+                style={footerStyle}
+              >
+                <img src={huntPinStar} alt="" className="h-4 w-4 object-contain brightness-0 invert" />
+                hunt
+              </button>
+              <button
+                type="button"
+                onClick={openInMaps}
+                disabled={!hasLocation}
+                className={footerPillClass}
+                style={footerStyle}
+              >
+                <Navigation className="h-4 w-4 text-white" />
+                directions
+              </button>
+            </>
           )}
         </div>
       </div>

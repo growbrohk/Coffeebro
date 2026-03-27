@@ -34,7 +34,7 @@ export function HuntFilter({
           size="icon"
           variant="secondary"
           className={cn(
-            'absolute top-2 right-2 z-[1000] h-8 w-8 rounded-md shadow-md',
+            'h-9 w-9 shrink-0 rounded-full border border-border bg-background shadow-sm',
             className
           )}
         >

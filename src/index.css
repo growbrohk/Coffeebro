@@ -304,6 +304,31 @@
   outline: none !important;
 }
 
+.hunt-map-wrapper .leaflet-div-icon.hunt-map-svg-marker {
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+}
+
+.hunt-map-svg-marker {
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.hunt-map-svg-marker-inner {
+  box-sizing: border-box;
+  pointer-events: auto !important;
+}
+
+.hunt-map-svg-marker-inner img {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.2));
+  pointer-events: auto !important;
+}
+
 .hunt-map-marker {
   background: none !important;
   border: none !important;

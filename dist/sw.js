@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "b1b6896e6edfddeaf0db005f30919862"
   }, {
     "url": "index.html",
-    "revision": "c06ef9f02ed206470d4f057411e79003"
+    "revision": "3c146932bd0665b9e473cb88f79653c7"
   }, {
     "url": "favicon.png",
     "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
@@ -114,10 +114,16 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "icons/icon-192.png",
     "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
   }, {
-    "url": "assets/index-L_F4txvk.css",
+    "url": "assets/index-CM4PTEvw.css",
     "revision": null
   }, {
-    "url": "assets/index-BKpK_1oc.js",
+    "url": "assets/index-BVGdofsz.js",
+    "revision": null
+  }, {
+    "url": "assets/hunt-pin-star-Da2i0JzL.svg",
+    "revision": null
+  }, {
+    "url": "assets/coffee-shop-pin-BCde-HmC.svg",
     "revision": null
   }], {});
   workbox.cleanupOutdatedCaches();
