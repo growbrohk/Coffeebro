@@ -22,7 +22,6 @@ import { CalendarDayCell, type CalendarDayCellVariant } from '@/components/Calen
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { TreasureDetailModal } from '@/components/TreasureDetailModal';
 import { localYMD } from '@/lib/date';
-import { cn } from '@/lib/utils';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -43,7 +42,8 @@ export default function CalendarPage() {
     huntId: string;
     treasureId: string;
   } | null>(null);
-  
+  const [voucherSubTab, setVoucherSubTab] = useState<'grab' | 'hunt'>('grab');
+
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const today = new Date();
@@ -88,6 +88,17 @@ export default function CalendarPage() {
 
   const totalOffersForSelectedDay =
     calendarOffersForSelectedDay.length + huntOffersForSelectedDay.length;
+
+  const grabCountSelected = calendarOffersForSelectedDay.length;
+  const huntCountSelected = huntOffersForSelectedDay.length;
+
+  useEffect(() => {
+    if (voucherSubTab === 'grab' && grabCountSelected === 0 && huntCountSelected > 0) {
+      setVoucherSubTab('hunt');
+    } else if (voucherSubTab === 'hunt' && huntCountSelected === 0 && grabCountSelected > 0) {
+      setVoucherSubTab('grab');
+    }
+  }, [selectedYmd, voucherSubTab, grabCountSelected, huntCountSelected]);
 
   const offersHeading = useMemo(() => {
     const d = new Date(year, month, selectedDay);
@@ -213,50 +224,66 @@ export default function CalendarPage() {
             })}
           </div>
 
-          {calendarTab === 'vouchers' && (
-            <p className="text-[10px] text-muted-foreground text-center mt-3 leading-snug px-1">
-              <span className="font-semibold text-emerald-700 dark:text-emerald-400">G</span> Grab Mode (Grab
-              in-app) ·{' '}
-              <span className="font-semibold text-orange-700 dark:text-orange-400">H</span> Hunt Mode (Hunt
-              in-life)
-            </p>
-          )}
-
           <TabsContent value="vouchers" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               {totalOffersForSelectedDay}{' '}
               {totalOffersForSelectedDay === 1 ? 'offer' : 'offers'} for {offersHeading}
             </h2>
-            {calendarOffersForSelectedDay.length === 0 && huntOffersForSelectedDay.length === 0 ? (
+            {grabCountSelected === 0 && huntCountSelected === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No offers this day.</p>
             ) : (
-              <>
-                {calendarOffersForSelectedDay.length > 0 && (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Grab Mode ({calendarOffersForSelectedDay.length})
-                    </p>
-                    {calendarOffersForSelectedDay.map((offer) => (
+              <Tabs
+                value={voucherSubTab}
+                onValueChange={(v) => setVoucherSubTab(v as 'grab' | 'hunt')}
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-2 h-auto p-1 gap-1">
+                  <TabsTrigger
+                    value="grab"
+                    className="flex flex-col gap-0.5 py-2 px-2 h-auto min-h-0 whitespace-normal text-center data-[state=active]:text-foreground"
+                  >
+                    <span className="text-sm font-medium leading-tight">
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">G</span>
+                      {` Grab Mode (${grabCountSelected})`}
+                    </span>
+                    <span className="text-xs text-muted-foreground leading-tight">Grab in-app</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="hunt"
+                    className="flex flex-col gap-0.5 py-2 px-2 h-auto min-h-0 whitespace-normal text-center data-[state=active]:text-foreground"
+                  >
+                    <span className="text-sm font-medium leading-tight">
+                      <span className="font-semibold text-orange-700 dark:text-orange-400">H</span>
+                      {` Hunt Mode (${huntCountSelected})`}
+                    </span>
+                    <span className="text-xs text-muted-foreground leading-tight">Hunt in-life</span>
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent
+                  value="grab"
+                  className="mt-4 flex flex-col gap-4 focus-visible:ring-0 focus-visible:ring-offset-0"
+                >
+                  {grabCountSelected === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">No Grab offers this day.</p>
+                  ) : (
+                    calendarOffersForSelectedDay.map((offer) => (
                       <CalendarVoucherOfferCard
                         key={`cal-${offer.id}`}
                         kind="calendar"
                         offer={offer}
                         onDetails={() => handleCoffeeOfferClick(offer)}
                       />
-                    ))}
-                  </div>
-                )}
-                {huntOffersForSelectedDay.length > 0 && (
-                  <div
-                    className={cn(
-                      'flex flex-col gap-4',
-                      calendarOffersForSelectedDay.length > 0 && 'mt-8'
-                    )}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Hunt Mode ({huntOffersForSelectedDay.length})
-                    </p>
-                    {huntOffersForSelectedDay.map((row) => {
+                    ))
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="hunt"
+                  className="mt-4 flex flex-col gap-4 focus-visible:ring-0 focus-visible:ring-offset-0"
+                >
+                  {huntCountSelected === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">No Hunt offers this day.</p>
+                  ) : (
+                    huntOffersForSelectedDay.map((row) => {
                       const tr = normalizeHuntTreasure(row.treasures);
                       if (!tr) return null;
                       return (
@@ -273,10 +300,10 @@ export default function CalendarPage() {
                           }
                         />
                       );
-                    })}
-                  </div>
-                )}
-              </>
+                    })
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
           </TabsContent>
 
