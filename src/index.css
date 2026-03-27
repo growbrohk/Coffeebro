@@ -439,6 +439,8 @@
   --quiz-bg: #f47c20;
   --quiz-fg: #ffffff;
   --quiz-segment-active: #1a0f0a;
+  /* Sit above fixed TabNavigation (.tab-nav z-50); siblings can’t stack over it */
+  padding-bottom: max(1.5rem, calc(6rem + env(safe-area-inset-bottom, 0px)));
   background-color: var(--quiz-bg);
   color: var(--quiz-fg);
 }

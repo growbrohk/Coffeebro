@@ -27,7 +27,7 @@ export function QuizQuestions({
   const isLast = currentIndex >= totalQuestions - 1;
 
   return (
-    <div className="quiz-flow flex min-h-dvh flex-col px-8 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <div className="quiz-flow flex min-h-dvh flex-col px-8 pt-[max(1.25rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
         <div className="mb-8 flex gap-1.5" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={totalQuestions}>
           {Array.from({ length: totalQuestions }, (_, i) => (

@@ -11,7 +11,7 @@ export function QuizResultBlurred({ resultType, onSignUp }: QuizResultBlurredPro
   const name = FROG_NAMES[resultType];
 
   return (
-    <div className="quiz-flow flex min-h-dvh flex-col px-6 pb-12 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="quiz-flow flex min-h-dvh flex-col px-6 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center space-y-8">
         <div className="text-center">
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">

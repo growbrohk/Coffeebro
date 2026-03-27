@@ -15,7 +15,7 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
   const wildcardName = FROG_NAMES[desc.wildcard];
 
   return (
-    <div className="quiz-flow min-h-dvh px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
