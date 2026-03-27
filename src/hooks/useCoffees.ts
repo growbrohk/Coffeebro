@@ -169,12 +169,20 @@ function drinkLabelFromRow(row: {
   return t;
 }
 
-function topNFromCounts(counts: Map<string, number>, n: number): string[] {
+export interface CoffeeProfileRankedItem {
+  label: string;
+  count: number;
+}
+
+function topNEntriesFromCounts(
+  counts: Map<string, number>,
+  n: number,
+): CoffeeProfileRankedItem[] {
   return [...counts.entries()]
     .filter(([k]) => k.length > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, n)
-    .map(([k]) => k);
+    .map(([label, count]) => ({ label, count }));
 }
 
 /** All-time coffee entry count for the current user. */
@@ -205,7 +213,8 @@ export function useCoffeeProfileStats() {
   return useQuery({
     queryKey: ['coffee-profile-stats', user?.id],
     queryFn: async () => {
-      if (!user) return { topPlaces: [] as string[], topDrinks: [] as string[] };
+      if (!user)
+        return { topPlaces: [] as CoffeeProfileRankedItem[], topDrinks: [] as CoffeeProfileRankedItem[] };
 
       const { data, error } = await supabase
         .from('daily_coffees')
@@ -229,8 +238,8 @@ export function useCoffeeProfileStats() {
       }
 
       return {
-        topPlaces: topNFromCounts(placeCounts, 3),
-        topDrinks: topNFromCounts(drinkCounts, 3),
+        topPlaces: topNEntriesFromCounts(placeCounts, 3),
+        topDrinks: topNEntriesFromCounts(drinkCounts, 3),
       };
     },
     enabled: !!user,

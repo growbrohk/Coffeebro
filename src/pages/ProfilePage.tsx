@@ -28,11 +28,26 @@ import { Settings } from 'lucide-react';
 const profileCardClass =
   'rounded-[1.35rem] border border-[#E8E2D9] bg-[#FAF7F2] p-5 text-[#2E1A14]';
 
-function listLines(items: string[], empty: string) {
-  const slots = [0, 1, 2].map((i) => items[i] ?? empty);
-  return slots.map((text, i) => (
-    <li key={i} className="text-sm font-medium">
-      {i + 1}. {text}
+function listRankedWithCounts(
+  items: { label: string; count: number }[],
+  loading: boolean,
+) {
+  const slots = [0, 1, 2].map((i) => {
+    if (loading) return { label: '…', count: null as number | null };
+    const it = items[i];
+    return it ? { label: it.label, count: it.count } : { label: '—', count: null };
+  });
+  return slots.map((slot, i) => (
+    <li
+      key={i}
+      className="flex items-baseline justify-between gap-2 text-sm font-medium"
+    >
+      <span className="min-w-0 truncate">
+        {i + 1}. {slot.label}
+      </span>
+      {slot.count != null ? (
+        <span className="shrink-0 tabular-nums text-[#2E1A14]/55">{slot.count}</span>
+      ) : null}
     </li>
   ));
 }
@@ -266,9 +281,7 @@ export default function ProfilePage() {
                   Top cafes
                 </p>
                 <ol className="mt-2 space-y-1.5">
-                  {profileStatsLoading
-                    ? listLines([], '…')
-                    : listLines(topPlaces, '—')}
+                  {listRankedWithCounts(topPlaces, profileStatsLoading)}
                 </ol>
               </div>
               <div>
@@ -276,9 +289,7 @@ export default function ProfilePage() {
                   Top coffee
                 </p>
                 <ol className="mt-2 space-y-1.5">
-                  {profileStatsLoading
-                    ? listLines([], '…')
-                    : listLines(topDrinks, '—')}
+                  {listRankedWithCounts(topDrinks, profileStatsLoading)}
                 </ol>
               </div>
             </div>
