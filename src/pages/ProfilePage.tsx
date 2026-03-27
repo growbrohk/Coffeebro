@@ -20,8 +20,9 @@ import {
 import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
 import { FROG_AVATAR_PATH, FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/constants';
+import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Settings, Coffee } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 function listLines(items: string[], empty: string) {
   const slots = [0, 1, 2].map((i) => items[i] ?? empty);
@@ -131,7 +132,7 @@ export default function ProfilePage() {
 
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="relative bg-primary px-4 pb-10 pt-12 text-primary-foreground">
+        <div className="relative z-0 rounded-b-[1.75rem] bg-primary px-4 pb-12 pt-12 text-primary-foreground">
           <button
             type="button"
             className="absolute right-4 top-10 rounded-full p-2 text-primary-foreground/95 hover:bg-white/10"
@@ -158,9 +159,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="space-y-4 px-4 -mt-6">
+        <div className="relative z-10 -mt-14 space-y-4 px-4">
           {/* Quiz card */}
-          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
+          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-md">
             {quizResultType ? (
               <>
                 <p className="text-sm text-foreground">
@@ -245,10 +246,10 @@ export default function ProfilePage() {
               <span className="text-5xl font-bold tabular-nums text-foreground">
                 {lifetimeLoading ? '…' : lifetimeTotal}
               </span>
-              <div className="flex shrink-0 gap-1 text-foreground/80">
-                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
-                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
-                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
+              <div className="flex shrink-0 items-center gap-0.5 text-foreground/80">
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-9 w-9" />
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-9 w-9" />
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-9 w-9" />
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border/60 pt-5">
