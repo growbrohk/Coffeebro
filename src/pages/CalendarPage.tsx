@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +19,7 @@ import {
 } from '@/hooks/useCoffeeOffers';
 import { CalendarDayCell, type CalendarDayCellVariant } from '@/components/CalendarDayCell';
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
+import { TreasureDetailModal } from '@/components/TreasureDetailModal';
 import { localYMD } from '@/lib/date';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +31,6 @@ const MONTHS = [
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function CalendarPage() {
-  const navigate = useNavigate();
   const { loading } = useAuth();
   const logCoffee = useLogCoffeeEntry();
   const [viewDate, setViewDate] = useState(new Date());
@@ -39,6 +38,10 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
   const [selectedCoffeeOffer, setSelectedCoffeeOffer] = useState<CoffeeOffer | null>(null);
   const [coffeeOfferModalOpen, setCoffeeOfferModalOpen] = useState(false);
+  const [treasureModalTarget, setTreasureModalTarget] = useState<{
+    huntId: string;
+    treasureId: string;
+  } | null>(null);
   
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -248,7 +251,10 @@ export default function CalendarPage() {
                           row={row}
                           treasure={tr}
                           onDetails={() =>
-                            navigate(`/hunts/${tr.hunt_id}/treasures/${tr.id}`)
+                            setTreasureModalTarget({
+                              huntId: tr.hunt_id,
+                              treasureId: tr.id,
+                            })
                           }
                         />
                       );
@@ -302,6 +308,15 @@ export default function CalendarPage() {
         offer={selectedCoffeeOffer}
         open={coffeeOfferModalOpen}
         onOpenChange={setCoffeeOfferModalOpen}
+      />
+
+      <TreasureDetailModal
+        huntId={treasureModalTarget?.huntId ?? ''}
+        treasureId={treasureModalTarget?.treasureId ?? ''}
+        open={!!treasureModalTarget}
+        onOpenChange={(open) => {
+          if (!open) setTreasureModalTarget(null);
+        }}
       />
     </div>
   );

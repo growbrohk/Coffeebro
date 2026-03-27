@@ -1,28 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, MapPin, Navigation, Clock } from 'lucide-react';
-import { useTreasure } from '@/hooks/useHunts';
-import { useMyClaimedTreasureIds } from '@/hooks/useHunts';
-import { useTreasureReward } from '@/hooks/useTreasureReward';
-import { useTreasureClaimCount } from '@/hooks/useTreasureClaimCount';
-import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
-import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
-
-function formatClaimWindow(startsAt: string | null | undefined, endsAt: string | null | undefined): string | null {
-  if (!startsAt && !endsAt) return null;
-  const format = (s: string) => {
-    const d = new Date(s);
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-  if (startsAt && endsAt) return `${format(startsAt)} – ${format(endsAt)}`;
-  if (endsAt) return `Claim until ${format(endsAt)}`;
-  if (startsAt) return `Opens ${format(startsAt)}`;
-  return null;
-}
+import { ArrowLeft } from 'lucide-react';
+import { TreasureDetailPanel } from '@/components/TreasureDetailPanel';
 
 export default function TreasureDetailPage() {
   const { huntId, treasureId } = useParams();
@@ -31,87 +9,17 @@ export default function TreasureDetailPage() {
 
   const fromTab = (location.state as { fromTab?: 'map' | 'list' })?.fromTab ?? 'map';
 
-  const { data: treasure, isLoading } = useTreasure(treasureId ?? '', huntId ?? undefined);
-  const { data: claimedIds } = useMyClaimedTreasureIds();
-  const { data: rewards = [] } = useTreasureReward(treasureId ?? null);
-  const { data: claimCount = 0 } = useTreasureClaimCount(treasureId ?? null);
-  const { position: userPosition } = useGeolocation();
-
-  const isClaimed = treasure && claimedIds?.has(treasure.id);
-  const primary = rewards[0];
-
-  const hasLocation =
-    treasure &&
-    treasure.lat != null &&
-    treasure.lng != null &&
-    Number.isFinite(treasure.lat) &&
-    Number.isFinite(treasure.lng);
-
-  const openInMaps = () => {
-    if (!treasure || !hasLocation) return;
-
-    const url = `https://www.google.com/maps/search/?api=1&query=${treasure.lat},${treasure.lng}`;
-
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (isIOS) {
-      window.location.href = url;
-      return;
-    }
-
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) {
-      window.location.href = url;
-    }
-  };
-
-  const distanceM =
-    treasure &&
-    userPosition &&
-    treasure.lat != null &&
-    treasure.lng != null &&
-    Number.isFinite(treasure.lat) &&
-    Number.isFinite(treasure.lng)
-      ? haversineDistance(userPosition.lat, userPosition.lng, treasure.lat, treasure.lng)
-      : null;
-
-  const claimWindowText = treasure
-    ? formatClaimWindow(treasure.starts_at, treasure.ends_at)
-    : null;
-
-  const quotaText =
-    treasure?.claim_limit != null
-      ? `${Math.max(0, treasure.claim_limit - claimCount)} available`
-      : null;
-
-  const offerTypeLabel = primary
-    ? OFFER_TYPE_LABELS[primary.offer_type] ?? primary.offer_type
-    : null;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!treasure) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Treasure not found</p>
-      </div>
-    );
-  }
+  const hId = huntId ?? '';
+  const tId = treasureId ?? '';
 
   return (
-    <div className="min-h-screen bg-white pb-24">
-      {/* Header with Back Button */}
-      <div className="sticky top-0 z-10 bg-white border-b border-border">
+    <div className="min-h-screen bg-background pb-24">
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
           <button
+            type="button"
             onClick={() =>
-              navigate(`/hunts/${huntId}/map`, {
+              navigate(`/hunts/${hId}/map`, {
                 state: { initialTab: fromTab },
               })
             }
@@ -122,97 +30,8 @@ export default function TreasureDetailPage() {
         </div>
       </div>
 
-      <div className="px-4">
-        {/* Clue image */}
-        <div className="aspect-video rounded-2xl overflow-hidden mb-6 bg-muted animate-fade-in mt-4">
-          {(treasure as { clue_image?: string | null }).clue_image ? (
-            <img
-              src={(treasure as { clue_image?: string | null }).clue_image!}
-              alt={`Clue for ${treasure.name}`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <MapPin className="w-12 h-12 text-muted-foreground" />
-            </div>
-          )}
-        </div>
-
-        {/* Treasure info */}
-        <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <div className="flex items-start gap-2 mb-2">
-            <h2 className="text-2xl font-bold flex-1">{treasure.name}</h2>
-            {isClaimed && (
-              <span className="shrink-0 px-2 py-1 text-xs font-semibold uppercase rounded bg-primary/20 text-primary">
-                Claimed
-              </span>
-            )}
-          </div>
-
-          {treasure.address && (
-            <p className="text-sm text-muted-foreground mb-2">{treasure.address}</p>
-          )}
-
-          {distanceM != null && (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-              <MapPin className="w-4 h-4" strokeWidth={1.5} />
-              <span>
-                {(distanceM / 1000).toFixed(1)} km away
-              </span>
-            </div>
-          )}
-
-          {primary && (
-            <div className="space-y-1 mb-4">
-              <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
-                <span>{primary.title}</span>
-                {quotaText && (
-                  <span className="text-muted-foreground font-normal">
-                    · {quotaText}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {primary.org_name && (
-                  <span className="text-sm text-muted-foreground">
-                    {primary.org_name}
-                  </span>
-                )}
-                {offerTypeLabel && (
-                  <span className="px-2 py-0.5 text-xs font-semibold rounded bg-muted text-muted-foreground">
-                    {offerTypeLabel}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {claimWindowText && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <Clock className="w-4 h-4" strokeWidth={1.5} />
-              <span>{claimWindowText}</span>
-            </div>
-          )}
-
-          {treasure.description && (
-            <p className="text-sm text-foreground mb-6">{treasure.description}</p>
-          )}
-
-          {hasLocation ? (
-            <button
-              onClick={openInMaps}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Navigation className="w-5 h-5" />
-              Open in Google Maps
-            </button>
-          ) : (
-            <div className="w-full flex items-center justify-center gap-2 py-4 bg-muted text-muted-foreground rounded-full font-medium">
-              <MapPin className="w-5 h-5" />
-              Location unavailable
-            </div>
-          )}
-        </div>
+      <div className="px-4 pt-4">
+        <TreasureDetailPanel huntId={hId} treasureId={tId} />
       </div>
     </div>
   );
