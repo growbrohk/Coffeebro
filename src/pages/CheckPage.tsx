@@ -13,6 +13,10 @@ import {
   primaryOfferByTreasureId,
   useTreasuresPrimaryOffers,
 } from '@/hooks/useTreasuresPrimaryOffers';
+import {
+  mapCalendarOfferRowToHuntMapTreasure,
+  usePublicCalendarOffersForExplore,
+} from '@/hooks/usePublicCalendarOffersForExplore';
 import { pinKindForTreasure } from '@/lib/huntMapPinKind';
 import type { HuntMapTreasure } from '@/types/huntMapTreasure';
 import { VoucherCarouselRow } from '@/components/VoucherCarouselCards';
@@ -63,6 +67,8 @@ export default function CheckPage() {
   const { data: huntOrgMap = new Map(), isPending: huntOrgMetaLoading } =
     useHuntsOrgMeta(huntIdsForOrg);
   const { data: discoveryOrgs = [], isPending: discoveryOrgsLoading } = useDiscoveryOrgs();
+  const { data: calendarOfferRows = [], isPending: calendarOffersLoading } =
+    usePublicCalendarOffersForExplore();
   const { data: offerRows = [] } = useTreasuresPrimaryOffers(treasureIds);
   const offerByTreasure = useMemo(() => primaryOfferByTreasureId(offerRows), [offerRows]);
 
@@ -95,13 +101,27 @@ export default function CheckPage() {
     });
   }, [enrichedTreasures, searchQuery]);
 
-  const voucherTreasures = useMemo(
-    () =>
-      filteredBySearch.filter(
-        (t) => !t.scanned && (t.pinKind === 'grab' || t.pinKind === 'hunt')
-      ),
-    [filteredBySearch]
+  const calendarAsTreasures = useMemo(
+    () => (calendarOfferRows || []).map(mapCalendarOfferRowToHuntMapTreasure),
+    [calendarOfferRows]
   );
+
+  const filteredCalendarBySearch = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return calendarAsTreasures.filter((t) => {
+      if (!q) return true;
+      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [calendarAsTreasures, searchQuery]);
+
+  const voucherTreasures = useMemo(() => {
+    const hunt = filteredBySearch.filter((t) => !t.scanned);
+    return [...hunt, ...filteredCalendarBySearch];
+  }, [filteredBySearch, filteredCalendarBySearch]);
 
   /** All orgs with an active hunt (server RPC), filtered by search. */
   const cafeTreasures = useMemo(() => {
@@ -119,6 +139,10 @@ export default function CheckPage() {
   }, [discoveryOrgs, searchQuery]);
 
   const navigateToTreasure = (t: HuntMapTreasure) => {
+    if (t.calendarOfferId) {
+      navigate('/calendar');
+      return;
+    }
     if (t.cafeDetailTreasureId && t.hunt_id) {
       navigate(`/hunts/${t.hunt_id}/treasures/${t.cafeDetailTreasureId}`);
       return;
@@ -131,7 +155,12 @@ export default function CheckPage() {
   };
 
   const isLoading =
-    authLoading || huntsLoading || treasuresLoading || huntOrgMetaLoading || discoveryOrgsLoading;
+    authLoading ||
+    huntsLoading ||
+    treasuresLoading ||
+    huntOrgMetaLoading ||
+    discoveryOrgsLoading ||
+    calendarOffersLoading;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-28">
@@ -177,7 +206,7 @@ export default function CheckPage() {
               </div>
               {voucherTreasures.length === 0 ? (
                 <p className="rounded-2xl bg-card/80 px-4 py-6 text-center text-sm text-muted-foreground shadow-sm">
-                  {hunts.length === 0
+                  {hunts.length === 0 && calendarAsTreasures.length === 0
                     ? 'No vouchers yet. Check back when new hunts go live.'
                     : 'No matching vouchers. Try another search or open the map to hunt.'}
                 </p>

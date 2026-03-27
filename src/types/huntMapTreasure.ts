@@ -13,4 +13,8 @@ export type HuntMapTreasure = Treasure & {
   campaignTitle: string | null;
   /** Recommended-café row from discovery org: treasure id for detail URL (list `id` stays org id). */
   cafeDetailTreasureId?: string | null;
+  /** Calendar campaign (`source_type = calendar`); real offer id for navigation. */
+  calendarOfferId?: string | null;
+  /** Calendar offer event day (YYYY-MM-DD). */
+  eventDate?: string | null;
 };

@@ -21,6 +21,10 @@ import {
   primaryOfferByTreasureId,
   useTreasuresPrimaryOffers,
 } from '@/hooks/useTreasuresPrimaryOffers';
+import {
+  mapCalendarOfferRowToHuntMapTreasure,
+  usePublicCalendarOffersForExplore,
+} from '@/hooks/usePublicCalendarOffersForExplore';
 import { pinKindForTreasure } from '@/lib/huntMapPinKind';
 import type { HuntMapTreasure } from '@/types/huntMapTreasure';
 import { Loader2, Search, ChevronLeft } from 'lucide-react';
@@ -65,6 +69,8 @@ export default function HuntMapPage() {
   const joinHunt = useJoinHunt();
   const hasTriedJoin = useRef(false);
   const { position: userPosition } = useGeolocation();
+  const { data: calendarOfferRows = [], isPending: calendarOffersLoading, refetch: refetchCalendar } =
+    usePublicCalendarOffersForExplore();
 
   const rawTreasures = isGlobalMode ? allTreasures : singleTreasures;
   const treasureIds = useMemo(() => rawTreasures.map((t) => t.id), [rawTreasures]);
@@ -110,16 +116,48 @@ export default function HuntMapPage() {
     });
   }, [enrichedTreasures, searchQuery, pillar]);
 
-  const voucherTreasures = useMemo(
-    () =>
-      filteredTreasures.filter(
-        (t) => !t.scanned && (t.pinKind === 'grab' || t.pinKind === 'hunt')
-      ),
-    [filteredTreasures]
+  const calendarAsTreasures = useMemo(
+    () => (calendarOfferRows || []).map(mapCalendarOfferRowToHuntMapTreasure),
+    [calendarOfferRows]
   );
 
+  const filteredCalendarForMap = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return calendarAsTreasures.filter((t) => {
+      if (pillar !== 'all' && t.pinKind !== pillar) return false;
+      if (!q) return true;
+      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [calendarAsTreasures, searchQuery, pillar]);
+
+  const mapTreasures = useMemo(
+    () => [...filteredTreasures, ...filteredCalendarForMap],
+    [filteredTreasures, filteredCalendarForMap]
+  );
+
+  const voucherTreasures = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const matches = (t: HuntMapTreasure) => {
+      if (!q) return true;
+      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    };
+    const hunt = enrichedTreasures.filter((t) => !t.scanned && matches(t));
+    const cal = calendarAsTreasures.filter((t) => matches(t));
+    return [...hunt, ...cal];
+  }, [enrichedTreasures, calendarAsTreasures, searchQuery]);
+
   const treasuresLoading =
-    (isGlobalMode ? allTreasuresLoading : singleTreasuresLoading) || huntOrgMetaLoading;
+    (isGlobalMode ? allTreasuresLoading : singleTreasuresLoading) ||
+    huntOrgMetaLoading ||
+    calendarOffersLoading;
 
   const hasLocation =
     selectedTreasure &&
@@ -141,6 +179,11 @@ export default function HuntMapPage() {
   };
 
   const navigateToTreasureDetail = (t: HuntMapTreasure) => {
+    if (t.calendarOfferId) {
+      navigate('/calendar');
+      setSelectedTreasure(null);
+      return;
+    }
     navigate(`/hunts/${t.hunt_id}/treasures/${t.id}`, {
       state: { fromTab: 'map' as const },
     });
@@ -191,12 +234,13 @@ export default function HuntMapPage() {
           </div>
         ) : (
           <HuntMap
-            treasures={filteredTreasures}
+            treasures={mapTreasures}
             onSelectTreasure={(t) => setSelectedTreasure(t)}
             emptyMessage={
-              isGlobalMode && hunts.length === 0
+              isGlobalMode && hunts.length === 0 && calendarAsTreasures.length === 0
                 ? 'No active hunts right now. Check back later or create one as a host.'
-                : filteredTreasures.length === 0 && enrichedTreasures.length > 0
+                : mapTreasures.length === 0 &&
+                    (enrichedTreasures.length > 0 || calendarAsTreasures.length > 0)
                   ? 'Nothing matches your search or filter.'
                   : undefined
             }
@@ -330,6 +374,7 @@ export default function HuntMapPage() {
       const handleRetry = () => {
         refetchHunts();
         refetchAllTreasures();
+        refetchCalendar();
       };
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 pb-24">

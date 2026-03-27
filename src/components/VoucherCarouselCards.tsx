@@ -6,10 +6,17 @@ import { cn } from '@/lib/utils';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 
+/** B1G1 / grab: prefer `offer_type` so CTA matches when `pinKind` tracks another reward row. */
+function isGrabOffer(t: HuntMapTreasure): boolean {
+  return t.pinKind === 'grab' || t.offerType === 'buy1get1free';
+}
+
 export function voucherCarouselTitle(items: HuntMapTreasure[]): string {
   const n = items.length;
-  const hasGrab = items.some((t) => t.pinKind === 'grab');
-  const hasHunt = items.some((t) => t.pinKind === 'hunt');
+  const hasGrab = items.some(isGrabOffer);
+  const hasHunt = items.some(
+    (t) => !isGrabOffer(t) && (t.pinKind === 'hunt' || t.pinKind === 'coffee_shop')
+  );
   const voucherWord = n === 1 ? 'voucher' : 'vouchers';
 
   if (hasGrab && !hasHunt) {
@@ -55,7 +62,9 @@ export function VoucherCarouselCard({
   const timeLine = formatHuntRedemptionPeriod(treasure.starts_at, treasure.ends_at);
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
-  const isGrab = treasure.pinKind === 'grab';
+  const isGrab = isGrabOffer(treasure);
+  const isCoffeeShop = treasure.pinKind === 'coffee_shop' && !isGrab;
+  const ctaLabel = isGrab ? 'grab now' : isCoffeeShop ? 'open' : 'hunt now';
   const cafeTitle = orgLine;
   const cafeLocation = locationLine;
 
@@ -156,7 +165,7 @@ export function VoucherCarouselCard({
                   className="h-3.5 w-3.5 object-contain brightness-0 invert"
                 />
               )}
-              {isGrab ? 'grab now' : 'hunt now'}
+              {ctaLabel}
             </button>
           </div>
         </div>
