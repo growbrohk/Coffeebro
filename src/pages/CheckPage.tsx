@@ -45,6 +45,7 @@ export default function CheckPage() {
         orgName: po?.org_name ?? null,
         quantityLimit: po?.quantity_limit ?? null,
         campaignTitle: po?.campaign_title ?? null,
+        clue_image: po?.preset_clue_image ?? t.clue_image ?? null,
       };
     });
   }, [rawTreasures, offerByTreasure, claimedIds]);

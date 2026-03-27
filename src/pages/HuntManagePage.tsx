@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useHunt, useTreasures, type Treasure } from '@/hooks/useHunts';
@@ -26,12 +25,9 @@ import { useTreasureReward } from '@/hooks/useTreasureReward';
 import { useOrgs } from '@/hooks/useOrgs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ImageIcon, MapPin, Pencil, Plus, QrCode, Trash2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Pencil, Plus, QrCode } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { OFFER_TYPES } from '@/lib/offerForm';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -74,12 +70,8 @@ export default function HuntManagePage() {
   const [editTreasureClaimLimit, setEditTreasureClaimLimit] = useState('');
   const [editTreasureStartsAt, setEditTreasureStartsAt] = useState('');
   const [editTreasureEndsAt, setEditTreasureEndsAt] = useState('');
-  const [editTreasureClueImage, setEditTreasureClueImage] = useState('');
   const [editTreasureOfferType, setEditTreasureOfferType] = useState<string>('free');
-  const [editTreasurePhotoMode, setEditTreasurePhotoMode] = useState<'link' | 'upload'>('link');
-  const [editTreasureUploading, setEditTreasureUploading] = useState(false);
   const [isEditTreasureSubmitting, setIsEditTreasureSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (hunt && editDialogOpen) {
@@ -101,7 +93,6 @@ export default function HuntManagePage() {
       );
       setEditTreasureStartsAt(toDatetimeLocal(editingTreasure.starts_at));
       setEditTreasureEndsAt(toDatetimeLocal(editingTreasure.ends_at));
-      setEditTreasureClueImage(editingTreasure.clue_image ?? '');
       const primary = treasureRewards[0];
       setEditTreasureOfferType(primary?.offer_type ?? 'free');
     }
@@ -204,55 +195,6 @@ export default function HuntManagePage() {
     setEditTreasureDialogOpen(true);
   };
 
-  const handleEditTreasureFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !huntId || !editingTreasure) return;
-
-    if (!ALLOWED_MIME.includes(file.type)) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please use JPEG, PNG, WebP, or GIF.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        title: 'File too large',
-        description: 'Maximum size is 5MB.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setEditTreasureUploading(true);
-    try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const path = `${huntId}/${editingTreasure.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-
-      const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-
-      if (error) throw error;
-
-      const { data } = supabase.storage.from('treasure-images').getPublicUrl(path);
-      setEditTreasureClueImage(data.publicUrl);
-      setEditTreasurePhotoMode('link');
-      toast({ title: 'Photo uploaded!' });
-    } catch (err: unknown) {
-      toast({
-        title: 'Upload failed',
-        description: (err as Error).message || 'Could not upload photo.',
-        variant: 'destructive',
-      });
-    } finally {
-      setEditTreasureUploading(false);
-      e.target.value = '';
-    }
-  };
-
   const handleEditTreasure = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTreasure || !huntId || !editTreasureName.trim()) return;
@@ -272,7 +214,6 @@ export default function HuntManagePage() {
         ends_at: editTreasureEndsAt
           ? new Date(editTreasureEndsAt).toISOString()
           : null,
-        clue_image: editTreasureClueImage.trim() || null,
       };
 
       const { error } = await (supabase as any)
@@ -559,86 +500,6 @@ export default function HuntManagePage() {
                 value={editTreasureEndsAt}
                 onChange={(e) => setEditTreasureEndsAt(e.target.value)}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Clue image (optional)</Label>
-              <Tabs
-                value={editTreasurePhotoMode}
-                onValueChange={(v) => setEditTreasurePhotoMode(v as 'link' | 'upload')}
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="link">Photo link</TabsTrigger>
-                  <TabsTrigger value="upload">Upload photo</TabsTrigger>
-                </TabsList>
-                <TabsContent value="link" className="space-y-2 mt-2">
-                  <Input
-                    type="url"
-                    value={editTreasureClueImage}
-                    onChange={(e) => setEditTreasureClueImage(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                  {editTreasureClueImage && (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={editTreasureClueImage}
-                        alt="Preview"
-                        className="w-20 h-20 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditTreasureClueImage('')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="upload" className="space-y-2 mt-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    onChange={handleEditTreasureFileUpload}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={editTreasureUploading}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {editTreasureUploading ? (
-                      'Uploading...'
-                    ) : (
-                      <>
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        Choose file (max 5MB, JPEG/PNG/WebP/GIF)
-                      </>
-                    )}
-                  </Button>
-                  {editTreasureClueImage && (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={editTreasureClueImage}
-                        alt="Preview"
-                        className="w-20 h-20 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditTreasureClueImage('')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
             </div>
 
             <Button type="submit" className="w-full" disabled={isEditTreasureSubmitting}>

@@ -77,6 +77,7 @@ export function useMyVouchers() {
             campaign_title,
             event_date,
             treasure_id,
+            preset_offers ( clue_image ),
             treasures ( clue_image, name )
           )
         `)
@@ -95,7 +96,11 @@ export function useMyVouchers() {
         }
         const tr = offer?.treasures;
         const treasure = Array.isArray(tr) ? tr[0] : tr;
-        const thumb = treasure?.clue_image as string | null | undefined;
+        const po = offer?.preset_offers;
+        const preset = Array.isArray(po) ? po[0] : po;
+        const presetClue = preset?.clue_image as string | null | undefined;
+        const treasureClue = treasure?.clue_image as string | null | undefined;
+        const thumb = presetClue || treasureClue || null;
         return {
           id: v.id,
           code: v.code,

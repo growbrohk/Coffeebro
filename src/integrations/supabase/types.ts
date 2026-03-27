@@ -402,6 +402,56 @@ export type Database = {
         }
         Relationships: []
       }
+      preset_offers: {
+        Row: {
+          clue_image: string | null
+          coffee_types: string[] | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          offer_type: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          clue_image?: string | null
+          coffee_types?: string[] | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          offer_type: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          clue_image?: string | null
+          coffee_types?: string[] | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          offer_type?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preset_offers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_results: {
         Row: {
           answers: Json

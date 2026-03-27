@@ -82,7 +82,9 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
     return <p className="py-8 text-center text-muted-foreground">Treasure not found</p>;
   }
 
-  const clue = (treasure as { clue_image?: string | null }).clue_image;
+  const primaryPresetClue = primary?.preset_clue_image ?? null;
+  const treasureClue = (treasure as { clue_image?: string | null }).clue_image ?? null;
+  const clue = primaryPresetClue || treasureClue;
 
   const footerPillClass =
     'inline-flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white active:scale-[0.99] transition-transform';

@@ -7,6 +7,7 @@ export interface TreasureRewardInfo {
   offer_type: string;
   org_name: string | null;
   description: string | null;
+  preset_clue_image: string | null;
 }
 
 export function useTreasureReward(treasureId: string | null) {
@@ -17,7 +18,7 @@ export function useTreasureReward(treasureId: string | null) {
 
       const { data, error } = await (supabase as any)
         .from('offers')
-        .select('id, name, offer_type, description, orgs(org_name)')
+        .select('id, name, offer_type, description, orgs(org_name), preset_offers(clue_image)')
         .eq('treasure_id', treasureId)
         .eq('source_type', 'hunt')
         .order('sort_order');
@@ -30,6 +31,7 @@ export function useTreasureReward(treasureId: string | null) {
         offer_type: r.offer_type || 'free',
         org_name: r.orgs?.org_name ?? null,
         description: r.description ?? null,
+        preset_clue_image: r.preset_offers?.clue_image ?? null,
       }));
     },
     enabled: !!treasureId,
