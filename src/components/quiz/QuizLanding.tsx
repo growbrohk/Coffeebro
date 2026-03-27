@@ -27,6 +27,7 @@ export function QuizLanding({ onStart, isLoading }: QuizLandingProps) {
           Answer 7 quick questions to discover your coffee frog - and see who matches you best!
         </p>
         <QuizCupCta
+          variant="startGraphic"
           onClick={onStart}
           disabled={isLoading}
           aria-label={isLoading ? 'Starting quiz' : 'Start quiz'}
