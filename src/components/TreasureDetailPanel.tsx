@@ -63,7 +63,7 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
     : null;
 
   const goBack = () => {
-    navigate(`/hunts/${huntId}/map`, { state: { initialTab: 'map' } });
+    navigate('/hunts');
   };
 
   if (!treasureId) {
