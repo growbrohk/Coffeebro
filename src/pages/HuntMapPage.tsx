@@ -56,8 +56,10 @@ export default function HuntMapPage() {
     isLoading: allTreasuresLoading,
     isError: allTreasuresError,
     refetch: refetchAllTreasures,
-  } = useAllTreasures(isGlobalMode ? selectedCampaignId : null, isGlobalMode && !!user);
-  const { data: isParticipant } = useIsParticipant(huntId ?? null);
+  } = useAllTreasures(isGlobalMode ? selectedCampaignId : null, isGlobalMode);
+  const { data: isParticipant, isPending: participantPending } = useIsParticipant(
+    huntId ?? null
+  );
   const { data: claimedIds } = useMyClaimedTreasureIds();
   const joinHunt = useJoinHunt();
   const hasTriedJoin = useRef(false);
@@ -313,7 +315,7 @@ export default function HuntMapPage() {
     if (huntsError || allTreasuresError) {
       const handleRetry = () => {
         refetchHunts();
-        if (user) refetchAllTreasures();
+        refetchAllTreasures();
       };
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 pb-24">
@@ -321,19 +323,6 @@ export default function HuntMapPage() {
           <Button variant="outline" onClick={handleRetry}>
             Retry
           </Button>
-        </div>
-      );
-    }
-
-    if (!user) {
-      return (
-        <div className="flex min-h-screen flex-col bg-background pb-24">
-          <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
-            <p className="text-muted-foreground">Sign in to browse hunts.</p>
-            <Button variant="outline" className="mt-4" onClick={() => navigate('/profile')}>
-              Go to Profile
-            </Button>
-          </div>
         </div>
       );
     }
@@ -349,38 +338,35 @@ export default function HuntMapPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background pb-24">
-        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
-          <p className="text-muted-foreground">Sign in to view this hunt.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate('/hunts')}>
-            Back
-          </Button>
+  if (user) {
+    if (participantPending) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background pb-24">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!isParticipant && !joinHunt.isPending) {
-    return (
-      <div className="flex min-h-screen flex-col bg-background pb-24">
-        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
-          <p className="text-muted-foreground">Could not join hunt.</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate('/hunts')}>
-            Back
-          </Button>
+    if (!isParticipant && !joinHunt.isPending) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background pb-24">
+          <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+            <p className="text-muted-foreground">Could not join hunt.</p>
+            <Button variant="outline" className="mt-4" onClick={() => navigate('/hunts')}>
+              Back
+            </Button>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (!isParticipant && joinHunt.isPending) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background pb-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    if (!isParticipant && joinHunt.isPending) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background pb-24">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
   }
 
   return mapChrome;
