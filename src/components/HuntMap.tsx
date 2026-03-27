@@ -181,12 +181,13 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
   }, [treasuresWithCoords]);
 
   return (
-    <div className="hunt-map-wrapper w-full h-full min-h-[200px] overflow-hidden rounded-none">
+    <div className="hunt-map-wrapper h-full w-full min-h-0 overflow-hidden rounded-none">
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={13}
-        className="w-full h-full min-h-[200px]"
+        className="h-full w-full min-h-0"
         scrollWheelZoom={true}
+        zoomControl={false}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'

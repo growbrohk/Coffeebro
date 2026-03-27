@@ -11,7 +11,6 @@ import {
   useMyClaimedTreasureIds,
 } from '@/hooks/useHunts';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
 import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
@@ -35,7 +34,6 @@ export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { canHostEvent } = useUserRole();
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [selectedTreasure, setSelectedTreasure] = useState<HuntMapTreasure | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,100 +143,11 @@ export default function HuntMapPage() {
   }, [user, huntId, isParticipant, joinHunt]);
 
   const mapChrome = (
-    <>
-      <div className="shrink-0 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 space-y-2 bg-background">
-        <div className="relative flex items-center gap-2 rounded-full border border-border/60 bg-white px-3 py-2.5 shadow-md">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search where you wanna explore today..."
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-            autoComplete="off"
-          />
-        </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <button
-            type="button"
-            onClick={() => setPillar('all')}
-            className={cn(
-              'shrink-0 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-              pillar === 'all'
-                ? 'bg-foreground text-background'
-                : 'bg-white text-foreground border border-border'
-            )}
-          >
-            all
-          </button>
-          <button
-            type="button"
-            onClick={() => setPillar('coffee_shop')}
-            className={cn(
-              'shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-              pillar === 'coffee_shop'
-                ? 'bg-[#1a1a1a] text-white'
-                : 'bg-white text-foreground border border-border'
-            )}
-          >
-            <img
-              src={coffeeShopPin}
-              alt=""
-              className={cn('h-5 w-5 object-contain', pillar === 'coffee_shop' && 'brightness-0 invert')}
-            />
-            coffee shops
-          </button>
-          <button
-            type="button"
-            onClick={() => setPillar('grab')}
-            className={cn(
-              'shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-              pillar === 'grab'
-                ? 'bg-[#1a1a1a] text-white'
-                : 'bg-white text-foreground border border-border'
-            )}
-          >
-            <img src={huntPinGrab} alt="" className="h-5 w-5 object-contain" />
-            grab
-          </button>
-          <button
-            type="button"
-            onClick={() => setPillar('hunt')}
-            className={cn(
-              'shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
-              pillar === 'hunt'
-                ? 'bg-[#1a1a1a] text-white'
-                : 'bg-white text-foreground border border-border'
-            )}
-          >
-            <img src={huntPinStar} alt="" className="h-5 w-5 object-contain" />
-            hunt
-          </button>
-          {isGlobalMode && (
-            <HuntFilter
-              hunts={hunts}
-              selectedCampaignId={selectedCampaignId}
-              onCampaignChange={setSelectedCampaignId}
-              className="ml-1"
-            />
-          )}
-        </div>
-      </div>
-
-      <div className="relative flex-1 min-h-0 min-h-[200px]">
-        {huntId && (
-          <button
-            type="button"
-            onClick={() => navigate('/hunts')}
-            className="absolute left-3 top-3 z-[1000] flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md"
-            aria-label="Back"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-        )}
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-background">
+      <div className="absolute inset-0 z-0 min-h-0">
         {treasuresLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
-            <div className="animate-pulse text-muted-foreground text-sm">Loading map…</div>
+          <div className="flex h-full w-full items-center justify-center bg-muted/30">
+            <div className="animate-pulse text-sm text-muted-foreground">Loading map…</div>
           </div>
         ) : (
           <HuntMap
@@ -253,17 +162,112 @@ export default function HuntMapPage() {
             }
           />
         )}
-        {selectedTreasure && (
-          <TreasurePopupCard
-            treasure={selectedTreasure}
-            onClose={() => setSelectedTreasure(null)}
-            onDirections={openInMaps}
-            onDetails={handleDetailsClick}
-            distance={distanceToSelected}
-          />
-        )}
       </div>
-    </>
+
+      <div
+        className="pointer-events-none absolute left-0 right-0 top-0 z-[1000] px-3 pb-2"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <div className="pointer-events-auto space-y-2">
+          {huntId ? (
+            <button
+              type="button"
+              onClick={() => navigate('/hunts')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md"
+              aria-label="Back"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          ) : null}
+          <div className="relative flex items-center gap-2 rounded-full border border-border/60 bg-white px-3 py-2.5 shadow-md">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search where you wanna explore today..."
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              autoComplete="off"
+            />
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setPillar('all')}
+              className={cn(
+                'shrink-0 rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                pillar === 'all'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-white text-foreground'
+              )}
+            >
+              all
+            </button>
+            <button
+              type="button"
+              onClick={() => setPillar('coffee_shop')}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                pillar === 'coffee_shop'
+                  ? 'bg-[#1a1a1a] text-white'
+                  : 'border border-border bg-white text-foreground'
+              )}
+            >
+              <img
+                src={coffeeShopPin}
+                alt=""
+                className={cn('h-5 w-5 object-contain', pillar === 'coffee_shop' && 'brightness-0 invert')}
+              />
+              coffee shops
+            </button>
+            <button
+              type="button"
+              onClick={() => setPillar('grab')}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                pillar === 'grab'
+                  ? 'bg-[#1a1a1a] text-white'
+                  : 'border border-border bg-white text-foreground'
+              )}
+            >
+              <img src={huntPinGrab} alt="" className="h-5 w-5 object-contain" />
+              grab
+            </button>
+            <button
+              type="button"
+              onClick={() => setPillar('hunt')}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                pillar === 'hunt'
+                  ? 'bg-[#1a1a1a] text-white'
+                  : 'border border-border bg-white text-foreground'
+              )}
+            >
+              <img src={huntPinStar} alt="" className="h-5 w-5 object-contain" />
+              hunt
+            </button>
+            {isGlobalMode && (
+              <HuntFilter
+                hunts={hunts}
+                selectedCampaignId={selectedCampaignId}
+                onCampaignChange={setSelectedCampaignId}
+                className="ml-1"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {selectedTreasure ? (
+        <TreasurePopupCard
+          treasure={selectedTreasure}
+          onClose={() => setSelectedTreasure(null)}
+          onDirections={openInMaps}
+          onDetails={handleDetailsClick}
+          distance={distanceToSelected}
+        />
+      ) : null}
+    </div>
   );
 
   if (isGlobalMode) {
@@ -303,11 +307,7 @@ export default function HuntMapPage() {
       );
     }
 
-    return (
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
-        {mapChrome}
-      </div>
-    );
+    return mapChrome;
   }
 
   if (huntLoading || !hunt) {
@@ -352,19 +352,6 @@ export default function HuntMapPage() {
     );
   }
 
-  return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
-      {canHostEvent && hunt.created_by === user?.id && (
-        <button
-          type="button"
-          onClick={() => navigate(`/host/hunts/${huntId}`)}
-          className="absolute right-3 top-[max(5.5rem,env(safe-area-inset-top)+4rem)] z-[1000] rounded-full border border-border bg-white/95 px-3 py-1.5 text-xs font-semibold shadow-md"
-        >
-          Manage
-        </button>
-      )}
-      {mapChrome}
-    </div>
-  );
+  return mapChrome;
 }
 

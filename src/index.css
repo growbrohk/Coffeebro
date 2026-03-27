@@ -293,6 +293,43 @@
 
 .hunt-map-wrapper .leaflet-tile-pane {
   border: none !important;
+  /* Muted, clean basemap closer to reference (white roads, soft grays) */
+  filter: saturate(0.88) contrast(1.04) brightness(1.03);
+}
+
+.dark .hunt-map-wrapper .leaflet-tile-pane {
+  filter: saturate(0.82) contrast(1.05) brightness(0.92);
+}
+
+.hunt-map-wrapper .leaflet-control-zoom {
+  display: none !important;
+}
+
+.hunt-map-wrapper .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: rgba(0, 0, 0, 0.42) !important;
+  font-size: 9px !important;
+  line-height: 1.25 !important;
+  padding: 2px 6px !important;
+  margin: 0 !important;
+  max-width: min(100%, 70vw);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px 0 0 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dark .hunt-map-wrapper .leaflet-control-attribution {
+  background: rgba(30, 30, 30, 0.82) !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.hunt-map-wrapper .leaflet-control-attribution a {
+  color: inherit !important;
+  text-decoration: underline;
+  text-underline-offset: 1px;
 }
 
 .hunt-map-wrapper .leaflet-zoom-box {
