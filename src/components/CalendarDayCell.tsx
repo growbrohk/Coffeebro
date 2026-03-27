@@ -1,5 +1,3 @@
-import type { CoffeeOffer } from '@/hooks/useCoffeeOffers';
-import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 import { cn } from '@/lib/utils';
 
 export type CalendarDayCellVariant = 'vouchers' | 'tracking';
@@ -8,9 +6,11 @@ interface CalendarDayCellProps {
   day: number;
   coffeeCount: number;
   isToday: boolean;
-  coffeeOffers: CoffeeOffer[];
-  onCoffeeOfferClick: (offer: CoffeeOffer) => void;
   variant: CalendarDayCellVariant;
+  /** Grab (calendar) campaign count; vouchers tab only */
+  grabCount?: number;
+  /** Hunt campaign count; vouchers tab only */
+  huntCount?: number;
   isSelected?: boolean;
   onSelectDay?: () => void;
 }
@@ -22,29 +22,19 @@ export function getCoffeeDayClass(count: number): string {
   return 'calendar-day-coffee-3';
 }
 
-function offerTypeLabel(offer: CoffeeOffer): string {
-  const t = offer.offer_type;
-  if (t && OFFER_TYPE_LABELS[t]) return OFFER_TYPE_LABELS[t];
-  if (t) return t;
-  return offer.name;
-}
-
 export function CalendarDayCell({
   day,
   coffeeCount,
   isToday,
-  coffeeOffers,
-  onCoffeeOfferClick,
   variant,
+  grabCount = 0,
+  huntCount = 0,
   isSelected,
   onSelectDay,
 }: CalendarDayCellProps) {
-  const MAX_VISIBLE_ITEMS = 2;
-  const visibleItems = coffeeOffers.slice(0, MAX_VISIBLE_ITEMS);
-  const remainingCount = coffeeOffers.length - MAX_VISIBLE_ITEMS;
-
   const isTracking = variant === 'tracking';
   const isVouchers = variant === 'vouchers';
+  const showVoucherCounts = isVouchers && (grabCount > 0 || huntCount > 0);
 
   return (
     <div
@@ -85,25 +75,17 @@ export function CalendarDayCell({
         )}
       </div>
 
-      {isVouchers && coffeeOffers.length > 0 && (
-        <div className="calendar-day-events">
-          {visibleItems.map((offer) => (
-            <button
-              type="button"
-              key={`offer-${offer.id}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCoffeeOfferClick(offer);
-              }}
-              className="calendar-event-label"
-              title={offer.name}
-            >
-              <span className="truncate max-w-full">{offerTypeLabel(offer)}</span>
-            </button>
-          ))}
-
-          {remainingCount > 0 && (
-            <span className="calendar-event-more">+{remainingCount} more</span>
+      {showVoucherCounts && (
+        <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 mt-0.5 px-0.5 w-full">
+          {grabCount > 0 && (
+            <span className="text-[8px] font-black tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">
+              G{grabCount}
+            </span>
+          )}
+          {huntCount > 0 && (
+            <span className="text-[8px] font-black tabular-nums text-violet-900 dark:text-violet-300 leading-none">
+              H{huntCount}
+            </span>
           )}
         </div>
       )}

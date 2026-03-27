@@ -14,6 +14,7 @@ import {
   useMonthlyHuntOffersForVoucherCalendar,
   groupCoffeeOffersByDate,
   huntOfferActiveOnLocalDay,
+  buildHuntOfferCountsByDay,
   normalizeHuntTreasure,
   type CoffeeOffer,
 } from '@/hooks/useCoffeeOffers';
@@ -57,6 +58,11 @@ export default function CalendarPage() {
   const firstDay = new Date(year, month, 1).getDay();
 
   const coffeeOffersByDate = groupCoffeeOffersByDate(coffeeOffers);
+
+  const huntCountByDay = useMemo(
+    () => buildHuntOfferCountsByDay(huntOffersMonth, year, month, daysInMonth),
+    [huntOffersMonth, year, month, daysInMonth]
+  );
 
   useEffect(() => {
     const now = new Date();
@@ -192,9 +198,9 @@ export default function CalendarPage() {
                   day={day}
                   coffeeCount={coffeeCount}
                   isToday={isToday}
-                  coffeeOffers={dayCoffeeOffers}
-                  onCoffeeOfferClick={handleCoffeeOfferClick}
                   variant={calendarTab}
+                  grabCount={dayCoffeeOffers.length}
+                  huntCount={huntCountByDay.get(day) ?? 0}
                   isSelected={calendarTab === 'vouchers' && selectedDay === day}
                   onSelectDay={
                     calendarTab === 'vouchers' ? () => setSelectedDay(day) : undefined
@@ -204,13 +210,24 @@ export default function CalendarPage() {
             })}
           </div>
 
+          {calendarTab === 'vouchers' && (
+            <p className="text-[10px] text-muted-foreground text-center mt-3 leading-snug px-1">
+              <span className="font-semibold text-emerald-700 dark:text-emerald-400">G</span> Grab Mode (Grab
+              in-app) ·{' '}
+              <span className="font-semibold text-violet-800 dark:text-violet-300">H</span> Hunt Mode (Hunt
+              in-life)
+            </p>
+          )}
+
           <TabsContent value="vouchers" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Offers for {offersHeading}
             </h2>
             <p className="text-xs text-muted-foreground mb-4">
-              Tap a day on the calendar to change the date. Chips on the grid show offer type; tap a chip for
-              details.
+              Tap a day to choose the date. <span className="font-medium text-emerald-700 dark:text-emerald-400">G</span>{' '}
+              counts Grab Mode offers (Grab in-app);{' '}
+              <span className="font-medium text-violet-800 dark:text-violet-300">H</span> counts Hunt Mode
+              offers (Hunt in-life). Use the cards below to open details.
             </p>
             {calendarOffersForSelectedDay.length === 0 && huntOffersForSelectedDay.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No offers this day.</p>
@@ -219,7 +236,7 @@ export default function CalendarPage() {
                 {calendarOffersForSelectedDay.length > 0 && (
                   <div className="flex flex-col gap-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Grab mode
+                      Grab Mode
                     </p>
                     {calendarOffersForSelectedDay.map((offer) => (
                       <CalendarVoucherOfferCard
@@ -239,7 +256,7 @@ export default function CalendarPage() {
                     )}
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Hunt mode
+                      Hunt Mode
                     </p>
                     {huntOffersForSelectedDay.map((row) => {
                       const tr = normalizeHuntTreasure(row.treasures);

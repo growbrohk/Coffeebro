@@ -112,6 +112,21 @@ export function huntOfferActiveOnLocalDay(
   return instantIntervalOverlapsMs(start, end, tr.starts_at, tr.ends_at);
 }
 
+/** Day-of-month → count of hunt offers active that local day (same rule as voucher list). */
+export function buildHuntOfferCountsByDay(
+  rows: HuntOfferForCalendarRow[],
+  year: number,
+  month: number,
+  daysInMonth: number
+): Map<number, number> {
+  const map = new Map<number, number>();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const n = rows.filter((row) => huntOfferActiveOnLocalDay(row, year, month, d)).length;
+    if (n > 0) map.set(d, n);
+  }
+  return map;
+}
+
 // Group coffee offers by day of month for calendar
 export function groupCoffeeOffersByDate(offers: CoffeeOffer[]): Map<number, CoffeeOffer[]> {
   const map = new Map<number, CoffeeOffer[]>();
