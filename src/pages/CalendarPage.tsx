@@ -166,7 +166,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="container px-4 py-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
               <ChevronLeft size={24} />
             </Button>
@@ -183,20 +183,20 @@ export default function CalendarPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-7 mb-2">
+          <div className="grid grid-cols-7 mb-1.5">
             {DAYS.map((day, i) => (
               <div 
                 key={i} 
-                className="text-center text-sm font-semibold text-muted-foreground py-2"
+                className="text-center text-sm font-semibold text-muted-foreground py-1"
               >
                 {day}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5">
             {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="min-h-[60px]" />
+              <div key={`empty-${i}`} className="min-h-[44px]" />
             ))}
 
             {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -224,7 +224,7 @@ export default function CalendarPage() {
             })}
           </div>
 
-          <TabsContent value="vouchers" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
+          <TabsContent value="vouchers" className="mt-4 focus-visible:ring-0 focus-visible:ring-offset-0">
             <h2 className="text-sm font-semibold text-foreground mb-3">
               {totalOffersForSelectedDay}{' '}
               {totalOffersForSelectedDay === 1 ? 'offer' : 'offers'} for {offersHeading}
@@ -307,7 +307,7 @@ export default function CalendarPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="tracking" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
+          <TabsContent value="tracking" className="mt-4 focus-visible:ring-0 focus-visible:ring-offset-0">
             <div className="flex items-center justify-center gap-6 text-sm flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-muted/30 border border-border" />

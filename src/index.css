@@ -142,42 +142,29 @@
 
   /* Calendar cell with events support */
   .calendar-day-cell {
-    @apply min-h-[60px] flex flex-col items-center py-1 text-sm font-medium;
+    @apply min-h-[44px] flex flex-col items-center justify-center py-0.5 text-sm font-medium;
   }
   
   .calendar-day-number {
-    @apply w-7 h-7 flex items-center justify-center text-sm font-medium;
+    @apply w-8 h-8 shrink-0 flex items-center justify-center text-sm font-medium rounded-full;
   }
   
-  /* Today: inner square around day number */
-  .calendar-day-cell.calendar-day-today .calendar-day-number {
-    @apply border-2 border-foreground;
-    width: 36px;
-    height: 36px;
-    box-sizing: border-box;
+  /* Today (tracking): circular ring on number — vouchers mode handles today in CalendarDayCell */
+  .calendar-day-cell.calendar-day-today:not(.calendar-vouchers-cell) .calendar-day-number {
+    @apply ring-2 ring-foreground ring-offset-2 ring-offset-background;
   }
   
   /* Coffee intensity classes - heatmap style */
   .calendar-day-cell.calendar-day-coffee-1 .calendar-day-number {
-    @apply bg-muted/30 border border-border;
+    @apply bg-muted/30 border border-border rounded-full;
   }
   
   .calendar-day-cell.calendar-day-coffee-2 .calendar-day-number {
-    @apply bg-muted/60 border border-border;
+    @apply bg-muted/60 border border-border rounded-full;
   }
   
   .calendar-day-cell.calendar-day-coffee-3 .calendar-day-number {
-    @apply bg-foreground text-background border-0;
-  }
-  
-  /* Today styling with coffee intensity */
-  .calendar-day-cell.calendar-day-today.calendar-day-coffee-1 .calendar-day-number,
-  .calendar-day-cell.calendar-day-today.calendar-day-coffee-2 .calendar-day-number {
-    @apply border-2 border-foreground;
-  }
-  
-  .calendar-day-cell.calendar-day-today.calendar-day-coffee-3 .calendar-day-number {
-    @apply border-0;
+    @apply bg-foreground text-background border-0 rounded-full;
   }
   
   .calendar-day-events {

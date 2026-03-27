@@ -53,13 +53,23 @@ export function CalendarDayCell({
       }
       className={cn(
         'calendar-day-cell',
+        isVouchers && 'calendar-vouchers-cell',
         isTracking && getCoffeeDayClass(coffeeCount),
         isToday && 'calendar-day-today',
-        isVouchers && onSelectDay && 'cursor-pointer rounded-md transition-colors',
-        isVouchers && isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+        isVouchers &&
+          onSelectDay &&
+          'cursor-pointer rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       )}
     >
-      <div className="calendar-day-number relative">
+      <div
+        className={cn(
+          'calendar-day-number relative',
+          isVouchers &&
+            isSelected &&
+            'bg-primary text-primary-foreground ring-0 border-0 shadow-sm',
+          isVouchers && isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background border-0'
+        )}
+      >
         {day}
         {isTracking && coffeeCount > 0 && (
           <span
