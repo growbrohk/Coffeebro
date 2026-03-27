@@ -24,10 +24,14 @@ import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 
+/** Profile stat cards — warm cream surface to match design reference */
+const profileCardClass =
+  'rounded-[1.35rem] border border-[#E8E2D9] bg-[#FAF7F2] p-5 text-[#2E1A14]';
+
 function listLines(items: string[], empty: string) {
   const slots = [0, 1, 2].map((i) => items[i] ?? empty);
   return slots.map((text, i) => (
-    <li key={i} className="text-sm font-medium text-foreground">
+    <li key={i} className="text-sm font-medium">
       {i + 1}. {text}
     </li>
   ));
@@ -161,17 +165,17 @@ export default function ProfilePage() {
 
         <div className="relative z-10 -mt-14 space-y-4 px-4">
           {/* Quiz card */}
-          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-md">
+          <div className={`${profileCardClass} shadow-md`}>
             {quizResultType ? (
               <>
-                <p className="text-sm text-foreground">
+                <p className="text-sm">
                   As an {FROG_NAMES[quizResultType].toLowerCase()}, you are a
                 </p>
-                <p className="mt-1 text-2xl font-bold capitalize leading-tight text-foreground">
+                <p className="mt-1 text-2xl font-bold capitalize leading-tight">
                   {FROG_PROFILE_CARD[quizResultType].archetype}
                 </p>
                 <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-[#2E1A14]/60">
                     {FROG_PROFILE_CARD[quizResultType].populationPercent}% of the population!
                   </p>
                   <Button
@@ -185,10 +189,10 @@ export default function ProfilePage() {
               </>
             ) : (
               <>
-                <p className="text-base font-medium leading-snug text-foreground">
+                <p className="text-base font-medium leading-snug">
                   Take the quiz to see what coffee frog u are
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-sm text-[#2E1A14]/60">
                   Seven café personalities — which frog matches you?
                 </p>
                 <div className="mt-4 flex justify-end">
@@ -205,27 +209,25 @@ export default function ProfilePage() {
           </div>
 
           {/* Voucher card */}
-          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
-            <p className="text-sm text-foreground">
-              You&apos;ve hunted &amp; grabbed
-            </p>
-            <p className="mt-1 text-2xl font-bold text-foreground">
+          <div className={`${profileCardClass} shadow-sm`}>
+            <p className="text-sm">You&apos;ve hunted &amp; grabbed</p>
+            <p className="mt-1 text-2xl font-bold">
               {vouchersLoading ? '…' : voucherCount}{' '}
               {voucherCount === 1 ? 'voucher' : 'vouchers'}
             </p>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
               {!voucherTopLoading && voucherTopPercent != null ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#2E1A14]/60">
                   Top {voucherTopPercent}% of the population!
                 </p>
               ) : voucherTopLoading && voucherCount > 0 ? (
-                <p className="text-sm text-muted-foreground">…</p>
+                <p className="text-sm text-[#2E1A14]/60">…</p>
               ) : voucherCount === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[#2E1A14]/60">
                   Grab treasures on a hunt to collect vouchers.
                 </p>
               ) : (
-                <span className="text-sm text-muted-foreground" aria-hidden>
+                <span className="text-sm text-[#2E1A14]/60" aria-hidden>
                   {'\u00a0'}
                 </span>
               )}
@@ -240,21 +242,21 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats card */}
-          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
-            <p className="text-sm font-medium text-foreground">In total, you drank</p>
-            <div className="mt-1 flex items-center justify-between gap-2">
-              <span className="text-5xl font-bold tabular-nums text-foreground">
+          <div className={`${profileCardClass} shadow-sm`}>
+            <p className="text-sm font-medium">In total, you drank</p>
+            <div className="mt-1 flex min-h-[4.5rem] items-center justify-between gap-2">
+              <span className="text-5xl font-bold tabular-nums">
                 {lifetimeLoading ? '…' : lifetimeTotal}
               </span>
-              <div className="flex shrink-0 items-center gap-0.5 text-foreground/80">
-                <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-9 w-9" />
-                <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-9 w-9" />
-                <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-9 w-9" />
+              <div className="flex shrink-0 items-center [&>svg+svg]:-ml-3">
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-16 w-16" />
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-16 w-16" />
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-16 w-16" />
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border/60 pt-5">
+            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-[#2E1A14]/12 pt-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#2E1A14]/55">
                   Top cafes
                 </p>
                 <ol className="mt-2 space-y-1.5">
@@ -264,7 +266,7 @@ export default function ProfilePage() {
                 </ol>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#2E1A14]/55">
                   Top coffee
                 </p>
                 <ol className="mt-2 space-y-1.5">
