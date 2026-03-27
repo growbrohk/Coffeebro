@@ -181,6 +181,8 @@ export default function CreateCoffeeOffer() {
   >([{ id: crypto.randomUUID(), presetOfferId: '', quota: 17, fixedCount: 1, weight: 1 }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const lastAutoLocationRef = useRef<string>('');
+  const lastAutoLatRef = useRef<string>('');
+  const lastAutoLngRef = useRef<string>('');
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [createdTreasure, setCreatedTreasure] = useState<{
     qr_code_id: string;
@@ -225,6 +227,12 @@ export default function CreateCoffeeOffer() {
       const loc = first.location ?? '';
       setLocation(loc);
       lastAutoLocationRef.current = loc;
+      const latStr = first.lat != null ? String(first.lat) : '';
+      const lngStr = first.lng != null ? String(first.lng) : '';
+      setLat(latStr);
+      setLng(lngStr);
+      lastAutoLatRef.current = latStr;
+      lastAutoLngRef.current = lngStr;
     }
   }, [orgs, orgId]);
 
@@ -244,6 +252,32 @@ export default function CreateCoffeeOffer() {
       if (location === '' || location === lastAutoLocationRef.current) {
         setLocation('');
         lastAutoLocationRef.current = '';
+      }
+    }
+
+    if (newOrg?.lat != null) {
+      const newLat = String(newOrg.lat);
+      if (lat === '' || lat === lastAutoLatRef.current) {
+        setLat(newLat);
+        lastAutoLatRef.current = newLat;
+      }
+    } else {
+      if (lat === '' || lat === lastAutoLatRef.current) {
+        setLat('');
+        lastAutoLatRef.current = '';
+      }
+    }
+
+    if (newOrg?.lng != null) {
+      const newLng = String(newOrg.lng);
+      if (lng === '' || lng === lastAutoLngRef.current) {
+        setLng(newLng);
+        lastAutoLngRef.current = newLng;
+      }
+    } else {
+      if (lng === '' || lng === lastAutoLngRef.current) {
+        setLng('');
+        lastAutoLngRef.current = '';
       }
     }
   };
