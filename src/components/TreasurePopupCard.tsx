@@ -78,7 +78,7 @@ export function TreasurePopupCard({
             </div>
             {primary && (
               <div className="text-sm text-muted-foreground space-y-0.5">
-                <div className="font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+                <div className="font-medium text-orange-900 dark:text-orange-200 flex items-center gap-1.5 flex-wrap">
                   <span>{primary.title}</span>
                   {quotaText && (
                     <span className="text-xs font-normal text-muted-foreground">
@@ -127,7 +127,11 @@ export function TreasurePopupCard({
             <Navigation className="w-4 h-4" />
             Directions
           </Button>
-          <Button onClick={onDetails} size="default" className="flex-1 gap-2">
+          <Button
+            onClick={onDetails}
+            size="default"
+            className="flex-1 gap-2 bg-orange-600 text-white hover:bg-orange-700 focus-visible:ring-orange-500 dark:bg-orange-600 dark:hover:bg-orange-500"
+          >
             Details
             <ChevronRight className="w-4 h-4" />
           </Button>

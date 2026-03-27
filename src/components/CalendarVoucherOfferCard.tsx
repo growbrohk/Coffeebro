@@ -61,7 +61,9 @@ function GrabCampaignHeadline({ offer }: { offer: CoffeeOffer }) {
   }
 
   return (
-    <p className="text-sm font-semibold text-foreground truncate pr-20 min-w-0">{segments}</p>
+    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200 truncate pr-20 min-w-0">
+      {segments}
+    </p>
   );
 }
 
@@ -96,7 +98,9 @@ function HuntCampaignHeadline({
   }
 
   return (
-    <p className="text-sm font-semibold text-foreground truncate pr-20 min-w-0">{segments}</p>
+    <p className="text-sm font-semibold text-orange-900 dark:text-orange-200 truncate pr-20 min-w-0">
+      {segments}
+    </p>
   );
 }
 
@@ -164,7 +168,11 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
           </div>
         </div>
         <div className="flex gap-2 px-4 pb-4">
-          <Button onClick={onDetails} size="default" className="flex-1 font-bold uppercase tracking-wide">
+          <Button
+            onClick={onDetails}
+            size="default"
+            className="flex-1 font-bold uppercase tracking-wide bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+          >
             Grab
           </Button>
         </div>
@@ -178,7 +186,7 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
   return (
     <div className="relative bg-card border border-border rounded-2xl shadow-md overflow-hidden">
       <span
-        className="absolute top-3 right-3 z-10 px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border border-violet-500/40 bg-violet-500/10 text-violet-900 dark:text-violet-200"
+        className="absolute top-3 right-3 z-10 px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border border-orange-500/40 bg-orange-500/10 text-orange-800 dark:text-orange-200"
         aria-hidden
       >
         HUNT MODE
@@ -214,7 +222,11 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
         </div>
       </div>
       <div className="flex gap-2 px-4 pb-4">
-        <Button onClick={onDetails} size="default" className="flex-1 font-bold uppercase tracking-wide">
+        <Button
+          onClick={onDetails}
+          size="default"
+          className="flex-1 font-bold uppercase tracking-wide bg-orange-600 text-white hover:bg-orange-700 focus-visible:ring-orange-500 dark:bg-orange-600 dark:hover:bg-orange-500"
+        >
           Hunt
         </Button>
       </div>

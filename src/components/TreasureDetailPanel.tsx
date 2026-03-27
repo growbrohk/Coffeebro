@@ -140,7 +140,7 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
 
         {primary && (
           <div className="space-y-1 mb-4">
-            <div className="text-sm font-medium text-foreground flex items-center gap-1.5 flex-wrap">
+            <div className="text-sm font-medium text-orange-900 dark:text-orange-200 flex items-center gap-1.5 flex-wrap">
               <span>{primary.title}</span>
               {quotaText && (
                 <span className="text-muted-foreground font-normal">· {quotaText}</span>
@@ -182,7 +182,7 @@ export function TreasureDetailPanel({ huntId, treasureId }: TreasureDetailPanelP
             <button
               type="button"
               onClick={openInMaps}
-              className="flex-1 flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-4 bg-orange-600 text-white rounded-full font-medium hover:bg-orange-700 transition-colors dark:hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
             >
               <Navigation className="w-5 h-5" />
               <span className="hidden min-[380px]:inline">Open in Google Maps</span>

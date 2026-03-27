@@ -217,7 +217,7 @@ export default function CalendarPage() {
             <p className="text-[10px] text-muted-foreground text-center mt-3 leading-snug px-1">
               <span className="font-semibold text-emerald-700 dark:text-emerald-400">G</span> Grab Mode (Grab
               in-app) ·{' '}
-              <span className="font-semibold text-violet-800 dark:text-violet-300">H</span> Hunt Mode (Hunt
+              <span className="font-semibold text-orange-700 dark:text-orange-400">H</span> Hunt Mode (Hunt
               in-life)
             </p>
           )}
@@ -250,7 +250,7 @@ export default function CalendarPage() {
                   <div
                     className={cn(
                       'flex flex-col gap-4',
-                      calendarOffersForSelectedDay.length > 0 && 'mt-8 pt-8 border-t border-border'
+                      calendarOffersForSelectedDay.length > 0 && 'mt-8'
                     )}
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

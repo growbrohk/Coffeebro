@@ -83,7 +83,7 @@ export function CalendarDayCell({
             </span>
           )}
           {huntCount > 0 && (
-            <span className="text-[8px] font-black tabular-nums text-violet-900 dark:text-violet-300 leading-none">
+            <span className="text-[8px] font-black tabular-nums text-orange-800 dark:text-orange-300 leading-none">
               H{huntCount}
             </span>
           )}
