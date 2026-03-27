@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useUserRole } from '@/hooks/useUserRole';
-import { RedeemCodeCard } from '@/components/RedeemCodeCard';
+import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
-import { Ticket } from 'lucide-react';
 
 export default function MyVouchersPage() {
   const navigate = useNavigate();
@@ -15,10 +15,36 @@ export default function MyVouchersPage() {
 
   const showHostScan = Boolean(user && !roleLoading && canHostEvent);
 
+  const header = (
+    <div className="sticky top-0 z-10 border-b border-border/60 bg-background/95 py-4 px-4 backdrop-blur-sm">
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0 rounded-full"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="min-w-0 truncate text-center text-lg font-bold lowercase tracking-tight text-foreground">
+          my wallet
+        </h1>
+        <div className="flex shrink-0 justify-end">
+          {showHostScan ? <ScanNavButton onClick={() => navigate('/scan')} /> : <div className="w-10" />}
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-lg font-semibold">Loading...</div>
+      <div className="flex min-h-screen flex-col bg-background pb-24">
+        {header}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="animate-pulse text-sm font-semibold text-muted-foreground">Loading...</div>
+        </div>
       </div>
     );
   }
@@ -26,23 +52,11 @@ export default function MyVouchersPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div />
-            <h1 className="text-xl font-black uppercase tracking-tight truncate text-center min-w-0">
-              My Vouchers
-            </h1>
-            <div className="flex justify-end">
-              {showHostScan && (
-                <ScanNavButton onClick={() => navigate('/scan')} />
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="container px-4 py-8">
-          <div className="max-w-sm mx-auto p-6 bg-foreground text-background text-center">
-            <p className="font-bold uppercase mb-4">Sign in to view your vouchers.</p>
-            <Button onClick={() => navigate('/profile')} variant="outline" className="btn-run">
+        {header}
+        <div className="px-4 py-6">
+          <div className="card mx-auto max-w-sm p-6 text-center">
+            <p className="mb-4 text-sm font-semibold text-foreground">Sign in to view your vouchers.</p>
+            <Button onClick={() => navigate('/profile')} variant="default" className="w-full">
               Go to Profile
             </Button>
           </div>
@@ -53,55 +67,24 @@ export default function MyVouchersPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-          <div />
-          <h1 className="text-xl font-black uppercase tracking-tight truncate text-center min-w-0">
-            My Vouchers
-          </h1>
-          <div className="flex justify-end">
-            {showHostScan && (
-              <ScanNavButton onClick={() => navigate('/scan')} />
-            )}
-          </div>
-        </div>
-      </div>
+      {header}
 
-      <div className="container px-4 py-6">
+      <div className="px-4 py-6">
         {vouchers.length === 0 ? (
-          <div className="max-w-sm mx-auto text-center py-12">
-            <Ticket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No vouchers yet.</p>
-            <p className="text-sm text-muted-foreground mt-2">
+          <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
+            <Ticket className="mx-auto h-12 w-12 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No vouchers yet.</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Join a hunt and scan treasures to unlock vouchers!
             </p>
-            <Button
-              variant="outline"
-              className="mt-6"
-              onClick={() => navigate('/hunts')}
-            >
+            <Button variant="default" className="mt-4 w-full" onClick={() => navigate('/hunts')}>
               Browse Hunts
             </Button>
           </div>
         ) : (
-          <div className="space-y-4 max-w-sm mx-auto">
+          <div className="mx-auto flex max-w-sm flex-col gap-3">
             {vouchers.map((v) => (
-              <div
-                key={v.id}
-                className="p-4 bg-muted/50 rounded-lg border border-border"
-              >
-                <p className="text-sm font-semibold mb-1">{v.title}</p>
-                {(v.org_name || v.offer_type) && (
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {[v.org_name, v.offer_type].filter(Boolean).join(' · ')}
-                  </p>
-                )}
-                <RedeemCodeCard
-                  code={v.code}
-                  status={v.status}
-                  variant="voucher"
-                />
-              </div>
+              <WalletVoucherCard key={v.id} voucher={v} />
             ))}
           </div>
         )}

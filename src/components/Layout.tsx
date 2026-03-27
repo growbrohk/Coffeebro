@@ -7,7 +7,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background">
       {children}
       <TabNavigation />
     </div>

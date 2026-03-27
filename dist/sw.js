@@ -88,7 +88,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "b1b6896e6edfddeaf0db005f30919862"
   }, {
     "url": "index.html",
-    "revision": "3d4b2d493b4c7e727675a17e67bc8971"
+    "revision": "6526b878ae746e4c64832f7849156658"
   }, {
     "url": "favicon.png",
     "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
@@ -111,10 +111,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "icons/icon-192.png",
     "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
   }, {
-    "url": "assets/index-nnfqM8gx.css",
+    "url": "assets/index-BppcVqg3.css",
     "revision": null
   }, {
-    "url": "assets/index-B7hsqGir.js",
+    "url": "assets/index-2lOK169s.js",
     "revision": null
   }], {});
   workbox.cleanupOutdatedCaches();

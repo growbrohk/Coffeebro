@@ -14,7 +14,7 @@ export function TabNavigation() {
 
   return (
     <nav className="tab-nav">
-      <div className="flex items-stretch">
+      <div className="mx-auto flex w-full max-w-[430px] items-stretch">
         {tabs.map((tab) => {
           const isActive = tab.pathMatch === 'prefix'
             ? location.pathname.startsWith(tab.path)

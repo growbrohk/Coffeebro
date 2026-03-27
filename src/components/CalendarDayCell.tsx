@@ -54,20 +54,21 @@ export function CalendarDayCell({
       className={cn(
         'calendar-day-cell',
         isVouchers && 'calendar-vouchers-cell',
+        showVoucherCounts && 'calendar-vouchers-has-offers',
         isTracking && getCoffeeDayClass(coffeeCount),
         isToday && 'calendar-day-today',
         isVouchers &&
           onSelectDay &&
-          'cursor-pointer rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+          'cursor-pointer rounded-2xl transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background'
       )}
     >
       <div
         className={cn(
-          'calendar-day-number relative',
+          'calendar-day-number relative z-0',
           isVouchers &&
             isSelected &&
-            'bg-primary text-primary-foreground ring-0 border-0 shadow-sm',
-          isVouchers && isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background border-0'
+            'bg-primary text-primary-foreground ring-0 border-0 shadow-soft',
+          isVouchers && isToday && !isSelected && 'ring-2 ring-primary/60 ring-offset-2 ring-offset-background border-0'
         )}
       >
         {day}
@@ -88,12 +89,12 @@ export function CalendarDayCell({
       {showVoucherCounts && (
         <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 mt-0.5 px-0.5 w-full">
           {grabCount > 0 && (
-            <span className="text-[8px] font-black tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">
+            <span className="rounded-full bg-primary/20 px-1 text-[8px] font-bold tabular-nums leading-none text-primary">
               G{grabCount}
             </span>
           )}
           {huntCount > 0 && (
-            <span className="text-[8px] font-black tabular-nums text-orange-800 dark:text-orange-300 leading-none">
+            <span className="rounded-full bg-accent/25 px-1 text-[8px] font-bold tabular-nums leading-none text-accent">
               H{huntCount}
             </span>
           )}

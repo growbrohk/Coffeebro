@@ -12,14 +12,14 @@ export default {
       screens: {
         sm: "100%",
         md: "100%",
-        lg: "480px",
-        xl: "480px",
-        "2xl": "480px",
+        lg: "430px",
+        xl: "430px",
+        "2xl": "430px",
       },
     },
     extend: {
       fontFamily: {
-        sans: ['Montserrat', 'system-ui', 'sans-serif'],
+        sans: ["Space Grotesk", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -65,11 +65,25 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        coffee: {
+          primary: "#F37721",
+          dark: "#2E1A14",
+          bg: "#FFFCF7",
+          accent: "#B16850",
+          muted: "#F6F2EB",
+        },
+        dark: "#2E1A14",
+        bg: "#FFFCF7",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "16px",
+        "2xl": "20px",
+      },
+      boxShadow: {
+        soft: "0 4px 12px rgba(0, 0, 0, 0.05)",
       },
       keyframes: {
         "accordion-down": {

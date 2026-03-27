@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { QrCode, Copy } from 'lucide-react';
-import QRCode from 'react-qr-code';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { QrCodeDialog } from '@/components/QrCodeDialog';
 
 export interface RedeemCodeCardProps {
   title?: string;
   code: string;
-  status?: 'active' | 'redeemed' | 'void';
+  status?: 'active' | 'redeemed' | 'void' | 'expired' | 'refunded';
   metaLines?: string[];
   onCopy?: () => void;
   variant?: 'voucher' | 'ticket';
@@ -38,11 +37,13 @@ export function RedeemCodeCard({
     active: 'bg-primary text-primary-foreground',
     redeemed: 'bg-muted text-muted-foreground',
     void: 'bg-destructive/20 text-destructive',
+    expired: 'bg-muted text-muted-foreground',
+    refunded: 'bg-muted text-muted-foreground',
   }[status];
 
   return (
     <>
-      <div className="bg-muted/50 rounded-lg p-4 text-center border border-border">
+      <div className="rounded-2xl bg-muted/50 p-4 text-center shadow-soft">
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs text-muted-foreground">{title}</p>
           <span
@@ -90,21 +91,7 @@ export function RedeemCodeCard({
         )}
       </div>
 
-      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader>
-            <DialogTitle className="text-base">Scan to Redeem</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-3 py-2">
-            <div className="bg-white p-3 rounded-md">
-              <QRCode value={code} size={220} />
-            </div>
-            <p className="text-xs text-muted-foreground font-mono">
-              {code}
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QrCodeDialog code={code} open={qrOpen} onOpenChange={setQrOpen} />
     </>
   );
 }

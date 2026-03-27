@@ -11,10 +11,41 @@ export interface MyVoucher {
   created_at: string;
   redeemed_at: string | null;
   expires_at: string | null;
-  // Display info
+  /** Campaign display: campaign_title || offer name */
   title: string;
   org_name?: string;
   offer_type?: string;
+  description?: string | null;
+  location?: string | null;
+  event_date?: string | null;
+  thumbnail_url?: string | null;
+}
+
+export function formatVoucherRedemptionPeriod(
+  expiresAt: string | null | undefined,
+  eventDate: string | null | undefined
+): string {
+  if (expiresAt) {
+    const d = new Date(expiresAt);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+  }
+  if (eventDate) {
+    const d = new Date(eventDate + 'T12:00:00');
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
+  }
+  return '—';
 }
 
 export function useMyVouchers() {
@@ -25,7 +56,6 @@ export function useMyVouchers() {
     queryFn: async () => {
       if (!user) return [];
 
-      // Note: Regenerate Supabase types after migrations to get full type support
       const { data: vouchers, error } = await (supabase as any)
         .from('vouchers')
         .select(`
@@ -39,7 +69,16 @@ export function useMyVouchers() {
           offer_id,
           org_id,
           orgs(org_name),
-          offers(name, offer_type)
+          offers(
+            name,
+            offer_type,
+            description,
+            location,
+            campaign_title,
+            event_date,
+            treasure_id,
+            treasures ( clue_image, name )
+          )
         `)
         .eq('owner_id', user.id)
         .order('created_at', { ascending: false });
@@ -47,12 +86,16 @@ export function useMyVouchers() {
       if (error) throw error;
 
       const result: MyVoucher[] = (vouchers || []).map((v: any) => {
-        let title = 'Voucher';
+        const offer = v.offers;
+        const campaignTitle =
+          (offer?.campaign_title?.trim() || offer?.name?.trim() || 'Voucher') as string;
         let offerType: string | undefined;
-        if (v.offers) {
-          title = v.offers.name || title;
-          offerType = v.offers.offer_type;
+        if (offer?.offer_type) {
+          offerType = OFFER_TYPE_LABELS[offer.offer_type] ?? offer.offer_type;
         }
+        const tr = offer?.treasures;
+        const treasure = Array.isArray(tr) ? tr[0] : tr;
+        const thumb = treasure?.clue_image as string | null | undefined;
         return {
           id: v.id,
           code: v.code,
@@ -61,9 +104,13 @@ export function useMyVouchers() {
           created_at: v.created_at,
           redeemed_at: v.redeemed_at,
           expires_at: v.expires_at,
-          title,
+          title: campaignTitle,
           org_name: v.orgs?.org_name,
-          offer_type: offerType ? OFFER_TYPE_LABELS[offerType] ?? offerType : undefined,
+          offer_type: offerType,
+          description: offer?.description ?? null,
+          location: offer?.location ?? null,
+          event_date: offer?.event_date ?? null,
+          thumbnail_url: thumb || null,
         };
       });
 

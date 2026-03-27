@@ -1,86 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Running Habit Tracker - Black & White Minimal Design System */
-
+/* CoffeeBro design tokens — hex references */
 @layer base {
   :root {
-    --background: 33 100% 95%;
-    --foreground: 192 65% 17%;
+    --color-primary: #f37721;
+    --color-dark: #2e1a14;
+    --color-bg: #fffcf7;
+    --color-accent: #b16850;
+    --color-muted: #f6f2eb;
 
-    --card: 33 100% 95%;
-    --card-foreground: 192 65% 17%;
+    --background: 40 43% 98%;
+    --foreground: 14 39% 13%;
 
-    --popover: 33 100% 95%;
-    --popover-foreground: 192 65% 17%;
+    --card: 40 43% 98%;
+    --card-foreground: 14 39% 13%;
 
-    --primary: 182 53% 20%;
-    --primary-foreground: 33 100% 95%;
+    --popover: 40 43% 98%;
+    --popover-foreground: 14 39% 13%;
 
-    --secondary: 33 90% 71%;
-    --secondary-foreground: 192 65% 17%;
+    --primary: 24 89% 54%;
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 33 60% 90%;
-    --muted-foreground: 182 20% 35%;
+    --secondary: 40 35% 94%;
+    --secondary-foreground: 14 39% 13%;
 
-    --accent: 30 97% 69%;
-    --accent-foreground: 192 65% 17%;
+    --muted: 40 33% 94%;
+    --muted-foreground: 14 18% 40%;
+
+    --accent: 15 39% 50%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 33 100% 95%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 182 25% 75%;
-    --input: 182 25% 75%;
-    --ring: 30 97% 69%;
+    --border: 30 25% 88%;
+    --input: 30 25% 88%;
+    --ring: 24 89% 54%;
 
-    --radius: 0rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 0%;
-    --sidebar-primary: 0 0% 0%;
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+    --sidebar-background: 40 43% 98%;
+    --sidebar-foreground: 14 39% 13%;
+    --sidebar-primary: 24 89% 54%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 0%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 0%;
+    --sidebar-accent: 40 33% 94%;
+    --sidebar-accent-foreground: 14 39% 13%;
+    --sidebar-border: 30 25% 88%;
+    --sidebar-ring: 24 89% 54%;
   }
 
   .dark {
-    --background: 192 65% 10%;
-    --foreground: 33 100% 95%;
+    --background: 14 30% 8%;
+    --foreground: 40 43% 96%;
 
-    --card: 192 65% 12%;
-    --card-foreground: 33 100% 95%;
-    --popover: 192 65% 12%;
-    --popover-foreground: 33 100% 95%;
+    --card: 14 28% 11%;
+    --card-foreground: 40 43% 96%;
+    --popover: 14 28% 11%;
+    --popover-foreground: 40 43% 96%;
 
-    --primary: 30 97% 69%;
-    --primary-foreground: 192 65% 17%;
+    --primary: 24 89% 54%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 182 53% 20%;
-    --secondary-foreground: 33 100% 95%;
+    --secondary: 14 25% 18%;
+    --secondary-foreground: 40 43% 96%;
 
-    --accent: 33 90% 71%;
-    --accent-foreground: 192 65% 17%;
+    --muted: 14 22% 18%;
+    --muted-foreground: 40 25% 70%;
 
-    --muted: 192 30% 18%;
-    --muted-foreground: 33 40% 80%;
+    --accent: 15 39% 45%;
+    --accent-foreground: 0 0% 100%;
 
-    --border: 192 30% 22%;
-    --input: 192 30% 22%;
-    --ring: 30 97% 69%;
-    
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 0 0% 100%;
+    --border: 14 20% 22%;
+    --input: 14 20% 22%;
+    --ring: 24 89% 54%;
+
+    --sidebar-background: 14 30% 6%;
+    --sidebar-foreground: 40 43% 96%;
+    --sidebar-primary: 24 89% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 14 25% 16%;
+    --sidebar-accent-foreground: 40 43% 96%;
+    --sidebar-border: 14 20% 18%;
+    --sidebar-ring: 24 89% 54%;
   }
 }
 
@@ -91,115 +98,187 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.02em;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 8vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 5vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  button,
+  a {
+    transition: all 0.2s ease;
   }
 }
 
 @layer components {
+  .card {
+    background: var(--color-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
+    border-radius: 9999px;
+    padding: 10px 16px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    opacity: 0.92;
+  }
+
+  textarea.data-textarea-pill {
+    background: var(--color-muted);
+    border-radius: 16px;
+    padding: 12px 16px;
+    outline: none;
+    border: none;
+    font-size: 12px;
+    line-height: 1.4;
+    transition: all 0.2s ease;
+  }
+
   .btn-run {
     @apply w-full py-6 text-2xl font-bold uppercase tracking-wider transition-all duration-200;
   }
-  
+
   .btn-run-yes {
     @apply bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98];
   }
-  
+
   .btn-run-no {
     @apply bg-background text-foreground border-2 border-foreground hover:bg-muted active:scale-[0.98];
   }
-  
+
   .progress-bar {
     @apply h-1 bg-muted overflow-hidden;
   }
-  
+
   .progress-fill {
     @apply h-full bg-foreground transition-all duration-500 ease-out;
   }
-  
+
   .tab-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border;
+    @apply fixed bottom-0 left-0 right-0 z-50 border-t border-border;
+    background: hsl(var(--background));
   }
-  
+
   .tab-item {
     @apply flex flex-col items-center justify-center py-3 text-muted-foreground transition-colors;
   }
-  
+
   .tab-item-active {
     @apply text-foreground;
   }
-  
+
   .calendar-day {
     @apply w-10 h-10 flex items-center justify-center text-sm font-medium;
   }
-  
+
   .calendar-day-run {
     @apply bg-foreground text-background;
   }
-  
-  .calendar-day-today {
-    /* No outer rectangle - styling moved to inner .calendar-day-number */
-  }
 
-  /* Calendar cell with events support */
   .calendar-day-cell {
     @apply min-h-[44px] flex flex-col items-center justify-center py-0.5 text-sm font-medium;
   }
-  
+
   .calendar-day-number {
     @apply w-8 h-8 shrink-0 flex items-center justify-center text-sm font-medium rounded-full;
   }
-  
-  /* Today (tracking): circular ring on number — vouchers mode handles today in CalendarDayCell */
+
   .calendar-day-cell.calendar-day-today:not(.calendar-vouchers-cell) .calendar-day-number {
-    @apply ring-2 ring-foreground ring-offset-2 ring-offset-background;
+    @apply ring-2 ring-primary/70 ring-offset-2 ring-offset-background;
   }
-  
-  /* Coffee intensity classes - heatmap style */
+
   .calendar-day-cell.calendar-day-coffee-1 .calendar-day-number {
-    @apply bg-muted/30 border border-border rounded-full;
+    @apply bg-muted/40 rounded-full;
   }
-  
+
   .calendar-day-cell.calendar-day-coffee-2 .calendar-day-number {
-    @apply bg-muted/60 border border-border rounded-full;
+    @apply bg-muted/70 rounded-full;
   }
-  
+
   .calendar-day-cell.calendar-day-coffee-3 .calendar-day-number {
-    @apply bg-foreground text-background border-0 rounded-full;
+    @apply bg-primary text-primary-foreground border-0 rounded-full;
   }
-  
+
   .calendar-day-events {
     @apply flex flex-col items-center w-full mt-0.5 gap-0.5 px-0.5;
   }
-  
+
   .calendar-event-label {
-    @apply w-full text-[8px] leading-tight font-medium text-foreground bg-muted px-0.5 py-0.5 truncate text-center hover:bg-accent transition-colors cursor-pointer;
+    @apply w-full text-[8px] leading-tight font-medium text-foreground bg-muted px-0.5 py-0.5 truncate text-center hover:bg-accent/20 transition-colors cursor-pointer rounded-full;
   }
-  
+
   .calendar-event-registered {
-    @apply bg-green-600 text-white hover:bg-green-700;
+    @apply bg-primary/90 text-primary-foreground hover:bg-primary;
   }
-  
+
   .calendar-event-coffee {
-    @apply bg-orange-500 text-white hover:bg-orange-600;
+    @apply bg-accent/85 text-primary-foreground hover:bg-accent;
   }
-  
+
   .calendar-event-coffee.calendar-event-registered {
-    @apply bg-green-600 hover:bg-green-700;
+    @apply bg-primary/90 hover:bg-primary;
   }
-  
+
   .calendar-event-more {
     @apply text-[7px] text-muted-foreground;
   }
+
+  /* Vouchers mode: soft organic blob behind day number */
+  .calendar-vouchers-cell.calendar-vouchers-has-offers .calendar-day-number::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    z-index: -1;
+    border-radius: 52% 48% 45% 55% / 48% 52% 48% 52%;
+    background: radial-gradient(
+      ellipse 80% 70% at 40% 35%,
+      hsl(var(--primary) / 0.22),
+      hsl(var(--accent) / 0.12) 55%,
+      transparent 75%
+    );
+    pointer-events: none;
+  }
+
+  .calendar-vouchers-cell.calendar-vouchers-has-offers .calendar-day-number {
+    @apply font-semibold;
+  }
 }
 
-/* HuntMap - map styles to match app theme */
+/* HuntMap */
 .hunt-map-wrapper .leaflet-container {
   height: 100% !important;
   outline: none !important;
   border: none !important;
 }
 
-/* Fix white lines/grid between map tiles (sub-pixel rendering) */
 .hunt-map-wrapper .leaflet-tile {
   border: none !important;
   outline: none !important;
@@ -210,7 +289,6 @@
   border: none !important;
 }
 
-/* Remove zoom box / selection rectangle border */
 .hunt-map-wrapper .leaflet-zoom-box {
   border: none !important;
   outline: none !important;
@@ -254,7 +332,7 @@
   padding: 0 !important;
   font-size: 9px !important;
   font-weight: 500 !important;
-  font-family: 'Montserrat', sans-serif !important;
+  font-family: 'Space Grotesk', sans-serif !important;
   color: hsl(var(--foreground)) !important;
   white-space: nowrap !important;
   pointer-events: auto !important;
@@ -269,12 +347,12 @@
   background: hsl(var(--popover));
   color: hsl(var(--foreground));
   border: 1px solid hsl(var(--border));
-  border-radius: 0;
+  border-radius: 16px;
 }
 
 .leaflet-popup-content {
   margin: 0.5rem 0.75rem;
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .leaflet-popup-tip {
