@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 import { useNavigate } from 'react-router-dom';
@@ -16,44 +15,40 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
   const wildcardName = FROG_NAMES[desc.wildcard];
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-24">
-      <div className="max-w-md w-full mx-auto space-y-6">
+    <div className="quiz-flow min-h-dvh px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-black uppercase tracking-tight mb-2">
+          <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
             Your Coffee Frog
           </h1>
           <p className="text-4xl">🐸</p>
-          <p className="text-xl font-bold mt-2">{desc.name}</p>
+          <p className="mt-2 text-xl font-bold text-[var(--quiz-fg)]">{desc.name}</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-              {desc.narrative}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">
+        <div className="rounded-2xl border border-white/25 bg-white/10 p-5">
+          <p className="text-sm font-medium leading-relaxed text-[var(--quiz-fg)]/95">{desc.narrative}</p>
+          <div className="mt-4 space-y-2 border-t border-white/20 pt-4 text-sm text-[var(--quiz-fg)]">
+            <p>
               <span className="font-semibold">Best Match:</span> {bestMatchName}
             </p>
-            <p className="text-sm">
+            <p>
               <span className="font-semibold">Wildcard:</span> {wildcardName}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          This is your café instinct.
+        <p className="text-center text-sm text-[var(--quiz-fg)]/85">
+          This is your cafe instinct.
           <br />
           Your real coffee pattern might tell a deeper story.
         </p>
 
         <div className="space-y-3">
-          <p className="text-center text-sm font-medium">
+          <p className="text-center text-sm font-medium text-[var(--quiz-fg)]">
             Start logging your coffee and let us map your actual behavior.
           </p>
           <Button
-            className="w-full h-12"
+            className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
             onClick={() => navigate('/')}
           >
             Start Logging My Coffee
@@ -62,7 +57,7 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
           {onShare && (
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
               onClick={onShare}
             >
               Share My Coffee Frog

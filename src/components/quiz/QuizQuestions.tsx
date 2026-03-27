@@ -1,8 +1,8 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Progress } from '@/components/ui/progress';
+import { QuizCoffeeBean, QuizCupCta } from '@/components/quiz/QuizVisualElements';
+import { cn } from '@/lib/utils';
 import type { QuizQuestion } from '@/lib/quiz/types';
 
 interface QuizQuestionsProps {
@@ -24,57 +24,84 @@ export function QuizQuestions({
   onNext,
   canProceed,
 }: QuizQuestionsProps) {
-  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+  const isLast = currentIndex >= totalQuestions - 1;
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-24 flex flex-col">
-      <div className="max-w-md w-full mx-auto flex-1 flex flex-col">
-        <div className="mb-4">
-          <Progress value={progress} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-1 text-right">
-            {currentIndex + 1} / {totalQuestions}
-          </p>
+    <div className="quiz-flow flex min-h-dvh flex-col px-8 pb-10 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+        <div className="mb-8 flex gap-1.5" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={totalQuestions}>
+          {Array.from({ length: totalQuestions }, (_, i) => (
+            <div
+              key={i}
+              className={cn(
+                'h-1 flex-1 rounded-full transition-colors',
+                i === currentIndex ? 'bg-[var(--quiz-segment-active)]' : 'bg-[var(--quiz-fg)]',
+              )}
+            />
+          ))}
         </div>
 
-        <Card className="flex-1 flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {question.text}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col gap-4">
-            <RadioGroup
-              value={value ?? ''}
-              onValueChange={onValueChange}
-              className="grid gap-3"
-            >
-              {question.options.map((opt) => (
-                <div
-                  key={opt.value}
-                  className="flex items-center space-x-3 rounded-lg border p-4 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
-                >
-                  <RadioGroupItem value={opt.value} id={`q${question.id}-${opt.value}`} />
-                  <Label
-                    htmlFor={`q${question.id}-${opt.value}`}
-                    className="flex-1 cursor-pointer text-base"
-                  >
-                    {opt.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+        <h2 className="mb-8 text-left text-xl font-bold leading-snug text-[var(--quiz-fg)] sm:text-2xl">
+          {question.text}
+        </h2>
 
-            <Button
-              className="w-full mt-auto"
+        <RadioGroup
+          value={value ?? ''}
+          onValueChange={onValueChange}
+          className="flex flex-col gap-0"
+        >
+          {question.options.map((opt) => {
+            const id = `q${question.id}-${opt.value}`;
+            const selected = value === opt.value;
+            return (
+              <div
+                key={opt.value}
+                className={cn(
+                  'rounded-xl border-l-4 border-transparent pl-1 transition-colors',
+                  selected && 'border-[var(--quiz-fg)] bg-white/10',
+                )}
+              >
+                <Label
+                  htmlFor={id}
+                  className="flex min-h-[3rem] cursor-pointer items-start gap-3 py-2.5 pr-1"
+                >
+                  <QuizCoffeeBean className="mt-0.5 shrink-0" />
+                  <span className="flex-1 pt-0.5 text-left text-base font-normal leading-snug text-[var(--quiz-fg)]">
+                    {opt.label}
+                  </span>
+                  <RadioGroupItem value={opt.value} id={id} className="sr-only" />
+                </Label>
+              </div>
+            );
+          })}
+        </RadioGroup>
+
+        <div className="mt-auto flex justify-end pt-10">
+          {isLast ? (
+            <QuizCupCta
               onClick={onNext}
               disabled={!canProceed}
+              aria-label="See my result"
             >
-              {currentIndex < totalQuestions - 1 ? 'Next' : 'See my result'}
-            </Button>
-          </CardContent>
-        </Card>
+              my result
+            </QuizCupCta>
+          ) : (
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canProceed}
+              aria-label="Next question"
+              className={cn(
+                'touch-manipulation p-2 text-[var(--quiz-fg)] transition-opacity',
+                'outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--quiz-bg)] rounded-md',
+                !canProceed && 'pointer-events-none opacity-35',
+              )}
+            >
+              <ArrowRight className="size-12" strokeWidth={1.15} aria-hidden />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuizLanding } from '@/components/quiz/QuizLanding';
 import { QuizQuestions } from '@/components/quiz/QuizQuestions';
@@ -171,9 +172,13 @@ export default function QuizPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-        <p className="text-destructive font-medium">{error}</p>
-        <Button variant="outline" className="mt-4" onClick={() => setStep('landing')}>
+      <div className="quiz-flow flex min-h-dvh flex-col items-center justify-center px-6">
+        <p className="text-center font-medium text-[var(--quiz-fg)]">{error}</p>
+        <Button
+          variant="outline"
+          className="mt-6 border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
+          onClick={() => setStep('landing')}
+        >
           Start over
         </Button>
       </div>
@@ -182,8 +187,8 @@ export default function QuizPage() {
 
   if (isLoading && step === 'landing' && claimParam) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="animate-pulse">Loading your result…</p>
+      <div className="quiz-flow flex min-h-dvh items-center justify-center px-6">
+        <p className="animate-pulse text-[var(--quiz-fg)]">Loading your result…</p>
       </div>
     );
   }
@@ -192,8 +197,8 @@ export default function QuizPage() {
     const token = getSessionToken();
     if (token && !hasCheckedSession) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <p className="animate-pulse">Loading…</p>
+        <div className="quiz-flow flex min-h-dvh items-center justify-center px-6">
+          <p className="animate-pulse text-[var(--quiz-fg)]">Loading…</p>
         </div>
       );
     }
@@ -228,8 +233,8 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <p className="animate-pulse">Loading…</p>
+    <div className="quiz-flow flex min-h-dvh items-center justify-center px-6">
+      <p className="animate-pulse text-[var(--quiz-fg)]">Loading…</p>
     </div>
   );
 }

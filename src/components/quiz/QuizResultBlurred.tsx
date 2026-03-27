@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { FROG_NAMES } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 
@@ -12,42 +11,38 @@ export function QuizResultBlurred({ resultType, onSignUp }: QuizResultBlurredPro
   const name = FROG_NAMES[resultType];
 
   return (
-    <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-      <div className="max-w-md w-full space-y-6">
+    <div className="quiz-flow flex min-h-dvh flex-col px-6 pb-12 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-black uppercase tracking-tight mb-2">
+          <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
             Your Coffee Frog
           </h1>
-          <p className="text-muted-foreground">
-            Sign up to unlock your full result
-          </p>
+          <p className="text-[var(--quiz-fg)]/85">Sign up to unlock your full result</p>
         </div>
 
-        <Card className="relative overflow-hidden">
-          <div className="absolute inset-0 backdrop-blur-xl bg-background/80 z-10 flex items-center justify-center">
+        <div className="relative overflow-hidden rounded-2xl border border-white/25 bg-white/10">
+          <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-md bg-[var(--quiz-bg)]/70 px-4">
             <Button
-              className="z-20"
               size="lg"
               onClick={onSignUp}
+              className="z-20 border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
             >
               Sign up to unlock
             </Button>
           </div>
-          <CardHeader>
-            <p className="text-4xl text-center">🐸</p>
-            <p className="text-xl font-bold text-center blur-sm select-none">
+          <div className="p-6 pt-8">
+            <p className="text-center text-4xl">🐸</p>
+            <p className="mt-2 text-center text-xl font-bold text-[var(--quiz-fg)] blur-sm select-none">
               {name}
             </p>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center blur-md select-none line-clamp-3">
+            <p className="mt-4 text-center text-sm text-[var(--quiz-fg)]/90 blur-md select-none line-clamp-3">
               Your narrative and best match are hidden. Sign up to reveal your full Coffee Frog identity.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Your Coffee Type is your café instinct.
+        <p className="text-center text-sm text-[var(--quiz-fg)]/80">
+          Your coffee type is your cafe instinct.
           <br />
           Your real coffee pattern might tell a deeper story.
         </p>

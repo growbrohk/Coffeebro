@@ -39,8 +39,8 @@ export default function QuizResultPage() {
 
   if (authLoading || (user && resultLoading)) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="animate-pulse">Loading…</p>
+      <div className="quiz-flow flex min-h-dvh items-center justify-center px-6">
+        <p className="animate-pulse text-[var(--quiz-fg)]">Loading…</p>
       </div>
     );
   }
@@ -51,17 +51,17 @@ export default function QuizResultPage() {
 
   if (!quizResultType) {
     return (
-      <div className="min-h-screen bg-background p-4 flex flex-col items-center justify-center">
-        <div className="max-w-md w-full text-center space-y-6">
+      <div className="quiz-flow flex min-h-dvh flex-col items-center justify-center p-6">
+        <div className="mx-auto w-full max-w-md space-y-6 text-center">
           <p className="text-4xl">🐸</p>
-          <h1 className="text-2xl font-black uppercase tracking-tight">
+          <h1 className="text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
             Discover Your Coffee Frog
           </h1>
-          <p className="text-muted-foreground">
-            Take the 7 Frogs quiz to find out your café personality — and who matches you best.
+          <p className="text-[var(--quiz-fg)]/85">
+            Take the 7 Frogs quiz to find out your cafe personality — and who matches you best.
           </p>
           <Button
-            className="w-full h-12"
+            className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
             onClick={() => navigate('/q')}
           >
             Take the quiz

@@ -433,3 +433,17 @@
 .leaflet-control-attribution a {
   color: hsl(var(--muted-foreground));
 }
+
+/* Quiz flow (/q) — scoped orange shell; does not change global theme */
+.quiz-flow {
+  --quiz-bg: #f47c20;
+  --quiz-fg: #ffffff;
+  --quiz-segment-active: #1a0f0a;
+  background-color: var(--quiz-bg);
+  color: var(--quiz-fg);
+}
+
+.quiz-flow ::selection {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--quiz-fg);
+}
