@@ -38,15 +38,9 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
           </div>
         </div>
 
-        <p className="text-center text-sm text-[var(--quiz-fg)]/85">
-          This is your cafe instinct.
-          <br />
-          Your real coffee pattern might tell a deeper story.
-        </p>
-
         <div className="space-y-3">
           <p className="text-center text-sm font-medium text-[var(--quiz-fg)]">
-            Start logging your coffee and let us map your actual behavior.
+            Track your brews, evolve your frog, and share to find your coffee soulmate.
           </p>
           <Button
             className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
