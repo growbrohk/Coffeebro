@@ -21,6 +21,7 @@ import {
 import { CalendarDayCell, type CalendarDayCellVariant } from '@/components/CalendarDayCell';
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { localYMD } from '@/lib/date';
+import { cn } from '@/lib/utils';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -211,31 +212,50 @@ export default function CalendarPage() {
             {calendarOffersForSelectedDay.length === 0 && huntOffersForSelectedDay.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No offers this day.</p>
             ) : (
-              <div className="flex flex-col gap-3">
-                {calendarOffersForSelectedDay.map((offer) => (
-                  <CalendarVoucherOfferCard
-                    key={`cal-${offer.id}`}
-                    kind="calendar"
-                    offer={offer}
-                    onDetails={() => handleCoffeeOfferClick(offer)}
-                  />
-                ))}
-                {huntOffersForSelectedDay.map((row) => {
-                  const tr = normalizeHuntTreasure(row.treasures);
-                  if (!tr) return null;
-                  return (
-                    <CalendarVoucherOfferCard
-                      key={`hunt-${row.id}`}
-                      kind="hunt"
-                      row={row}
-                      treasure={tr}
-                      onDetails={() =>
-                        navigate(`/hunts/${tr.hunt_id}/treasures/${tr.id}`)
-                      }
-                    />
-                  );
-                })}
-              </div>
+              <>
+                {calendarOffersForSelectedDay.length > 0 && (
+                  <div className="flex flex-col gap-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Grab mode
+                    </p>
+                    {calendarOffersForSelectedDay.map((offer) => (
+                      <CalendarVoucherOfferCard
+                        key={`cal-${offer.id}`}
+                        kind="calendar"
+                        offer={offer}
+                        onDetails={() => handleCoffeeOfferClick(offer)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {huntOffersForSelectedDay.length > 0 && (
+                  <div
+                    className={cn(
+                      'flex flex-col gap-4',
+                      calendarOffersForSelectedDay.length > 0 && 'mt-8 pt-8 border-t border-border'
+                    )}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Hunt mode
+                    </p>
+                    {huntOffersForSelectedDay.map((row) => {
+                      const tr = normalizeHuntTreasure(row.treasures);
+                      if (!tr) return null;
+                      return (
+                        <CalendarVoucherOfferCard
+                          key={`hunt-${row.id}`}
+                          kind="hunt"
+                          row={row}
+                          treasure={tr}
+                          onDetails={() =>
+                            navigate(`/hunts/${tr.hunt_id}/treasures/${tr.id}`)
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </TabsContent>
 

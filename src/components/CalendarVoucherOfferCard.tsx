@@ -1,7 +1,8 @@
-import { ImageIcon, MapPin, ChevronRight } from 'lucide-react';
+import { Clock, ImageIcon, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 import type { CoffeeOffer, HuntOfferForCalendarRow, HuntOfferTreasureEmbed } from '@/hooks/useCoffeeOffers';
+import { cn } from '@/lib/utils';
 
 function truncate(str: string, maxLen: number) {
   if (str.length <= maxLen) return str;
@@ -30,6 +31,35 @@ function offerTypeLabel(offerType: string | null | undefined): string | null {
   return OFFER_TYPE_LABELS[offerType] ?? offerType;
 }
 
+/** Calendar `event_time` is stored as HH:MM or HH:MM:SS */
+function formatCalendarStartTime(eventTime: string | null | undefined): string | null {
+  if (!eventTime?.trim()) return null;
+  const t = eventTime.trim();
+  return t.length >= 5 ? t.slice(0, 5) : t;
+}
+
+function CampaignTypeLine({
+  campaignDisplay,
+  typeLabel,
+  className,
+}: {
+  campaignDisplay: string;
+  typeLabel: string | null;
+  className?: string;
+}) {
+  return (
+    <p className={cn('text-sm font-semibold text-foreground truncate pr-20', className)}>
+      <span className="text-foreground">{campaignDisplay}</span>
+      {typeLabel && (
+        <>
+          <span className="text-muted-foreground font-normal"> · </span>
+          <span className="text-muted-foreground font-normal">{typeLabel}</span>
+        </>
+      )}
+    </p>
+  );
+}
+
 type CalendarVoucherOfferCardProps =
   | {
       kind: 'calendar';
@@ -47,27 +77,32 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
   if (props.kind === 'calendar') {
     const { offer, onDetails } = props;
     const typeLabel = offerTypeLabel(offer.offer_type);
+    const campaignDisplay = (offer.campaign_title?.trim() || offer.name).trim();
+    const showProductTitle = offer.name !== campaignDisplay;
+    const startTimeLabel = formatCalendarStartTime(offer.event_time);
 
     return (
-      <div className="bg-card border border-border rounded-2xl shadow-md overflow-hidden">
+      <div className="relative bg-card border border-border rounded-2xl shadow-md overflow-hidden">
+        <span
+          className="absolute top-3 right-3 z-10 px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+          aria-hidden
+        >
+          GRAB MODE
+        </span>
         <div className="flex items-start gap-3 p-4 pb-3">
           <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
             <ImageIcon className="w-6 h-6 text-muted-foreground/40" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 mb-1">
-              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase rounded bg-muted text-muted-foreground">
-                Calendar offer campaign
-              </span>
-              {typeLabel && (
-                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase rounded bg-orange-500/15 text-orange-700 dark:text-orange-400">
-                  {typeLabel}
-                </span>
-              )}
-            </div>
-            <h3 className="text-base font-semibold text-foreground truncate">{offer.name}</h3>
-            {offer.campaign_title && offer.campaign_title !== offer.name && (
-              <p className="text-xs text-muted-foreground truncate mt-0.5">{offer.campaign_title}</p>
+            <CampaignTypeLine campaignDisplay={campaignDisplay} typeLabel={typeLabel} />
+            {showProductTitle && (
+              <h3 className="text-base font-semibold text-foreground truncate mt-1">{offer.name}</h3>
+            )}
+            {startTimeLabel && (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <Clock className="w-3 h-3 shrink-0" strokeWidth={1.5} />
+                <span>Starts {startTimeLabel}</span>
+              </p>
             )}
             {offer.location && (
               <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
@@ -78,9 +113,8 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
           </div>
         </div>
         <div className="flex gap-2 px-4 pb-4">
-          <Button onClick={onDetails} size="default" className="flex-1 gap-2">
-            Details
-            <ChevronRight className="w-4 h-4" />
+          <Button onClick={onDetails} size="default" className="flex-1 font-bold uppercase tracking-wide">
+            Grab
           </Button>
         </div>
       </div>
@@ -90,9 +124,17 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
   const { row, treasure, onDetails } = props;
   const typeLabel = offerTypeLabel(row.offer_type);
   const windowText = formatClaimWindow(treasure.starts_at, treasure.ends_at);
+  const campaignDisplay = (row.campaign_title?.trim() || row.name).trim();
+  const showProductTitle = row.name !== campaignDisplay;
 
   return (
-    <div className="bg-card border border-border rounded-2xl shadow-md overflow-hidden">
+    <div className="relative bg-card border border-border rounded-2xl shadow-md overflow-hidden">
+      <span
+        className="absolute top-3 right-3 z-10 px-2 py-1 text-[9px] font-black uppercase tracking-wider rounded-md border border-violet-500/40 bg-violet-500/10 text-violet-900 dark:text-violet-200"
+        aria-hidden
+      >
+        HUNT MODE
+      </span>
       <div className="flex items-start gap-3 p-4 pb-3">
         <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-muted">
           {treasure.clue_image ? (
@@ -108,19 +150,9 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5 mb-1">
-            <span className="px-2 py-0.5 text-[10px] font-semibold uppercase rounded bg-muted text-muted-foreground">
-              Hunt offer campaign
-            </span>
-            {typeLabel && (
-              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase rounded bg-orange-500/15 text-orange-700 dark:text-orange-400">
-                {typeLabel}
-              </span>
-            )}
-          </div>
-          <h3 className="text-base font-semibold text-foreground truncate">{row.name}</h3>
-          {row.campaign_title && row.campaign_title !== row.name && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">{row.campaign_title}</p>
+          <CampaignTypeLine campaignDisplay={campaignDisplay} typeLabel={typeLabel} />
+          {showProductTitle && (
+            <h3 className="text-base font-semibold text-foreground truncate mt-1">{row.name}</h3>
           )}
           {treasure.name &&
             treasure.name !== row.name &&
@@ -137,9 +169,8 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
         </div>
       </div>
       <div className="flex gap-2 px-4 pb-4">
-        <Button onClick={onDetails} size="default" className="flex-1 gap-2">
-          Details
-          <ChevronRight className="w-4 h-4" />
+        <Button onClick={onDetails} size="default" className="flex-1 font-bold uppercase tracking-wide">
+          Hunt
         </Button>
       </div>
     </div>
