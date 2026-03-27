@@ -69,6 +69,24 @@ export function useVoucherCountForOffer(offerId: string | null) {
   });
 }
 
+/** "Top X%" among voucher holders (see my_voucher_hunter_top_percent RPC). Null if user has no qualifying vouchers. */
+export function useMyVoucherTopPercent() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['voucher-hunter-top-percent', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+
+      const { data, error } = await supabase.rpc('my_voucher_hunter_top_percent');
+
+      if (error) throw error;
+      return data as number | null;
+    },
+    enabled: !!user,
+  });
+}
+
 /**
  * Hook to mint a voucher (call RPC)
  */
@@ -104,6 +122,8 @@ export function useMintVoucher() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['voucher', 'my', variables.offerId] });
       queryClient.invalidateQueries({ queryKey: ['voucher', 'count', variables.offerId] });
+      queryClient.invalidateQueries({ queryKey: ['vouchers', 'my'] });
+      queryClient.invalidateQueries({ queryKey: ['voucher-hunter-top-percent'] });
     },
   });
 }

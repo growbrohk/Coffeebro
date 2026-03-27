@@ -779,6 +779,7 @@ export type Database = {
           voucher_id: string
         }[]
       }
+      my_voucher_hunter_top_percent: { Args: never; Returns: number | null }
       redeem_voucher_atomic: {
         Args: { p_code: string }
         Returns: {

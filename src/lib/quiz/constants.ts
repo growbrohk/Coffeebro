@@ -1,4 +1,4 @@
-import type { FrogType, QuizQuestion, FrogDescription } from './types';
+import type { FrogType, QuizQuestion, FrogDescription, FrogProfileCard } from './types';
 
 export const FROG_TYPES: FrogType[] = ['ESP', 'LAT', 'AME', 'MOC', 'CLD', 'MAT', 'DIR'];
 
@@ -17,6 +17,17 @@ export const FROG_NAMES: Record<FrogType, string> = {
 export const LEGACY_FROG_MAP: Record<string, FrogType> = {
   OAT: 'MAT',
   DRP: 'DIR',
+};
+
+/** Profile card: short archetype line + illustrative population % (not live analytics). */
+export const FROG_PROFILE_CARD: Record<FrogType, FrogProfileCard> = {
+  ESP: { archetype: 'idealistic thinker', populationPercent: 15 },
+  LAT: { archetype: 'social connector', populationPercent: 14 },
+  AME: { archetype: 'steady planner', populationPercent: 14 },
+  MOC: { archetype: 'feeling-led romantic', populationPercent: 14 },
+  CLD: { archetype: 'independent trailblazer', populationPercent: 14 },
+  MAT: { archetype: 'mindful observer', populationPercent: 14 },
+  DIR: { archetype: 'curious experimenter', populationPercent: 15 },
 };
 
 // Q1–Q7, answer A/B/C/D → { FrogType: points }

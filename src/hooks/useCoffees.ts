@@ -76,6 +76,8 @@ export function useAddCoffee() {
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
       queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
       queryClient.invalidateQueries({ queryKey: ['coffee-streak'] });
+      queryClient.invalidateQueries({ queryKey: ['lifetime-coffee-count'] });
+      queryClient.invalidateQueries({ queryKey: ['coffee-profile-stats'] });
     },
   });
 }
@@ -152,6 +154,84 @@ export function useTodayCoffees() {
 
       if (error) throw error;
       return data || [];
+    },
+    enabled: !!user,
+  });
+}
+
+function drinkLabelFromRow(row: {
+  coffee_type: string | null;
+  coffee_type_other: string | null;
+}): string {
+  const t = (row.coffee_type || '').trim();
+  if (!t) return '';
+  if (t === 'Other') return (row.coffee_type_other || '').trim();
+  return t;
+}
+
+function topNFromCounts(counts: Map<string, number>, n: number): string[] {
+  return [...counts.entries()]
+    .filter(([k]) => k.length > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([k]) => k);
+}
+
+/** All-time coffee entry count for the current user. */
+export function useLifetimeCoffeeCount() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['lifetime-coffee-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const { count, error } = await supabase
+        .from('daily_coffees')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+}
+
+/** Top places and drink labels from logged coffees (lifetime). */
+export function useCoffeeProfileStats() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['coffee-profile-stats', user?.id],
+    queryFn: async () => {
+      if (!user) return { topPlaces: [] as string[], topDrinks: [] as string[] };
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .select('place, coffee_type, coffee_type_other')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const placeCounts = new Map<string, number>();
+      const drinkCounts = new Map<string, number>();
+
+      for (const row of data || []) {
+        const place = (row.place || '').trim();
+        if (place) {
+          placeCounts.set(place, (placeCounts.get(place) || 0) + 1);
+        }
+        const drink = drinkLabelFromRow(row);
+        if (drink) {
+          drinkCounts.set(drink, (drinkCounts.get(drink) || 0) + 1);
+        }
+      }
+
+      return {
+        topPlaces: topNFromCounts(placeCounts, 3),
+        topDrinks: topNFromCounts(drinkCounts, 3),
+      };
     },
     enabled: !!user,
   });

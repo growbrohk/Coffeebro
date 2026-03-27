@@ -81,6 +81,9 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "registerSW.js",
     "revision": "1872c500de691dce40960bb85481de07"
   }, {
+    "url": "profile-frog-hero.png",
+    "revision": "aacebd77c0843e497bef26336a39ef8d"
+  }, {
     "url": "placeholder.svg",
     "revision": "35707bd9960ba5281c72af927b79291f"
   }, {
@@ -88,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "b1b6896e6edfddeaf0db005f30919862"
   }, {
     "url": "index.html",
-    "revision": "c591af87857ef11ca9e8c8a610b8f259"
+    "revision": "c06ef9f02ed206470d4f057411e79003"
   }, {
     "url": "favicon.png",
     "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
@@ -111,10 +114,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "icons/icon-192.png",
     "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
   }, {
-    "url": "assets/index-CJ04-RNY.css",
+    "url": "assets/index-L_F4txvk.css",
     "revision": null
   }, {
-    "url": "assets/index-C63UVFz8.js",
+    "url": "assets/index-BKpK_1oc.js",
     "revision": null
   }], {});
   workbox.cleanupOutdatedCaches();

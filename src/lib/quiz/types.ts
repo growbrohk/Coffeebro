@@ -13,6 +13,11 @@ export interface FrogDescription {
   wildcard: FrogType;
 }
 
+export interface FrogProfileCard {
+  archetype: string;
+  populationPercent: number;
+}
+
 export interface QuizResult {
   resultType: FrogType;
   answers: Record<number, string>;

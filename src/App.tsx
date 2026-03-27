@@ -24,6 +24,7 @@ import HostOffersPage from "./pages/HostOffersPage";
 import HuntManagePage from "./pages/HuntManagePage";
 import CreateOfferPresetPage from "./pages/CreateOfferPresetPage";
 import OfferPresetsPage from "./pages/OfferPresetsPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/hunts/:huntId/treasures/:treasureId" element={<TreasureDetailPage />} />
               <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/host/hunt/create" element={<Navigate to="/host/offer-campaign/create?mode=hunt" replace />} />
               <Route path="/host/hunts" element={<HostHuntsPage />} />
               <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />

@@ -32,6 +32,7 @@ export function useClaimTreasure() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vouchers', 'my'] });
+      queryClient.invalidateQueries({ queryKey: ['voucher-hunter-top-percent'] });
       queryClient.invalidateQueries({ queryKey: ['hunt'] });
       queryClient.invalidateQueries({ queryKey: ['treasures'] });
       queryClient.invalidateQueries({ queryKey: ['hunt-claims'] });

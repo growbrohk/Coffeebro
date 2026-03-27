@@ -2,31 +2,48 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLeaderboard } from '@/hooks/useLeaderboard';
-import { useMaxStreak } from '@/hooks/useStreak';
-import { useMonthCoffeeCount } from '@/hooks/useCoffees';
- import { useUserRole } from '@/hooks/useUserRole';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
 import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
 import { useUserQuizResult } from '@/hooks/useUserQuizResult';
-import { FROG_NAMES } from '@/lib/quiz/constants';
+import {
+  useLifetimeCoffeeCount,
+  useCoffeeProfileStats,
+} from '@/hooks/useCoffees';
+import { useMyVouchers } from '@/hooks/useMyVouchers';
+import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
+import { FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/constants';
 import { useNavigate, useSearchParams } from 'react-router-dom';
- import { useToast } from '@/hooks/use-toast';
+import { Settings, Coffee } from 'lucide-react';
+
+function listLines(items: string[], empty: string) {
+  const slots = [0, 1, 2].map((i) => items[i] ?? empty);
+  return slots.map((text, i) => (
+    <li key={i} className="text-sm font-medium text-foreground">
+      {i + 1}. {text}
+    </li>
+  ));
+}
 
 export default function ProfilePage() {
   const [searchParams] = useSearchParams();
   const msgParam = searchParams.get('msg');
-  
   const claimParam = searchParams.get('claim');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Different message types for different contexts
   const getMessage = () => {
     switch (msgParam) {
       case 'tracking':
         return 'Sign-up/log in to start tracking your coffee!';
       case 'view-calendar':
-        return 'Log in to view other coffee drinkers\' calendars.';
+        return "Log in to view other coffee drinkers' calendars.";
       case 'search':
         return 'Log in to search and view other coffee drinkers.';
       case 'messages':
@@ -40,15 +57,15 @@ export default function ProfilePage() {
 
   const authMessage = getMessage();
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
-  const { data: leaderboard } = useLeaderboard();
-  const { data: maxStreak } = useMaxStreak();
-  const { data: monthCount = 0 } = useMonthCoffeeCount();
-   const { canHostEvent, role, isLoading: roleLoading } = useUserRole();
+  const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [] } = useOrgs();
   const orgIds = orgs.map((o) => o.id);
   const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
   const { data: quizResultType } = useUserQuizResult(user?.id);
-  const { toast } = useToast();
+  const { data: lifetimeTotal = 0, isLoading: lifetimeLoading } = useLifetimeCoffeeCount();
+  const { data: profileStats, isLoading: profileStatsLoading } = useCoffeeProfileStats();
+  const { data: vouchers = [], isLoading: vouchersLoading } = useMyVouchers();
+  const { data: voucherTopPercent, isLoading: voucherTopLoading } = useMyVoucherTopPercent();
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(false);
@@ -60,49 +77,11 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
       </div>
     );
   }
-
-  // Get user's rank
-  const userRank = profile && leaderboard 
-    ? leaderboard.findIndex(e => e.username === profile.username) + 1 
-    : null;
-
-   const handleCreateOfferPreset = () => {
-     if (canHostEvent) {
-       navigate('/host/preset-offers');
-     } else {
-       toast({
-         title: 'Access Required',
-         description: 'Please upgrade your access to create offer presets.',
-       });
-     }
-   };
-
-   const handleOfferCampaignHub = () => {
-     if (canHostEvent) {
-       navigate('/host/offer-campaign');
-     } else {
-       toast({
-         title: 'Access Required',
-         description: 'Please upgrade your access to create or manage offer campaigns.',
-       });
-     }
-   };
-
-   const handleManageHunts = () => {
-     if (canHostEvent) {
-       navigate('/host/hunts');
-     } else {
-       toast({
-         title: 'Access Required',
-         description: 'Please upgrade your access to manage hunts.',
-       });
-     }
-   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +109,7 @@ export default function ProfilePage() {
           navigate(claimParam ? `/q?claim=${claimParam}` : '/');
         }
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong');
     } finally {
       setIsSubmitting(false);
@@ -138,145 +117,254 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = async () => {
+    setSettingsOpen(false);
     await signOut();
   };
 
-  // Logged in view
   if (user && profile) {
+    const frogSubtitle = quizResultType
+      ? FROG_NAMES[quizResultType].toLowerCase()
+      : 'find your frog';
+    const topPlaces = profileStats?.topPlaces ?? [];
+    const topDrinks = profileStats?.topDrinks ?? [];
+    const voucherCount = vouchers.length;
+
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-          <h1 className="text-2xl font-black uppercase tracking-tight text-center">
-            Profile
-          </h1>
+        <div className="relative bg-primary px-4 pb-10 pt-12 text-primary-foreground">
+          <button
+            type="button"
+            className="absolute right-4 top-10 rounded-full p-2 text-primary-foreground/95 hover:bg-white/10"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="h-6 w-6" strokeWidth={1.75} />
+          </button>
+
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight">{profile.username}</h1>
+            <p className="mt-1 text-sm font-medium text-primary-foreground/90">{frogSubtitle}</p>
+            <div className="mt-4 flex justify-center">
+              <img
+                src="/profile-frog-hero.png"
+                alt=""
+                className="h-40 w-auto max-w-[min(100%,220px)] object-contain"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="container px-4 py-8">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-foreground text-background rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">
-                {quizResultType ? '🐸' : profile.username.charAt(0)}
-              </span>
-            </div>
-            <h2 className="text-2xl font-black uppercase">{profile.username}</h2>
-            {quizResultType && (
-              <p className="text-sm font-medium text-muted-foreground mt-1">
-                {FROG_NAMES[quizResultType]}
-              </p>
+        <div className="space-y-4 px-4 -mt-6">
+          {/* Quiz card */}
+          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
+            {quizResultType ? (
+              <>
+                <p className="text-sm text-foreground">
+                  As an {FROG_NAMES[quizResultType].toLowerCase()}, you are a
+                </p>
+                <p className="mt-1 text-2xl font-bold capitalize leading-tight text-foreground">
+                  {FROG_PROFILE_CARD[quizResultType].archetype}
+                </p>
+                <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    {FROG_PROFILE_CARD[quizResultType].populationPercent}% of the population!
+                  </p>
+                  <Button
+                    type="button"
+                    className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    onClick={() => navigate('/q/result')}
+                  >
+                    view my result
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-base font-medium leading-snug text-foreground">
+                  Take the quiz to see what coffee frog u are
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Seven café personalities — which frog matches you?
+                </p>
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    type="button"
+                    className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    onClick={() => navigate('/q')}
+                  >
+                    take my quiz
+                  </Button>
+                </div>
+              </>
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="text-center p-4 bg-muted">
-              <div className="text-3xl font-black">{userRank || '-'}</div>
-              <div className="text-xs font-semibold uppercase text-muted-foreground mt-1">
-                Rank
+          {/* Voucher card */}
+          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-sm text-foreground">
+              You&apos;ve hunted &amp; grabbed
+            </p>
+            <p className="mt-1 text-2xl font-bold text-foreground">
+              {vouchersLoading ? '…' : voucherCount}{' '}
+              {voucherCount === 1 ? 'voucher' : 'vouchers'}
+            </p>
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+              {!voucherTopLoading && voucherTopPercent != null ? (
+                <p className="text-sm text-muted-foreground">
+                  Top {voucherTopPercent}% of the population!
+                </p>
+              ) : voucherTopLoading && voucherCount > 0 ? (
+                <p className="text-sm text-muted-foreground">…</p>
+              ) : voucherCount === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Grab treasures on a hunt to collect vouchers.
+                </p>
+              ) : (
+                <span className="text-sm text-muted-foreground" aria-hidden>
+                  {'\u00a0'}
+                </span>
+              )}
+              <Button
+                type="button"
+                className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                onClick={() => navigate('/leaderboard')}
+              >
+                view leaderboard
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats card */}
+          <div className="rounded-[1.35rem] border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-sm font-medium text-foreground">In total, you drank</p>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <span className="text-5xl font-bold tabular-nums text-foreground">
+                {lifetimeLoading ? '…' : lifetimeTotal}
+              </span>
+              <div className="flex shrink-0 gap-1 text-foreground/80">
+                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
+                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
+                <Coffee className="h-8 w-8" strokeWidth={1.25} aria-hidden />
               </div>
             </div>
-            <div className="text-center p-4 bg-muted">
-              <div className="text-3xl font-black">
-                {monthCount}
+            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-border/60 pt-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Top cafes
+                </p>
+                <ol className="mt-2 space-y-1.5">
+                  {profileStatsLoading
+                    ? listLines([], '…')
+                    : listLines(topPlaces, '—')}
+                </ol>
               </div>
-              <div className="text-xs font-semibold uppercase text-muted-foreground mt-1">
-                This Month
-              </div>
-            </div>
-            <div className="text-center p-4 bg-muted">
-              <div className="text-3xl font-black">{maxStreak || 0}</div>
-              <div className="text-xs font-semibold uppercase text-muted-foreground mt-1">
-                Max Streak
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Top coffee
+                </p>
+                <ol className="mt-2 space-y-1.5">
+                  {profileStatsLoading
+                    ? listLines([], '…')
+                    : listLines(topDrinks, '—')}
+                </ol>
               </div>
             </div>
           </div>
 
-          <Button
-            variant={quizResultType ? 'outline' : 'default'}
-            className="w-full btn-run mb-4"
-            onClick={() => navigate(quizResultType ? '/q/result' : '/q')}
-          >
-            {quizResultType ? 'View my result' : 'Take the quiz'}
-          </Button>
-
-          {conversionRates.length > 0 && (
-            <div className="space-y-3 mb-8">
-              <h3 className="text-sm font-semibold uppercase text-muted-foreground">
-                Quiz Conversion
-              </h3>
-              {conversionRates.map((cr) => {
-                const org = orgs.find((o) => o.id === cr.store_id);
-                return (
-                  <div
-                    key={cr.store_id}
-                    className="p-4 bg-muted rounded-lg flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-semibold">{org?.org_name ?? cr.store_id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {cr.starts} starts · {cr.signups} signups
-                      </p>
-                    </div>
-                    <p className="text-2xl font-black">{cr.conversion_rate}%</p>
-                  </div>
-                );
-              })}
+          {canHostEvent && (
+            <div className="space-y-3 pt-2">
+              <Button
+                type="button"
+                onClick={() => navigate('/host/preset-offers')}
+                className="w-full btn-run mb-0 bg-orange-500 hover:bg-orange-600 text-white"
+                disabled={roleLoading}
+              >
+                Create / manage offer
+              </Button>
+              <Button
+                type="button"
+                onClick={() => navigate('/host/offer-campaign')}
+                variant="outline"
+                className="w-full btn-run mb-0"
+                disabled={roleLoading}
+              >
+                Create / manage offer campaign
+              </Button>
+              <Button
+                type="button"
+                onClick={() => navigate('/host/hunts')}
+                variant="outline"
+                className="w-full btn-run mb-0"
+                disabled={roleLoading}
+              >
+                Manage Hunts
+              </Button>
             </div>
           )}
-
-           <Button
-             onClick={handleCreateOfferPreset}
-             className="w-full btn-run mb-4 bg-orange-500 hover:bg-orange-600 text-white"
-             disabled={roleLoading}
-           >
-             Create / manage offer
-           </Button>
-
-           <Button
-             onClick={handleOfferCampaignHub}
-             variant="outline"
-             className="w-full btn-run mb-4"
-             disabled={roleLoading}
-           >
-             Create / manage offer campaign
-           </Button>
-
-           <Button
-             onClick={handleManageHunts}
-             variant="outline"
-             className="w-full btn-run mb-4"
-             disabled={roleLoading}
-           >
-             Manage Hunts
-           </Button>
-
-          <Button
-            onClick={handleSignOut}
-            className="w-full btn-run btn-run-no"
-            variant="outline"
-          >
-            Logout
-          </Button>
         </div>
+
+        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle>Settings</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 flex flex-col gap-6">
+              {conversionRates.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold uppercase text-muted-foreground">
+                    Quiz conversion
+                  </h3>
+                  {conversionRates.map((cr) => {
+                    const org = orgs.find((o) => o.id === cr.store_id);
+                    return (
+                      <div
+                        key={cr.store_id}
+                        className="flex items-center justify-between rounded-xl bg-muted/60 p-4"
+                      >
+                        <div>
+                          <p className="font-semibold">{org?.org_name ?? cr.store_id}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {cr.starts} starts · {cr.signups} signups
+                          </p>
+                        </div>
+                        <p className="text-xl font-black">{cr.conversion_rate}%</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Button
+                type="button"
+                onClick={handleSignOut}
+                className="w-full btn-run btn-run-no"
+                variant="outline"
+              >
+                Logout
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     );
   }
 
-  // Login/Signup view
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
-        <h1 className="text-2xl font-black uppercase tracking-tight text-center">
+      <div className="sticky top-0 z-10 border-b border-border bg-background py-4 px-4">
+        <h1 className="text-center text-2xl font-black uppercase tracking-tight">
           {isSignUp ? 'Sign Up' : 'Login'}
         </h1>
       </div>
 
       <div className="container px-4 py-8">
         {authMessage && (
-          <div className="max-w-sm mx-auto mb-6 p-4 bg-foreground text-background text-center">
+          <div className="mx-auto mb-6 max-w-sm bg-foreground p-4 text-center text-background">
             <p className="font-bold uppercase">{authMessage}</p>
           </div>
         )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
+
+        <form onSubmit={handleSubmit} className="mx-auto max-w-sm space-y-4">
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-semibold uppercase">
@@ -326,16 +414,10 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <p className="text-sm font-medium text-center bg-foreground text-background p-2">
-              {error}
-            </p>
+            <p className="bg-foreground p-2 text-center text-sm font-medium text-background">{error}</p>
           )}
 
-          <Button
-            type="submit"
-            className="w-full btn-run btn-run-yes"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" className="w-full btn-run btn-run-yes" disabled={isSubmitting}>
             {isSubmitting ? 'Loading...' : isSignUp ? 'Create Account' : 'Login'}
           </Button>
 
@@ -345,7 +427,7 @@ export default function ProfilePage() {
               setIsSignUp(!isSignUp);
               setError('');
             }}
-            className="w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2"
+            className="w-full py-2 text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign up"}
           </button>
