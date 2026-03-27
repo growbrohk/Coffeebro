@@ -1,23 +1,28 @@
+import { useId } from 'react';
 import { CoffeeCupIcon } from '@/components/CoffeeCupMark';
 import { cn } from '@/lib/utils';
 
 export function QuizCoffeeBean({ className }: { className?: string }) {
+  const clipId = useId().replace(/:/g, '');
   return (
     <svg
-      className={cn('shrink-0 size-5 text-[var(--quiz-fg)]', className)}
-      viewBox="0 0 24 24"
+      className={cn('size-5 shrink-0 text-[var(--quiz-fg)]', className)}
+      viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <ellipse cx="11" cy="12" rx="7.5" ry="9" fill="currentColor" opacity={0.95} />
-      <path
-        d="M11 4.5c1.2 2.8 1.2 5.9 0 8.7M11 10.8c-1.8 1.4-3.8 2.4-6 2.8"
-        stroke="var(--quiz-bg)"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity={0.35}
-      />
+      <defs>
+        <clipPath id={clipId}>
+          <rect width="20" height="20" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>
+        <path
+          d="M0.874648 16.9055C-1.04585 13.5188 0.261 8.2072 4.23401 4.23308C8.74577 -0.278065 14.9843 -1.35354 18.1694 1.831C18.1732 1.83517 18.1763 1.83989 18.1814 1.84412C17.5439 3.69875 15.5139 7.64489 9.42898 9.77837C3.85487 11.7338 1.70464 14.8426 0.874648 16.9055ZM19.0653 2.99033C18.5825 4.1166 17.7422 5.58846 16.2944 7.03615C14.8391 8.49206 12.7707 9.92197 9.84088 10.9497C3.89461 13.0348 2.23321 16.4483 1.76966 18.1025C1.79156 18.1246 1.81039 18.1475 1.83168 18.1689C5.01653 21.3536 11.2553 20.2782 15.7667 15.7663C19.7811 11.7519 21.0721 6.37134 19.0653 2.99033Z"
+          fill="currentColor"
+        />
+      </g>
     </svg>
   );
 }
