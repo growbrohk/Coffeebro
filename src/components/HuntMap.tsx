@@ -130,17 +130,7 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
 
   const hasCoords = treasuresWithCoords.length > 0;
 
-  if (treasures.length === 0) {
-    return (
-      <div className="w-full h-full min-h-[200px] bg-muted/30 flex items-center justify-center">
-        <p className="text-muted-foreground">
-          {emptyMessage ?? 'No treasures on this hunt yet.'}
-        </p>
-      </div>
-    );
-  }
-
-  if (!hasCoords) {
+  if (treasures.length > 0 && !hasCoords) {
     return (
       <div className="w-full min-h-[200px] p-4 space-y-2 bg-muted/30">
         <p className="text-sm font-semibold">Locations</p>
@@ -180,8 +170,10 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
     return [lat, lng] as const;
   }, [treasuresWithCoords]);
 
+  const emptyHint = emptyMessage ?? 'No treasures on this hunt yet.';
+
   return (
-    <div className="hunt-map-wrapper h-full w-full min-h-0 overflow-hidden rounded-none">
+    <div className="relative hunt-map-wrapper h-full w-full min-h-0 overflow-hidden rounded-none">
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={13}
@@ -209,6 +201,13 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
           />
         ))}
       </MapContainer>
+      {treasures.length === 0 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[500] flex justify-center px-4">
+          <p className="max-w-sm rounded-xl border border-border/60 bg-card/95 px-4 py-3 text-center text-sm text-muted-foreground shadow-md backdrop-blur-md">
+            {emptyHint}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
