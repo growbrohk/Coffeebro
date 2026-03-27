@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { localYMD } from '@/lib/date';
+import { computeCoffeeStreakFromToday } from '@/lib/coffeeStreak';
 
 export function useMonthlyCoffees(year: number, month: number) {
   const { user } = useAuth();
@@ -34,6 +35,8 @@ export interface CoffeeDetails {
   coffee_type_other?: string | null;
   place?: string | null;
   diary?: string | null;
+  beans?: string | null;
+  note?: string | null;
 }
 
 // A) useAddCoffee() - INSERT mutation (NOT upsert)
@@ -56,6 +59,8 @@ export function useAddCoffee() {
           coffee_type_other: details.coffee_type_other ?? null,
           place: details.place ?? null,
           diary: details.diary ?? null,
+          beans: details.beans ?? null,
+          note: details.note ?? null,
         })
         .select()
         .single();
@@ -70,7 +75,61 @@ export function useAddCoffee() {
       queryClient.invalidateQueries({ queryKey: ['coffees'] });
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
       queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
+      queryClient.invalidateQueries({ queryKey: ['coffee-streak'] });
     },
+  });
+}
+
+/** Total coffees logged in a specific calendar month (local). */
+export function useCalendarMonthCoffeeCount(year: number, month: number) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['month-coffee-count', user?.id, year, month],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const startDate = localYMD(new Date(year, month, 1));
+      const endDate = localYMD(new Date(year, month + 1, 0));
+
+      const { count, error } = await supabase
+        .from('daily_coffees')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('coffee_date', startDate)
+        .lte('coffee_date', endDate);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+}
+
+export function useCoffeeStreak() {
+  const { user } = useAuth();
+  const today = localYMD();
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  const windowStart = localYMD(twoYearsAgo);
+
+  return useQuery({
+    queryKey: ['coffee-streak', user?.id, today],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .select('coffee_date')
+        .eq('user_id', user.id)
+        .lte('coffee_date', today)
+        .gte('coffee_date', windowStart);
+
+      if (error) throw error;
+      const logged = new Set((data || []).map((r) => r.coffee_date));
+      return computeCoffeeStreakFromToday(logged, today);
+    },
+    enabled: !!user,
   });
 }
 

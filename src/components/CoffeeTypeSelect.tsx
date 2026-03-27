@@ -70,6 +70,14 @@ interface CoffeeTypeSelectProps {
   label?: string;
   className?: string;
   onMaxReached?: () => void;
+  /** Extra classes for the field label */
+  labelClassName?: string;
+  /** Extra classes for the combobox trigger button */
+  triggerClassName?: string;
+  /** Placeholder on the trigger when nothing selected */
+  emptyLabel?: string;
+  /** `CommandInput` placeholder */
+  searchPlaceholder?: string;
 }
 
 export function CoffeeTypeSelect({
@@ -79,6 +87,10 @@ export function CoffeeTypeSelect({
   label = 'Coffee type (choose up to 2)',
   className,
   onMaxReached,
+  labelClassName,
+  triggerClassName,
+  emptyLabel = 'Search coffee...',
+  searchPlaceholder = 'Search coffee...',
 }: CoffeeTypeSelectProps) {
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -110,20 +122,21 @@ export function CoffeeTypeSelect({
     onChange(value.filter((v) => v !== itemToRemove));
   };
 
-  const displayValue = value.length === 0 
-    ? 'Search coffee…' 
-    : value.length === 1 
-    ? value[0] 
-    : `${value.length} selected`;
+  const displayValue =
+    value.length === 0
+      ? emptyLabel
+      : value.length === 1
+        ? value[0]
+        : `${value.length} selected`;
 
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
-        <Label className="text-sm font-semibold">{label}</Label>
+        <Label className={cn('text-sm font-semibold', labelClassName)}>{label}</Label>
       )}
-      
-      {/* Selected items display */}
-      {value.length > 0 && (
+
+      {/* Selected items display (multi-select only) */}
+      {maxSelected > 1 && value.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {value.map((item) => (
             <div
@@ -151,7 +164,7 @@ export function CoffeeTypeSelect({
             variant="outline"
             role="combobox"
             aria-expanded={comboboxOpen}
-            className="w-full justify-between bg-background border-border"
+            className={cn('w-full justify-between bg-background border-border', triggerClassName)}
             disabled={value.length >= maxSelected}
           >
             {displayValue}
@@ -161,7 +174,7 @@ export function CoffeeTypeSelect({
         <PopoverContent className="w-full p-0" align="start">
           <Command>
             <CommandInput
-              placeholder="Search coffee…"
+              placeholder={searchPlaceholder}
               value={searchValue}
               onValueChange={setSearchValue}
             />

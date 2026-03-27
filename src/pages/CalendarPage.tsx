@@ -3,11 +3,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogCoffeeNavButton } from '@/components/LogCoffeeNavButton';
-import { ProgressBar } from '@/components/ProgressBar';
 import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
 import { CalendarVoucherOfferCard } from '@/components/CalendarVoucherOfferCard';
+import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMonthCoffeeCount, useMonthCoffeeDayCounts } from '@/hooks/useCoffees';
+import {
+  useMonthCoffeeDayCounts,
+  useMonthlyCoffees,
+  useCalendarMonthCoffeeCount,
+  useCoffeeStreak,
+} from '@/hooks/useCoffees';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 import {
   useMonthlyCoffeeOffers,
@@ -22,13 +27,47 @@ import { CalendarDayCell, type CalendarDayCellVariant } from '@/components/Calen
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { TreasureDetailModal } from '@/components/TreasureDetailModal';
 import { localYMD } from '@/lib/date';
+import { cn } from '@/lib/utils';
+import type { Database } from '@/integrations/supabase/types';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const MONTHS_LOWER = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
 ];
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+type DailyCoffeeRow = Database['public']['Tables']['daily_coffees']['Row'];
+
+function buildMonthWeeks(daysInMonth: number, firstDay: number): (number | null)[][] {
+  const weeks: (number | null)[][] = [];
+  let row: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) row.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    row.push(d);
+    if (row.length === 7) {
+      weeks.push(row);
+      row = [];
+    }
+  }
+  if (row.length > 0) {
+    while (row.length < 7) row.push(null);
+    weeks.push(row);
+  }
+  return weeks;
+}
+
+function drinkLabel(row: DailyCoffeeRow): string {
+  if (row.coffee_type === 'Other') {
+    return row.coffee_type_other?.trim() || 'Coffee';
+  }
+  return row.coffee_type?.trim() || 'Coffee';
+}
 
 export default function CalendarPage() {
   const { loading } = useAuth();
@@ -49,13 +88,16 @@ export default function CalendarPage() {
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  const monthCount = useMonthCoffeeCount();
+
+  const { data: viewMonthCoffeeTotal = 0 } = useCalendarMonthCoffeeCount(year, month);
+  const { data: streak = 0 } = useCoffeeStreak();
   const { data: coffeeDayCounts = {} } = useMonthCoffeeDayCounts(year, month);
+  const { data: monthCoffees = [] } = useMonthlyCoffees(year, month);
   const { data: coffeeOffers = [] } = useMonthlyCoffeeOffers(year, month);
   const { data: huntOffersMonth = [] } = useMonthlyHuntOffersForVoucherCalendar(year, month);
 
   const firstDay = new Date(year, month, 1).getDay();
+  const weeks = useMemo(() => buildMonthWeeks(daysInMonth, firstDay), [daysInMonth, firstDay]);
 
   const coffeeOffersByDate = groupCoffeeOffersByDate(coffeeOffers);
 
@@ -75,6 +117,13 @@ export default function CalendarPage() {
   }, [year, month, daysInMonth]);
 
   const selectedYmd = localYMD(new Date(year, month, selectedDay));
+
+  const coffeesForSelectedDay = useMemo(() => {
+    const rows = monthCoffees.filter((r) => r.coffee_date === selectedYmd);
+    return [...rows].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }, [monthCoffees, selectedYmd]);
 
   const calendarOffersForSelectedDay = useMemo(
     () => coffeeOffers.filter((o) => o.event_date === selectedYmd),
@@ -150,14 +199,7 @@ export default function CalendarPage() {
             <h1 className="text-2xl font-black uppercase tracking-tight text-center truncate min-w-0">
               Calendar
             </h1>
-            <div className="flex justify-end">
-              {calendarTab === 'tracking' && (
-                <LogCoffeeNavButton
-                  onClick={logCoffee.startLogCoffee}
-                  disabled={logCoffee.addCoffeePending}
-                />
-              )}
-            </div>
+            <div />
           </div>
           <TabsList className="w-full grid grid-cols-2 mt-3 h-10">
             <TabsTrigger value="vouchers">Vouchers</TabsTrigger>
@@ -166,62 +208,114 @@ export default function CalendarPage() {
         </div>
 
         <div className="container px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
-              <ChevronLeft size={24} />
-            </Button>
-            
-            <button 
-              onClick={goToToday}
-              className="text-xl font-bold uppercase tracking-tight"
-            >
-              {MONTHS[month]} {year}
-            </button>
-            
-            <Button variant="ghost" size="icon" onClick={goToNextMonth}>
-              <ChevronRight size={24} />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-7 mb-1.5">
-            {DAYS.map((day, i) => (
-              <div 
-                key={i} 
-                className="text-center text-sm font-semibold text-muted-foreground py-1"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-0.5">
-            {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="min-h-[44px]" />
-            ))}
-
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const dateKey = localYMD(new Date(year, month, day));
-              const coffeeCount = coffeeDayCounts[dateKey] || 0;
-              const isToday = isCurrentMonth && today.getDate() === day;
-              const dayCoffeeOffers = coffeeOffersByDate.get(day) || [];
-
-              return (
-                <CalendarDayCell
-                  key={day}
-                  day={day}
-                  coffeeCount={coffeeCount}
-                  isToday={isToday}
-                  variant={calendarTab}
-                  grabCount={dayCoffeeOffers.length}
-                  huntCount={huntCountByDay.get(day) ?? 0}
-                  isSelected={calendarTab === 'vouchers' && selectedDay === day}
-                  onSelectDay={
-                    calendarTab === 'vouchers' ? () => setSelectedDay(day) : undefined
-                  }
+          {calendarTab === 'tracking' && (
+            <div className="mb-5 rounded-xl bg-muted px-4 py-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm lowercase text-muted-foreground">
+                    in {MONTHS_LOWER[month]}, you drank
+                  </p>
+                  <p className="text-3xl font-bold tracking-tight text-foreground">
+                    {viewMonthCoffeeTotal} coffee
+                  </p>
+                </div>
+                <LogCoffeeNavButton
+                  onClick={logCoffee.startLogCoffee}
+                  disabled={logCoffee.addCoffeePending}
                 />
-              );
-            })}
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
+                <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-5 w-5" />
+                <span>You have {streak} coffee streaks!</span>
+              </div>
+            </div>
+          )}
+
+          <div
+            className={cn(
+              calendarTab === 'tracking' && 'rounded-xl border border-border bg-card px-3 pb-4 pt-3'
+            )}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
+                <ChevronLeft size={24} />
+              </Button>
+
+              <button
+                type="button"
+                onClick={goToToday}
+                className="text-xl font-bold uppercase tracking-tight"
+              >
+                {MONTHS[month]} {year}
+              </button>
+
+              <Button variant="ghost" size="icon" onClick={goToNextMonth}>
+                <ChevronRight size={24} />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-7 mb-1.5">
+              {DAYS.map((day, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    'py-1 text-center text-sm font-semibold',
+                    calendarTab === 'tracking'
+                      ? 'font-bold text-primary'
+                      : 'text-muted-foreground'
+                  )}
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-0">
+              {weeks.map((week, wi) => (
+                <div
+                  key={wi}
+                  className={cn(
+                    'grid grid-cols-7 gap-0.5',
+                    calendarTab === 'tracking' && 'calendar-tracking-week-row'
+                  )}
+                >
+                  {week.map((day, di) =>
+                    day == null ? (
+                      <div key={`e-${wi}-${di}`} className="min-h-[52px]" />
+                    ) : (
+                      <CalendarDayCell
+                        key={day}
+                        day={day}
+                        coffeeCount={coffeeDayCounts[localYMD(new Date(year, month, day))] || 0}
+                        isToday={isCurrentMonth && today.getDate() === day}
+                        variant={calendarTab}
+                        grabCount={coffeeOffersByDate.get(day)?.length ?? 0}
+                        huntCount={huntCountByDay.get(day) ?? 0}
+                        isSelected={selectedDay === day}
+                        onSelectDay={() => setSelectedDay(day)}
+                      />
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {calendarTab === 'tracking' && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-6 w-6" />
+                  <span className="text-foreground">1 coffee</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-6 w-6" />
+                  <span className="text-foreground">2 coffee</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-6 w-6" />
+                  <span className="text-foreground">3+ coffee</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <TabsContent value="vouchers" className="mt-4 focus-visible:ring-0 focus-visible:ring-offset-0">
@@ -308,32 +402,50 @@ export default function CalendarPage() {
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-4 focus-visible:ring-0 focus-visible:ring-offset-0">
-            <div className="flex items-center justify-center gap-6 text-sm flex-wrap">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-muted/30 border border-border" />
-                <span className="text-muted-foreground">1 coffee</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-muted/60 border border-border" />
-                <span className="text-muted-foreground">2 coffees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-foreground text-background text-[10px] flex items-center justify-center font-bold">
-                  3+
-                </div>
-                <span className="text-muted-foreground">3+ coffees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 border-2 border-foreground" />
-                <span className="text-muted-foreground">Today</span>
-              </div>
+            <div className="rounded-xl bg-muted px-4 py-2">
+              {coffeesForSelectedDay.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No coffees logged this day.
+                </p>
+              ) : (
+                coffeesForSelectedDay.map((entry) => {
+                  const t = new Date(entry.created_at).toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  });
+                  const noteText = entry.note?.trim();
+                  const diaryFallback = entry.diary?.trim();
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex gap-3 border-b border-border/60 py-4 last:border-b-0"
+                    >
+                      <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="mt-0.5 h-8 w-8 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-xs text-muted-foreground">{t}</p>
+                        <p className="font-bold text-foreground">{drinkLabel(entry)}</p>
+                        {entry.place?.trim() ? (
+                          <p className="text-sm capitalize text-foreground">{entry.place.trim()}</p>
+                        ) : null}
+                        {noteText ? (
+                          <p className="mt-1 text-sm text-muted-foreground">{noteText}</p>
+                        ) : diaryFallback ? (
+                          <p className="mt-1 text-sm text-muted-foreground">{diaryFallback}</p>
+                        ) : null}
+                        {entry.beans?.trim() ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Beans: {entry.beans.trim()}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </TabsContent>
         </div>
-
-        {calendarTab === 'tracking' && (
-          <ProgressBar placement="bottom" monthCount={monthCount.data || 0} />
-        )}
       </Tabs>
 
       <LogCoffeeEntryModals

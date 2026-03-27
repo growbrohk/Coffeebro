@@ -28,6 +28,8 @@ export function useLogCoffeeEntry() {
         coffee_type_other: details.coffee_type_other,
         place: details.place,
         diary: details.diary,
+        beans: details.beans,
+        note: details.note,
       });
       setShowDetailsSheet(false);
       setShowCelebrationModal(true);

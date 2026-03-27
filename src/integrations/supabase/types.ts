@@ -72,36 +72,42 @@ export type Database = {
       }
       daily_coffees: {
         Row: {
+          beans: string | null
           coffee_date: string
           coffee_type: string | null
           coffee_type_other: string | null
           created_at: string
           diary: string | null
           id: string
+          note: string | null
           place: string | null
           rating: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          beans?: string | null
           coffee_date?: string
           coffee_type?: string | null
           coffee_type_other?: string | null
           created_at?: string
           diary?: string | null
           id?: string
+          note?: string | null
           place?: string | null
           rating?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          beans?: string | null
           coffee_date?: string
           coffee_type?: string | null
           coffee_type_other?: string | null
           created_at?: string
           diary?: string | null
           id?: string
+          note?: string | null
           place?: string | null
           rating?: number | null
           updated_at?: string
