@@ -88,7 +88,7 @@ export const QUESTIONS: QuizQuestion[] = [
     options: [
       { value: 'A', label: "It's along your normal route." },
       { value: 'B', label: 'A friend brought you there.' },
-      { value: 'C', label: 'You saw because someone promoted it.' },
+      { value: 'C', label: 'You saw it online and saved it.' },
       { value: 'D', label: 'You actively searched for somewhere new.' },
     ],
   },
@@ -96,20 +96,20 @@ export const QUESTIONS: QuizQuestion[] = [
     id: 6,
     text: 'An hour alone in a café usually looks like…',
     options: [
-      { value: 'A', label: '100% lock in.' },
-      { value: 'B', label: 'Just yapping and doom scrolling.' },
-      { value: 'C', label: 'People watching.' },
-      { value: 'D', label: 'Getting deep with your thoughts.' },
+      { value: 'A', label: 'Deep focus or work.' },
+      { value: 'B', label: 'Messaging people or light tasks.' },
+      { value: 'C', label: 'Watching the room and observing people.' },
+      { value: 'D', label: 'Sitting quietly with your thoughts.' },
     ],
   },
   {
     id: 7,
     text: 'You return to the same café mainly because…',
     options: [
-      { value: 'A', label: 'The vibe/ambiance of the environment' },
-      { value: 'B', label: 'The connection with the people.' },
-      { value: 'C', label: 'Good food/drinks.' },
-      { value: 'D', label: 'Convenient.' },
+      { value: 'A', label: "It's reliable and consistent." },
+      { value: 'B', label: 'You associate it with people.' },
+      { value: 'C', label: 'It feels inspiring or interesting.' },
+      { value: 'D', label: 'It gives you a grounding feeling.' },
     ],
   },
 ];
