@@ -8,6 +8,9 @@ export type HuntMapTreasure = Treasure & {
   offerDescription: string | null;
   offerType: string | null;
   orgName: string | null;
+  orgPreviewPhotoUrl: string | null;
   quantityLimit: number | null;
   campaignTitle: string | null;
+  /** Recommended-café stub: open hunt map instead of a treasure detail URL. */
+  openHuntMapOnly?: boolean;
 };

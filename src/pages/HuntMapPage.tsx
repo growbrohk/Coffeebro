@@ -16,6 +16,7 @@ import { HuntMap } from '@/components/HuntMap';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
 import { HuntMapVoucherCarouselSheet } from '@/components/HuntMapVoucherCarouselSheet';
 import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
+import { useHuntsOrgMeta } from '@/hooks/useHuntsOrgMeta';
 import {
   primaryOfferByTreasureId,
   useTreasuresPrimaryOffers,
@@ -67,12 +68,19 @@ export default function HuntMapPage() {
 
   const rawTreasures = isGlobalMode ? allTreasures : singleTreasures;
   const treasureIds = useMemo(() => rawTreasures.map((t) => t.id), [rawTreasures]);
+  const huntIdsForOrg = useMemo(
+    () => [...new Set(rawTreasures.map((t) => t.hunt_id))],
+    [rawTreasures]
+  );
+  const { data: huntOrgMap = new Map(), isPending: huntOrgMetaLoading } =
+    useHuntsOrgMeta(huntIdsForOrg);
   const { data: offerRows = [] } = useTreasuresPrimaryOffers(treasureIds);
   const offerByTreasure = useMemo(() => primaryOfferByTreasureId(offerRows), [offerRows]);
 
   const enrichedTreasures: HuntMapTreasure[] = useMemo(() => {
     return rawTreasures.map((t) => {
       const po = offerByTreasure.get(t.id);
+      const huntOrg = huntOrgMap.get(t.hunt_id);
       return {
         ...t,
         scanned: claimedIds?.has(t.id) ?? false,
@@ -80,20 +88,24 @@ export default function HuntMapPage() {
         offerTitle: po?.name ?? null,
         offerDescription: po?.description ?? null,
         offerType: po?.offer_type ?? null,
-        orgName: po?.org_name ?? null,
+        orgName: po?.org_name ?? huntOrg?.org_name ?? null,
+        orgPreviewPhotoUrl: po?.org_preview_photo_url ?? huntOrg?.preview_photo_url ?? null,
         quantityLimit: po?.quantity_limit ?? null,
         campaignTitle: po?.campaign_title ?? null,
         clue_image: po?.preset_clue_image ?? t.clue_image ?? null,
       };
     });
-  }, [rawTreasures, offerByTreasure, claimedIds]);
+  }, [rawTreasures, offerByTreasure, claimedIds, huntOrgMap]);
 
   const filteredTreasures = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return enrichedTreasures.filter((t) => {
       if (pillar !== 'all' && t.pinKind !== pillar) return false;
       if (!q) return true;
-      const hay = [t.name, t.address, t.offerTitle].filter(Boolean).join(' ').toLowerCase();
+      const hay = [t.name, t.address, t.offerTitle, t.orgName]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return hay.includes(q);
     });
   }, [enrichedTreasures, searchQuery, pillar]);
@@ -106,7 +118,8 @@ export default function HuntMapPage() {
     [filteredTreasures]
   );
 
-  const treasuresLoading = isGlobalMode ? allTreasuresLoading : singleTreasuresLoading;
+  const treasuresLoading =
+    (isGlobalMode ? allTreasuresLoading : singleTreasuresLoading) || huntOrgMetaLoading;
 
   const hasLocation =
     selectedTreasure &&

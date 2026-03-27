@@ -26,11 +26,14 @@ export function voucherCarouselTitle(items: HuntMapTreasure[]): string {
 const cardWidthClass =
   'w-[calc((min(430px,100vw-1.5rem)-1.5rem-1rem)/2.25)] shrink-0 snap-start';
 
+export type VoucherCarouselVariant = 'voucher' | 'cafe';
+
 interface VoucherCarouselCardProps {
   treasure: HuntMapTreasure;
   onCta: (treasure: HuntMapTreasure) => void;
   onCardPress?: (treasure: HuntMapTreasure) => void;
   showRedemptionPeriod?: boolean;
+  variant?: VoucherCarouselVariant;
 }
 
 export function VoucherCarouselCard({
@@ -38,8 +41,12 @@ export function VoucherCarouselCard({
   onCta,
   onCardPress,
   showRedemptionPeriod = true,
+  variant = 'voucher',
 }: VoucherCarouselCardProps) {
-  const clue = treasure.clue_image;
+  const clue =
+    variant === 'cafe'
+      ? (treasure.orgPreviewPhotoUrl ?? treasure.clue_image ?? null)
+      : (treasure.clue_image ?? null);
   const offerName = treasure.offerTitle?.trim() || 'Offer';
   const nameQuotaTitle =
     treasure.quantityLimit != null
@@ -49,6 +56,8 @@ export function VoucherCarouselCard({
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
   const isGrab = treasure.pinKind === 'grab';
+  const cafeTitle = orgLine;
+  const cafeLocation = locationLine;
 
   return (
     <div
@@ -77,52 +86,81 @@ export function VoucherCarouselCard({
           </div>
         )}
       </div>
-      <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
-        <div
-          className="flex min-w-0 items-center gap-1 text-sm font-bold leading-snug text-foreground"
-          title={nameQuotaTitle}
-        >
-          <span className="min-w-0 truncate">{offerName}</span>
-          {treasure.quantityLimit != null ? (
-            <span className="shrink-0 text-[11px] font-semibold tabular-nums text-foreground/80">
-              · {treasure.quantityLimit}
-            </span>
-          ) : null}
-        </div>
-        {showRedemptionPeriod && timeLine ? (
-          <p className="text-[11px] text-muted-foreground">Available: {timeLine}</p>
-        ) : null}
-        <p className="text-xs font-medium text-foreground">{orgLine}</p>
-        {locationLine ? (
-          <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
-        ) : null}
-        <div className="my-1 border-t border-dashed border-border" />
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCta(treasure);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold lowercase text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+      {variant === 'cafe' ? (
+        <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
+          <div
+            className="flex min-w-0 text-sm font-bold leading-snug text-foreground"
+            title={cafeTitle}
           >
-            {isGrab ? (
-              <img
-                src={huntPinGrab}
-                alt=""
-                className="h-3.5 w-3.5 object-contain brightness-0 invert"
-              />
-            ) : (
-              <img
-                src={huntPinStar}
-                alt=""
-                className="h-3.5 w-3.5 object-contain brightness-0 invert"
-              />
-            )}
-            {isGrab ? 'grab now' : 'hunt now'}
-          </button>
+            <span className="min-w-0 line-clamp-2">{cafeTitle}</span>
+          </div>
+          {cafeLocation ? (
+            <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
+              {cafeLocation}
+            </p>
+          ) : null}
+          <div className="my-1 border-t border-dashed border-border" />
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCta(treasure);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold lowercase text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+            >
+              view
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
+          <div
+            className="flex min-w-0 items-center gap-1 text-sm font-bold leading-snug text-foreground"
+            title={nameQuotaTitle}
+          >
+            <span className="min-w-0 truncate">{offerName}</span>
+            {treasure.quantityLimit != null ? (
+              <span className="shrink-0 text-[11px] font-semibold tabular-nums text-foreground/80">
+                · {treasure.quantityLimit}
+              </span>
+            ) : null}
+          </div>
+          {showRedemptionPeriod && timeLine ? (
+            <p className="text-[11px] text-muted-foreground">Available: {timeLine}</p>
+          ) : null}
+          <p className="text-xs font-medium text-foreground">{orgLine}</p>
+          {locationLine ? (
+            <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
+          ) : null}
+          <div className="my-1 border-t border-dashed border-border" />
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCta(treasure);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold lowercase text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+            >
+              {isGrab ? (
+                <img
+                  src={huntPinGrab}
+                  alt=""
+                  className="h-3.5 w-3.5 object-contain brightness-0 invert"
+                />
+              ) : (
+                <img
+                  src={huntPinStar}
+                  alt=""
+                  className="h-3.5 w-3.5 object-contain brightness-0 invert"
+                />
+              )}
+              {isGrab ? 'grab now' : 'hunt now'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -132,6 +170,7 @@ interface VoucherCarouselRowProps {
   onCta: (treasure: HuntMapTreasure) => void;
   onCardPress?: (treasure: HuntMapTreasure) => void;
   showRedemptionPeriod?: boolean;
+  variant?: VoucherCarouselVariant;
   className?: string;
 }
 
@@ -140,6 +179,7 @@ export function VoucherCarouselRow({
   onCta,
   onCardPress,
   showRedemptionPeriod = true,
+  variant = 'voucher',
   className,
 }: VoucherCarouselRowProps) {
   if (items.length === 0) return null;
@@ -159,6 +199,7 @@ export function VoucherCarouselRow({
           onCta={onCta}
           onCardPress={onCardPress}
           showRedemptionPeriod={showRedemptionPeriod}
+          variant={variant}
         />
       ))}
     </div>

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ImageIcon, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   useAllTreasures,
   useHunts,
   useMyClaimedTreasureIds,
 } from '@/hooks/useHunts';
+import { useDiscoveryOrgs, type DiscoveryOrgRow } from '@/hooks/useDiscoveryOrgs';
+import { useHuntsOrgMeta } from '@/hooks/useHuntsOrgMeta';
 import {
   primaryOfferByTreasureId,
   useTreasuresPrimaryOffers,
@@ -14,6 +16,32 @@ import {
 import { pinKindForTreasure } from '@/lib/huntMapPinKind';
 import type { HuntMapTreasure } from '@/types/huntMapTreasure';
 import { VoucherCarouselRow } from '@/components/VoucherCarouselCards';
+
+function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasure {
+  const openHuntMapOnly = row.sample_treasure_id == null;
+  return {
+    id: row.sample_treasure_id ?? row.id,
+    hunt_id: row.sample_hunt_id,
+    qr_code_id: `discovery:${row.id}`,
+    name: row.org_name,
+    description: null,
+    lat: row.lat,
+    lng: row.lng,
+    address: row.location,
+    sort_order: 0,
+    clue_image: null,
+    scanned: false,
+    pinKind: 'coffee_shop',
+    offerTitle: null,
+    offerDescription: null,
+    offerType: null,
+    orgName: row.org_name,
+    orgPreviewPhotoUrl: row.preview_photo_url,
+    quantityLimit: null,
+    campaignTitle: null,
+    openHuntMapOnly,
+  };
+}
 
 export default function CheckPage() {
   const navigate = useNavigate();
@@ -29,12 +57,20 @@ export default function CheckPage() {
   const { data: claimedIds } = useMyClaimedTreasureIds();
 
   const treasureIds = useMemo(() => rawTreasures.map((t) => t.id), [rawTreasures]);
+  const huntIdsForOrg = useMemo(
+    () => [...new Set(rawTreasures.map((t) => t.hunt_id))],
+    [rawTreasures]
+  );
+  const { data: huntOrgMap = new Map(), isPending: huntOrgMetaLoading } =
+    useHuntsOrgMeta(huntIdsForOrg);
+  const { data: discoveryOrgs = [], isPending: discoveryOrgsLoading } = useDiscoveryOrgs();
   const { data: offerRows = [] } = useTreasuresPrimaryOffers(treasureIds);
   const offerByTreasure = useMemo(() => primaryOfferByTreasureId(offerRows), [offerRows]);
 
   const enrichedTreasures: HuntMapTreasure[] = useMemo(() => {
     return rawTreasures.map((t) => {
       const po = offerByTreasure.get(t.id);
+      const huntOrg = huntOrgMap.get(t.hunt_id);
       return {
         ...t,
         scanned: claimedIds?.has(t.id) ?? false,
@@ -42,13 +78,14 @@ export default function CheckPage() {
         offerTitle: po?.name ?? null,
         offerDescription: po?.description ?? null,
         offerType: po?.offer_type ?? null,
-        orgName: po?.org_name ?? null,
+        orgName: po?.org_name ?? huntOrg?.org_name ?? null,
+        orgPreviewPhotoUrl: po?.org_preview_photo_url ?? huntOrg?.preview_photo_url ?? null,
         quantityLimit: po?.quantity_limit ?? null,
         campaignTitle: po?.campaign_title ?? null,
         clue_image: po?.preset_clue_image ?? t.clue_image ?? null,
       };
     });
-  }, [rawTreasures, offerByTreasure, claimedIds]);
+  }, [rawTreasures, offerByTreasure, claimedIds, huntOrgMap]);
 
   const filteredBySearch = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -67,24 +104,31 @@ export default function CheckPage() {
     [filteredBySearch]
   );
 
+  /** All orgs with an active hunt (server RPC), filtered by search. */
   const cafeTreasures = useMemo(() => {
-    const shops = filteredBySearch.filter((t) => t.pinKind === 'coffee_shop');
-    const seen = new Set<string>();
-    const deduped: HuntMapTreasure[] = [];
-    for (const t of shops) {
-      const key = `${t.orgName ?? t.name}|${t.address ?? ''}|${t.lat ?? ''}|${t.lng ?? ''}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      deduped.push(t);
-    }
-    return deduped;
-  }, [filteredBySearch]);
+    const q = searchQuery.trim().toLowerCase();
+    const rows = !q
+      ? discoveryOrgs
+      : discoveryOrgs.filter((r) => {
+          const hay = [r.org_name, r.location, r.district, r.mtr_station]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          return hay.includes(q);
+        });
+    return rows.map(discoveryOrgToCafeTreasure);
+  }, [discoveryOrgs, searchQuery]);
 
   const navigateToTreasure = (t: HuntMapTreasure) => {
+    if (t.openHuntMapOnly) {
+      navigate(`/hunts/${t.hunt_id}/map`);
+      return;
+    }
     navigate(`/hunts/${t.hunt_id}/treasures/${t.id}`);
   };
 
-  const isLoading = authLoading || huntsLoading || treasuresLoading;
+  const isLoading =
+    authLoading || huntsLoading || treasuresLoading || huntOrgMetaLoading || discoveryOrgsLoading;
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] pb-28">
@@ -152,38 +196,14 @@ export default function CheckPage() {
                   No cafe spots to show yet.
                 </p>
               ) : (
-                <div
-                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  style={{ scrollPaddingLeft: '0.25rem' }}
-                >
-                  {cafeTreasures.map((t) => {
-                    const img = t.clue_image;
-                    const title = t.orgName?.trim() || t.name;
-                    const loc = t.address?.trim() || null;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => navigateToTreasure(t)}
-                        className="w-[min(200px,calc((100vw-2.5rem-1.5rem)/1.35))] shrink-0 snap-start text-left"
-                      >
-                        <div className="aspect-[4/5] w-full overflow-hidden rounded-[20px] bg-muted shadow-sm">
-                          {img ? (
-                            <img src={img} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <ImageIcon className="h-10 w-10 text-muted-foreground/35" strokeWidth={1.25} />
-                            </div>
-                          )}
-                        </div>
-                        <p className="mt-2 text-sm font-bold text-foreground line-clamp-2">{title}</p>
-                        {loc ? (
-                          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{loc}</p>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
+                <VoucherCarouselRow
+                  variant="cafe"
+                  items={cafeTreasures}
+                  onCta={navigateToTreasure}
+                  onCardPress={navigateToTreasure}
+                  showRedemptionPeriod={false}
+                  className="-mx-1 pl-1 pr-5"
+                />
               )}
             </section>
 

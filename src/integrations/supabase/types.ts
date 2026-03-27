@@ -810,6 +810,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_discovery_orgs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          org_name: string
+          preview_photo_url: string | null
+          location: string | null
+          lat: number | null
+          lng: number | null
+          district: string | null
+          mtr_station: string | null
+          sample_hunt_id: string
+          sample_treasure_id: string | null
+        }[]
+      }
       get_store_conversion_rates: {
         Args: { p_org_ids: string[] }
         Returns: {

@@ -48,10 +48,10 @@ export function TreasurePopupCard({
   const redemption = formatHuntRedemptionPeriod(treasure.starts_at, treasure.ends_at);
   const { pinKind, offerTitle } = treasure;
 
-  const imageBlock = (
+  const imageBlock = (heroUrl: string | null) => (
     <div className="hunt-map-clue-strip">
-      {clue ? (
-        <img src={clue} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      {heroUrl ? (
+        <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <ImageIcon className="h-7 w-7 text-muted-foreground/35" strokeWidth={1.25} />
@@ -80,9 +80,11 @@ export function TreasurePopupCard({
         style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
-          {imageBlock}
+          {imageBlock(treasure.orgPreviewPhotoUrl ?? clue ?? null)}
           <div className="px-3 pb-2 pt-2">
-            <h3 className="text-base font-bold text-foreground">{treasure.name}</h3>
+            <h3 className="text-base font-bold text-foreground">
+              {treasure.orgName?.trim() || treasure.name}
+            </h3>
             {treasure.address && (
               <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
             )}
@@ -106,7 +108,7 @@ export function TreasurePopupCard({
         style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
-          {imageBlock}
+          {imageBlock(clue ?? null)}
           <div className="px-3 pb-2 pt-2">
             <div className="flex items-start gap-1.5">
               <img src={huntPinGrab} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
@@ -148,7 +150,7 @@ export function TreasurePopupCard({
       style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
       <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
-        {imageBlock}
+        {imageBlock(clue ?? null)}
         <div className="px-3 pb-2 pt-2">
           <div className="flex items-start gap-1.5">
             <img src={huntPinStar} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
