@@ -119,12 +119,11 @@ export function QuizQuestions({
           ) : null}
           {isLast ? (
             <QuizCupCta
+              variant="resultGraphic"
               onClick={onNext}
               disabled={!canProceed}
               aria-label="See my result"
-            >
-              my result
-            </QuizCupCta>
+            />
           ) : (
             <button
               type="button"

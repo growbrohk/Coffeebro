@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { CoffeeCupIcon } from '@/components/CoffeeCupMark';
 import { cn } from '@/lib/utils';
+import quizMyResultSvg from '@/assets/quiz-my-result.svg?raw';
 
 export function QuizCoffeeBean({ className }: { className?: string }) {
   const clipId = useId().replace(/:/g, '');
@@ -77,9 +78,23 @@ function QuizStartCtaGraphic({ className }: { className?: string }) {
   );
 }
 
+function QuizMyResultCtaGraphic({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'pointer-events-none flex h-full w-full max-h-full max-w-full items-center justify-center',
+        '[&>svg]:block [&>svg]:h-full [&>svg]:w-full [&>svg]:max-h-full [&>svg]:max-w-full',
+        className,
+      )}
+      dangerouslySetInnerHTML={{ __html: quizMyResultSvg }}
+      aria-hidden
+    />
+  );
+}
+
 type QuizCupCtaProps = {
-  variant?: 'cup' | 'startGraphic';
-  children: React.ReactNode;
+  variant?: 'cup' | 'startGraphic' | 'resultGraphic';
+  children?: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   type?: 'button' | 'submit';
@@ -115,6 +130,26 @@ export function QuizCupCta({
         )}
       >
         <QuizStartCtaGraphic className="pointer-events-none" />
+      </button>
+    );
+  }
+
+  if (variant === 'resultGraphic') {
+    return (
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        className={cn(
+          'quiz-cup-cta relative touch-manipulation outline-none transition-opacity',
+          'flex h-[7.75rem] w-[min(19.5rem,92vw)] items-center justify-center p-0',
+          'disabled:opacity-40 disabled:pointer-events-none',
+          'focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--quiz-bg)]',
+          className,
+        )}
+      >
+        <QuizMyResultCtaGraphic />
       </button>
     );
   }
