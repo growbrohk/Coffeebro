@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +41,8 @@ export default function ProfilePage() {
   const [searchParams] = useSearchParams();
   const msgParam = searchParams.get('msg');
   const claimParam = searchParams.get('claim');
+  /** Quiz unlock flow: show sign-up first, not login */
+  const openAuthAsSignUp = Boolean(claimParam) || msgParam === 'quiz';
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const getMessage = () => {
@@ -73,7 +75,11 @@ export default function ProfilePage() {
   const { data: voucherTopPercent, isLoading: voucherTopLoading } = useMyVoucherTopPercent();
   const navigate = useNavigate();
 
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(openAuthAsSignUp);
+
+  useEffect(() => {
+    if (openAuthAsSignUp) setIsSignUp(true);
+  }, [openAuthAsSignUp]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
