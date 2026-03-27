@@ -86,6 +86,9 @@ export default function CalendarPage() {
     [huntOffersMonth, year, month, selectedDay]
   );
 
+  const totalOffersForSelectedDay =
+    calendarOffersForSelectedDay.length + huntOffersForSelectedDay.length;
+
   const offersHeading = useMemo(() => {
     const d = new Date(year, month, selectedDay);
     return d.toLocaleDateString('en-US', {
@@ -221,14 +224,9 @@ export default function CalendarPage() {
 
           <TabsContent value="vouchers" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
             <h2 className="text-sm font-semibold text-foreground mb-3">
-              Offers for {offersHeading}
+              {totalOffersForSelectedDay}{' '}
+              {totalOffersForSelectedDay === 1 ? 'offer' : 'offers'} for {offersHeading}
             </h2>
-            <p className="text-xs text-muted-foreground mb-4">
-              Tap a day to choose the date. <span className="font-medium text-emerald-700 dark:text-emerald-400">G</span>{' '}
-              counts Grab Mode offers (Grab in-app);{' '}
-              <span className="font-medium text-violet-800 dark:text-violet-300">H</span> counts Hunt Mode
-              offers (Hunt in-life). Use the cards below to open details.
-            </p>
             {calendarOffersForSelectedDay.length === 0 && huntOffersForSelectedDay.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No offers this day.</p>
             ) : (
@@ -236,7 +234,7 @@ export default function CalendarPage() {
                 {calendarOffersForSelectedDay.length > 0 && (
                   <div className="flex flex-col gap-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Grab Mode
+                      Grab Mode ({calendarOffersForSelectedDay.length})
                     </p>
                     {calendarOffersForSelectedDay.map((offer) => (
                       <CalendarVoucherOfferCard
@@ -256,7 +254,7 @@ export default function CalendarPage() {
                     )}
                   >
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Hunt Mode
+                      Hunt Mode ({huntOffersForSelectedDay.length})
                     </p>
                     {huntOffersForSelectedDay.map((row) => {
                       const tr = normalizeHuntTreasure(row.treasures);
