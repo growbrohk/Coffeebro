@@ -1,8 +1,8 @@
+import { Fragment, type ReactNode } from 'react';
 import { Clock, ImageIcon, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 import type { CoffeeOffer, HuntOfferForCalendarRow, HuntOfferTreasureEmbed } from '@/hooks/useCoffeeOffers';
-import { cn } from '@/lib/utils';
+import { useVoucherCountForOffer } from '@/hooks/useVouchers';
 
 function truncate(str: string, maxLen: number) {
   if (str.length <= maxLen) return str;
@@ -26,36 +26,99 @@ function formatClaimWindow(startsAt: string | null | undefined, endsAt: string |
   return null;
 }
 
-function offerTypeLabel(offerType: string | null | undefined): string | null {
-  if (!offerType) return null;
-  return OFFER_TYPE_LABELS[offerType] ?? offerType;
-}
-
-/** Calendar `event_time` is stored as HH:MM or HH:MM:SS */
-function formatCalendarStartTime(eventTime: string | null | undefined): string | null {
-  if (!eventTime?.trim()) return null;
-  const t = eventTime.trim();
+/** Calendar times (`event_time`, `redeem_before_time`) as HH:MM or HH:MM:SS */
+function formatCalendarTimeHHMM(time: string | null | undefined): string | null {
+  if (!time?.trim()) return null;
+  const t = time.trim();
   return t.length >= 5 ? t.slice(0, 5) : t;
 }
 
-function CampaignTypeLine({
-  campaignDisplay,
-  typeLabel,
-  className,
-}: {
-  campaignDisplay: string;
-  typeLabel: string | null;
-  className?: string;
-}) {
+/** Headline: campaign · remaining left (preset name & offer type hidden) */
+function GrabCampaignHeadline({ offer }: { offer: CoffeeOffer }) {
+  const { data: voucherCount = 0, isPending } = useVoucherCountForOffer(offer.id);
+  const campaignDisplay = (offer.campaign_title?.trim() || offer.name).trim();
+  const limit = offer.quantity_limit;
+
+  let quotaSegment: ReactNode = null;
+  if (limit != null) {
+    quotaSegment = isPending ? (
+      <span className="text-muted-foreground font-normal">…</span>
+    ) : (
+      <span className="text-muted-foreground font-normal">
+        {Math.max(0, limit - voucherCount)} left
+      </span>
+    );
+  }
+
+  const segments: ReactNode[] = [<span key="camp">{campaignDisplay}</span>];
+  if (quotaSegment) {
+    segments.push(
+      <Fragment key="q">
+        <span className="text-muted-foreground/50 font-normal"> · </span>
+        {quotaSegment}
+      </Fragment>
+    );
+  }
+
   return (
-    <p className={cn('text-sm font-semibold text-foreground truncate pr-20', className)}>
-      <span className="text-foreground">{campaignDisplay}</span>
-      {typeLabel && (
-        <>
-          <span className="text-muted-foreground font-normal"> · </span>
-          <span className="text-muted-foreground font-normal">{typeLabel}</span>
-        </>
-      )}
+    <p className="text-sm font-semibold text-foreground truncate pr-20 min-w-0">{segments}</p>
+  );
+}
+
+function HuntCampaignHeadline({
+  row,
+}: {
+  row: HuntOfferForCalendarRow;
+}) {
+  const { data: voucherCount = 0, isPending } = useVoucherCountForOffer(row.id);
+  const campaignDisplay = (row.campaign_title?.trim() || row.name).trim();
+  const limit = row.quantity_limit;
+
+  let quotaSegment: ReactNode = null;
+  if (limit != null) {
+    quotaSegment = isPending ? (
+      <span className="text-muted-foreground font-normal">…</span>
+    ) : (
+      <span className="text-muted-foreground font-normal">
+        {Math.max(0, limit - voucherCount)} left
+      </span>
+    );
+  }
+
+  const segments: ReactNode[] = [<span key="camp">{campaignDisplay}</span>];
+  if (quotaSegment) {
+    segments.push(
+      <Fragment key="q">
+        <span className="text-muted-foreground/50 font-normal"> · </span>
+        {quotaSegment}
+      </Fragment>
+    );
+  }
+
+  return (
+    <p className="text-sm font-semibold text-foreground truncate pr-20 min-w-0">{segments}</p>
+  );
+}
+
+function GrabModeTimesOnly({ offer }: { offer: CoffeeOffer }) {
+  const start = formatCalendarTimeHHMM(offer.event_time);
+  const end = formatCalendarTimeHHMM(offer.redeem_before_time);
+
+  const parts: { key: string; node: ReactNode }[] = [];
+  if (start) parts.push({ key: 'start', node: <>Starts {start}</> });
+  if (end) parts.push({ key: 'end', node: <>Until {end}</> });
+
+  if (parts.length === 0) return null;
+
+  return (
+    <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+      <Clock className="w-3 h-3 shrink-0" strokeWidth={1.5} />
+      {parts.map((p, i) => (
+        <Fragment key={p.key}>
+          {i > 0 && <span className="text-muted-foreground/50">·</span>}
+          {p.node}
+        </Fragment>
+      ))}
     </p>
   );
 }
@@ -76,10 +139,6 @@ type CalendarVoucherOfferCardProps =
 export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
   if (props.kind === 'calendar') {
     const { offer, onDetails } = props;
-    const typeLabel = offerTypeLabel(offer.offer_type);
-    const campaignDisplay = (offer.campaign_title?.trim() || offer.name).trim();
-    const showProductTitle = offer.name !== campaignDisplay;
-    const startTimeLabel = formatCalendarStartTime(offer.event_time);
 
     return (
       <div className="relative bg-card border border-border rounded-2xl shadow-md overflow-hidden">
@@ -94,16 +153,8 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
             <ImageIcon className="w-6 h-6 text-muted-foreground/40" strokeWidth={1.5} />
           </div>
           <div className="flex-1 min-w-0">
-            <CampaignTypeLine campaignDisplay={campaignDisplay} typeLabel={typeLabel} />
-            {showProductTitle && (
-              <h3 className="text-base font-semibold text-foreground truncate mt-1">{offer.name}</h3>
-            )}
-            {startTimeLabel && (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <Clock className="w-3 h-3 shrink-0" strokeWidth={1.5} />
-                <span>Starts {startTimeLabel}</span>
-              </p>
-            )}
+            <GrabCampaignHeadline offer={offer} />
+            <GrabModeTimesOnly offer={offer} />
             {offer.location && (
               <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
                 <MapPin className="w-3 h-3 shrink-0" strokeWidth={1.5} />
@@ -122,10 +173,7 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
   }
 
   const { row, treasure, onDetails } = props;
-  const typeLabel = offerTypeLabel(row.offer_type);
   const windowText = formatClaimWindow(treasure.starts_at, treasure.ends_at);
-  const campaignDisplay = (row.campaign_title?.trim() || row.name).trim();
-  const showProductTitle = row.name !== campaignDisplay;
 
   return (
     <div className="relative bg-card border border-border rounded-2xl shadow-md overflow-hidden">
@@ -150,10 +198,7 @@ export function CalendarVoucherOfferCard(props: CalendarVoucherOfferCardProps) {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <CampaignTypeLine campaignDisplay={campaignDisplay} typeLabel={typeLabel} />
-          {showProductTitle && (
-            <h3 className="text-base font-semibold text-foreground truncate mt-1">{row.name}</h3>
-          )}
+          <HuntCampaignHeadline row={row} />
           {treasure.name &&
             treasure.name !== row.name &&
             treasure.name !== row.campaign_title && (
