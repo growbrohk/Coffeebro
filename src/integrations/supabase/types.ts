@@ -364,6 +364,15 @@ export type Database = {
           location: string | null
           org_name: string
           owner_user_id: string
+          lat: number | null
+          lng: number | null
+          instagram_handle: string | null
+          phone: string | null
+          google_maps_url: string | null
+          opening_hours: unknown | null
+          hk_area: string | null
+          district: string | null
+          mtr_station: string | null
         }
         Insert: {
           created_at?: string
@@ -371,6 +380,15 @@ export type Database = {
           location?: string | null
           org_name: string
           owner_user_id: string
+          lat?: number | null
+          lng?: number | null
+          instagram_handle?: string | null
+          phone?: string | null
+          google_maps_url?: string | null
+          opening_hours?: unknown | null
+          hk_area?: string | null
+          district?: string | null
+          mtr_station?: string | null
         }
         Update: {
           created_at?: string
@@ -378,6 +396,15 @@ export type Database = {
           location?: string | null
           org_name?: string
           owner_user_id?: string
+          lat?: number | null
+          lng?: number | null
+          instagram_handle?: string | null
+          phone?: string | null
+          google_maps_url?: string | null
+          opening_hours?: unknown | null
+          hk_area?: string | null
+          district?: string | null
+          mtr_station?: string | null
         }
         Relationships: []
       }

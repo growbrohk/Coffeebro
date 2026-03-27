@@ -9,6 +9,15 @@ export interface Org {
   org_name: string;
   created_at: string;
   location?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  instagram_handle?: string | null;
+  phone?: string | null;
+  google_maps_url?: string | null;
+  opening_hours?: unknown | null;
+  hk_area?: string | null;
+  district?: string | null;
+  mtr_station?: string | null;
 }
  
  export function useOrgs() {

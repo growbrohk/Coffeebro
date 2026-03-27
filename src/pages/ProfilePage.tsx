@@ -64,7 +64,7 @@ export default function ProfilePage() {
 
   const authMessage = getMessage();
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { canHostEvent, isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [] } = useOrgs();
   const orgIds = orgs.map((o) => o.id);
   const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
@@ -345,6 +345,20 @@ export default function ProfilePage() {
                     );
                   })}
                 </div>
+              )}
+
+              {isSuperAdmin && (
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    navigate('/admin/orgs');
+                  }}
+                >
+                  Organizations
+                </Button>
               )}
 
               <Button
