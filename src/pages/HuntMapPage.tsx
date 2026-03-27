@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { HuntFilter } from '@/components/HuntFilter';
 import { HuntMap } from '@/components/HuntMap';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
+import { HuntMapVoucherCarouselSheet } from '@/components/HuntMapVoucherCarouselSheet';
 import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
 import {
   primaryOfferByTreasureId,
@@ -38,6 +39,8 @@ export default function HuntMapPage() {
   const [selectedTreasure, setSelectedTreasure] = useState<HuntMapTreasure | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [pillar, setPillar] = useState<PillarId>('all');
+  const [voucherSheetDismissed, setVoucherSheetDismissed] = useState(false);
+  const prevSelectedTreasureRef = useRef<HuntMapTreasure | null>(null);
 
   const isGlobalMode = !huntId;
 
@@ -76,6 +79,9 @@ export default function HuntMapPage() {
         offerTitle: po?.name ?? null,
         offerDescription: po?.description ?? null,
         offerType: po?.offer_type ?? null,
+        orgName: po?.org_name ?? null,
+        quantityLimit: po?.quantity_limit ?? null,
+        campaignTitle: po?.campaign_title ?? null,
       };
     });
   }, [rawTreasures, offerByTreasure, claimedIds]);
@@ -89,6 +95,14 @@ export default function HuntMapPage() {
       return hay.includes(q);
     });
   }, [enrichedTreasures, searchQuery, pillar]);
+
+  const voucherTreasures = useMemo(
+    () =>
+      filteredTreasures.filter(
+        (t) => !t.scanned && (t.pinKind === 'grab' || t.pinKind === 'hunt')
+      ),
+    [filteredTreasures]
+  );
 
   const treasuresLoading = isGlobalMode ? allTreasuresLoading : singleTreasuresLoading;
 
@@ -111,13 +125,16 @@ export default function HuntMapPage() {
     if (!win) window.location.href = url;
   };
 
-  const handleDetailsClick = () => {
-    if (!selectedTreasure) return;
-    const targetHuntId = selectedTreasure.hunt_id;
-    navigate(`/hunts/${targetHuntId}/treasures/${selectedTreasure.id}`, {
+  const navigateToTreasureDetail = (t: HuntMapTreasure) => {
+    navigate(`/hunts/${t.hunt_id}/treasures/${t.id}`, {
       state: { fromTab: 'map' as const },
     });
     setSelectedTreasure(null);
+  };
+
+  const handleDetailsClick = () => {
+    if (!selectedTreasure) return;
+    navigateToTreasureDetail(selectedTreasure);
   };
 
   const distanceToSelected =
@@ -141,6 +158,14 @@ export default function HuntMapPage() {
       joinHunt.mutate(huntId);
     }
   }, [user, huntId, isParticipant, joinHunt]);
+
+  useEffect(() => {
+    const prev = prevSelectedTreasureRef.current;
+    if (prev !== null && selectedTreasure === null) {
+      setVoucherSheetDismissed(false);
+    }
+    prevSelectedTreasureRef.current = selectedTreasure;
+  }, [selectedTreasure]);
 
   const mapChrome = (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background">
@@ -265,6 +290,13 @@ export default function HuntMapPage() {
           onDirections={openInMaps}
           onDetails={handleDetailsClick}
           distance={distanceToSelected}
+        />
+      ) : !voucherSheetDismissed && voucherTreasures.length > 0 ? (
+        <HuntMapVoucherCarouselSheet
+          items={voucherTreasures}
+          onClose={() => setVoucherSheetDismissed(true)}
+          onCta={navigateToTreasureDetail}
+          onCardPress={(t) => setSelectedTreasure(t)}
         />
       ) : null}
     </div>

@@ -7,4 +7,7 @@ export type HuntMapTreasure = Treasure & {
   offerTitle: string | null;
   offerDescription: string | null;
   offerType: string | null;
+  orgName: string | null;
+  quantityLimit: number | null;
+  campaignTitle: string | null;
 };
