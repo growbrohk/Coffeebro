@@ -1,7 +1,5 @@
--- Public-safe org directory: **one row per org in public.orgs** (with or without any hunt).
--- sample_hunt_id / sample_treasure_id are null when the org has no hunts or no treasures.
--- When hunts exist: picks active hunt first, else most recent; first treasure by sort_order.
--- Uses security definer so consumers can read these fields without broad orgs SELECT.
+-- Re-apply get_discovery_orgs if an older variant only returned orgs with active hunts.
+-- Result set: all rows from public.orgs; hunt/treasure ids nullable.
 
 create or replace function public.get_discovery_orgs()
 returns table (
@@ -52,6 +50,3 @@ as $$
 $$;
 
 comment on function public.get_discovery_orgs() is 'Every org row; optional sample hunt (active preferred) and treasure for deep links.';
-
-grant execute on function public.get_discovery_orgs() to anon;
-grant execute on function public.get_discovery_orgs() to authenticated;
