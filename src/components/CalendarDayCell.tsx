@@ -11,9 +11,10 @@ interface CalendarDayCellProps {
   coffeeOffers: CoffeeOffer[];
   onCoffeeOfferClick: (offer: CoffeeOffer) => void;
   variant: CalendarDayCellVariant;
+  isSelected?: boolean;
+  onSelectDay?: () => void;
 }
 
-// Helper function to get coffee day class based on count
 export function getCoffeeDayClass(count: number): string {
   if (count === 0) return '';
   if (count === 1) return 'calendar-day-coffee-1';
@@ -35,19 +36,37 @@ export function CalendarDayCell({
   coffeeOffers,
   onCoffeeOfferClick,
   variant,
+  isSelected,
+  onSelectDay,
 }: CalendarDayCellProps) {
   const MAX_VISIBLE_ITEMS = 2;
   const visibleItems = coffeeOffers.slice(0, MAX_VISIBLE_ITEMS);
   const remainingCount = coffeeOffers.length - MAX_VISIBLE_ITEMS;
 
   const isTracking = variant === 'tracking';
+  const isVouchers = variant === 'vouchers';
 
   return (
     <div
+      role={isVouchers && onSelectDay ? 'button' : undefined}
+      tabIndex={isVouchers && onSelectDay ? 0 : undefined}
+      onClick={isVouchers && onSelectDay ? onSelectDay : undefined}
+      onKeyDown={
+        isVouchers && onSelectDay
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectDay();
+              }
+            }
+          : undefined
+      }
       className={cn(
         'calendar-day-cell',
         isTracking && getCoffeeDayClass(coffeeCount),
-        isToday && 'calendar-day-today'
+        isToday && 'calendar-day-today',
+        isVouchers && onSelectDay && 'cursor-pointer rounded-md transition-colors',
+        isVouchers && isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
       )}
     >
       <div className="calendar-day-number relative">
@@ -66,10 +85,11 @@ export function CalendarDayCell({
         )}
       </div>
 
-      {!isTracking && coffeeOffers.length > 0 && (
+      {isVouchers && coffeeOffers.length > 0 && (
         <div className="calendar-day-events">
           {visibleItems.map((offer) => (
             <button
+              type="button"
               key={`offer-${offer.id}`}
               onClick={(e) => {
                 e.stopPropagation();

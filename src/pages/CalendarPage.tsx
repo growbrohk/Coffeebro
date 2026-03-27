@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogCoffeeNavButton } from '@/components/LogCoffeeNavButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
+import { CalendarVoucherOfferCard } from '@/components/CalendarVoucherOfferCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMonthCoffeeCount, useMonthCoffeeDayCounts } from '@/hooks/useCoffees';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
-import { useMonthlyCoffeeOffers, groupCoffeeOffersByDate, type CoffeeOffer } from '@/hooks/useCoffeeOffers';
+import {
+  useMonthlyCoffeeOffers,
+  useMonthlyHuntOffersForVoucherCalendar,
+  groupCoffeeOffersByDate,
+  huntOfferActiveOnLocalDay,
+  normalizeHuntTreasure,
+  type CoffeeOffer,
+} from '@/hooks/useCoffeeOffers';
 import { CalendarDayCell, type CalendarDayCellVariant } from '@/components/CalendarDayCell';
 import { CoffeeOfferDetailModal } from '@/components/CoffeeOfferDetailModal';
 import { localYMD } from '@/lib/date';
@@ -21,10 +30,12 @@ const MONTHS = [
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
   const { loading } = useAuth();
   const logCoffee = useLogCoffeeEntry();
   const [viewDate, setViewDate] = useState(new Date());
-  const [calendarTab, setCalendarTab] = useState<CalendarDayCellVariant>('tracking');
+  const [calendarTab, setCalendarTab] = useState<CalendarDayCellVariant>('vouchers');
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
   const [selectedCoffeeOffer, setSelectedCoffeeOffer] = useState<CoffeeOffer | null>(null);
   const [coffeeOfferModalOpen, setCoffeeOfferModalOpen] = useState(false);
   
@@ -32,15 +43,48 @@ export default function CalendarPage() {
   const month = viewDate.getMonth();
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
   
   const monthCount = useMonthCoffeeCount();
   const { data: coffeeDayCounts = {} } = useMonthCoffeeDayCounts(year, month);
   const { data: coffeeOffers = [] } = useMonthlyCoffeeOffers(year, month);
+  const { data: huntOffersMonth = [] } = useMonthlyHuntOffersForVoucherCalendar(year, month);
 
   const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const coffeeOffersByDate = groupCoffeeOffersByDate(coffeeOffers);
+
+  useEffect(() => {
+    const now = new Date();
+    const viewingCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
+    if (viewingCurrentMonth) {
+      setSelectedDay(Math.min(now.getDate(), daysInMonth));
+    } else {
+      setSelectedDay(1);
+    }
+  }, [year, month, daysInMonth]);
+
+  const selectedYmd = localYMD(new Date(year, month, selectedDay));
+
+  const calendarOffersForSelectedDay = useMemo(
+    () => coffeeOffers.filter((o) => o.event_date === selectedYmd),
+    [coffeeOffers, selectedYmd]
+  );
+
+  const huntOffersForSelectedDay = useMemo(
+    () => huntOffersMonth.filter((row) => huntOfferActiveOnLocalDay(row, year, month, selectedDay)),
+    [huntOffersMonth, year, month, selectedDay]
+  );
+
+  const offersHeading = useMemo(() => {
+    const d = new Date(year, month, selectedDay);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, [year, month, selectedDay]);
 
   const isLoading = loading;
 
@@ -147,15 +191,52 @@ export default function CalendarPage() {
                   coffeeOffers={dayCoffeeOffers}
                   onCoffeeOfferClick={handleCoffeeOfferClick}
                   variant={calendarTab}
+                  isSelected={calendarTab === 'vouchers' && selectedDay === day}
+                  onSelectDay={
+                    calendarTab === 'vouchers' ? () => setSelectedDay(day) : undefined
+                  }
                 />
               );
             })}
           </div>
 
           <TabsContent value="vouchers" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
-            <p className="text-center text-sm text-muted-foreground">
-              Chips show offer type. Tap for details.
+            <h2 className="text-sm font-semibold text-foreground mb-3">
+              Offers for {offersHeading}
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Tap a day on the calendar to change the date. Chips on the grid show offer type; tap a chip for
+              details.
             </p>
+            {calendarOffersForSelectedDay.length === 0 && huntOffersForSelectedDay.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No offers this day.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {calendarOffersForSelectedDay.map((offer) => (
+                  <CalendarVoucherOfferCard
+                    key={`cal-${offer.id}`}
+                    kind="calendar"
+                    offer={offer}
+                    onDetails={() => handleCoffeeOfferClick(offer)}
+                  />
+                ))}
+                {huntOffersForSelectedDay.map((row) => {
+                  const tr = normalizeHuntTreasure(row.treasures);
+                  if (!tr) return null;
+                  return (
+                    <CalendarVoucherOfferCard
+                      key={`hunt-${row.id}`}
+                      kind="hunt"
+                      row={row}
+                      treasure={tr}
+                      onDetails={() =>
+                        navigate(`/hunts/${tr.hunt_id}/treasures/${tr.id}`)
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-8 focus-visible:ring-0 focus-visible:ring-offset-0">
