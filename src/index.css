@@ -234,9 +234,8 @@
     @apply w-8 h-8 shrink-0 flex items-center justify-center text-sm font-medium rounded-full;
   }
 
-  /* Tracking uses underline for selection only — no today ring */
-  .calendar-day-cell.calendar-day-today:not(.calendar-vouchers-cell):not(.calendar-tracking)
-    .calendar-day-number {
+  /* Non-tracking today ring (tracking cells use .calendar-tracking + CoffeeCupMark) */
+  .calendar-day-cell.calendar-day-today:not(.calendar-tracking) .calendar-day-number {
     @apply ring-2 ring-primary/70 ring-offset-2 ring-offset-background;
   }
 
@@ -278,26 +277,6 @@
 
   .calendar-event-more {
     @apply text-[7px] text-muted-foreground;
-  }
-
-  /* Vouchers mode: soft organic blob behind day number */
-  .calendar-vouchers-cell.calendar-vouchers-has-offers .calendar-day-number::before {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    z-index: -1;
-    border-radius: 52% 48% 45% 55% / 48% 52% 48% 52%;
-    background: radial-gradient(
-      ellipse 80% 70% at 40% 35%,
-      hsl(var(--primary) / 0.22),
-      hsl(var(--accent) / 0.12) 55%,
-      transparent 75%
-    );
-    pointer-events: none;
-  }
-
-  .calendar-vouchers-cell.calendar-vouchers-has-offers .calendar-day-number {
-    @apply font-semibold;
   }
 }
 

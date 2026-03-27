@@ -29,59 +29,6 @@ export function useMonthlyCoffees(year: number, month: number) {
   });
 }
 
-export interface CoffeeDetails {
-  rating?: number | null;
-  coffee_type?: string | null;
-  coffee_type_other?: string | null;
-  place?: string | null;
-  diary?: string | null;
-  beans?: string | null;
-  note?: string | null;
-}
-
-// A) useAddCoffee() - INSERT mutation (NOT upsert)
-export function useAddCoffee() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const today = localYMD();
-
-  return useMutation({
-    mutationFn: async (details: CoffeeDetails) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('daily_coffees')
-        .insert({
-          user_id: user.id,
-          coffee_date: today,
-          rating: details.rating ?? null,
-          coffee_type: details.coffee_type ?? null,
-          coffee_type_other: details.coffee_type_other ?? null,
-          place: details.place ?? null,
-          diary: details.diary ?? null,
-          beans: details.beans ?? null,
-          note: details.note ?? null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['today-coffees'] });
-      queryClient.invalidateQueries({ queryKey: ['month-coffee-count'] });
-      queryClient.invalidateQueries({ queryKey: ['month-coffee-day-counts'] });
-      queryClient.invalidateQueries({ queryKey: ['coffees'] });
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
-      queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
-      queryClient.invalidateQueries({ queryKey: ['coffee-streak'] });
-      queryClient.invalidateQueries({ queryKey: ['lifetime-coffee-count'] });
-      queryClient.invalidateQueries({ queryKey: ['coffee-profile-stats'] });
-    },
-  });
-}
-
 /** Total coffees logged in a specific calendar month (local). */
 export function useCalendarMonthCoffeeCount(year: number, month: number) {
   const { user } = useAuth();
@@ -132,6 +79,59 @@ export function useCoffeeStreak() {
       return computeCoffeeStreakFromToday(logged, today);
     },
     enabled: !!user,
+  });
+}
+
+export interface CoffeeDetails {
+  rating?: number | null;
+  coffee_type?: string | null;
+  coffee_type_other?: string | null;
+  place?: string | null;
+  diary?: string | null;
+  beans?: string | null;
+  note?: string | null;
+}
+
+// A) useAddCoffee() - INSERT mutation (NOT upsert)
+export function useAddCoffee() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const today = localYMD();
+
+  return useMutation({
+    mutationFn: async (details: CoffeeDetails) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('daily_coffees')
+        .insert({
+          user_id: user.id,
+          coffee_date: today,
+          rating: details.rating ?? null,
+          coffee_type: details.coffee_type ?? null,
+          coffee_type_other: details.coffee_type_other ?? null,
+          place: details.place ?? null,
+          diary: details.diary ?? null,
+          beans: details.beans ?? null,
+          note: details.note ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['today-coffees'] });
+      queryClient.invalidateQueries({ queryKey: ['month-coffee-count'] });
+      queryClient.invalidateQueries({ queryKey: ['month-coffee-day-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['coffees'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+      queryClient.invalidateQueries({ queryKey: ['today-percentage'] });
+      queryClient.invalidateQueries({ queryKey: ['coffee-streak'] });
+      queryClient.invalidateQueries({ queryKey: ['lifetime-coffee-count'] });
+      queryClient.invalidateQueries({ queryKey: ['coffee-profile-stats'] });
+    },
   });
 }
 

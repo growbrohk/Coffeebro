@@ -1,14 +1,12 @@
 import { localYMD } from '@/lib/date';
 
-/** Consecutive local days with ≥1 log, counting backward from `todayYmd` (inclusive). */
+/** Consecutive days with at least one log, counting backward from todayYmd (inclusive). */
 export function computeCoffeeStreakFromToday(loggedDays: Set<string>, todayYmd: string): number {
+  const d = new Date(`${todayYmd}T12:00:00`);
   let streak = 0;
-  let cur = todayYmd;
-  while (loggedDays.has(cur)) {
+  while (loggedDays.has(localYMD(d))) {
     streak += 1;
-    const [y, m, d] = cur.split('-').map(Number);
-    const prev = new Date(y, m - 1, d - 1);
-    cur = localYMD(prev);
+    d.setDate(d.getDate() - 1);
   }
   return streak;
 }
