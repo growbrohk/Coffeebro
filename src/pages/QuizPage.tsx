@@ -108,6 +108,10 @@ export default function QuizPage() {
     if (q) setAnswers((prev) => ({ ...prev, [q.id]: value }));
   }, [currentQuestionIndex]);
 
+  const handleBack = useCallback(() => {
+    setCurrentQuestionIndex((i) => (i > 0 ? i - 1 : i));
+  }, []);
+
   const handleNext = useCallback(async () => {
     const q = QUESTIONS[currentQuestionIndex];
     const value = answers[q.id];
@@ -215,6 +219,7 @@ export default function QuizPage() {
         value={answers[question.id] ?? null}
         onValueChange={handleAnswer}
         onNext={handleNext}
+        onBack={currentQuestionIndex > 0 ? handleBack : undefined}
         canProceed={!!answers[question.id]}
       />
     );

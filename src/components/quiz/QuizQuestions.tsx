@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { QuizCoffeeBean, QuizCupCta } from '@/components/quiz/QuizVisualElements';
@@ -12,6 +12,7 @@ interface QuizQuestionsProps {
   value: string | null;
   onValueChange: (value: string) => void;
   onNext: () => void;
+  onBack?: () => void;
   canProceed: boolean;
 }
 
@@ -22,6 +23,7 @@ export function QuizQuestions({
   value,
   onValueChange,
   onNext,
+  onBack,
   canProceed,
 }: QuizQuestionsProps) {
   const isLast = currentIndex >= totalQuestions - 1;
@@ -96,7 +98,25 @@ export function QuizQuestions({
           })}
         </RadioGroup>
 
-        <div className="mt-auto flex justify-end pt-10">
+        <div
+          className={cn(
+            'mt-auto flex items-end gap-4 pt-10',
+            onBack ? 'justify-between' : 'justify-end',
+          )}
+        >
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Previous question"
+              className={cn(
+                'touch-manipulation p-2 text-[var(--quiz-fg)] transition-opacity',
+                'outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--quiz-bg)] rounded-md',
+              )}
+            >
+              <ArrowLeft className="size-12" strokeWidth={1.15} aria-hidden />
+            </button>
+          ) : null}
           {isLast ? (
             <QuizCupCta
               onClick={onNext}
