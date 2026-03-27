@@ -41,14 +41,25 @@ export function QuizQuestions({
           ))}
         </div>
 
-        <h2 className="mb-8 text-left text-xl font-bold leading-snug text-[var(--quiz-fg)] sm:text-2xl">
+        <h2
+          id="quiz-question-heading"
+          className="mb-3 text-left text-xl font-bold leading-snug text-[var(--quiz-fg)] sm:text-2xl"
+        >
           {question.text}
         </h2>
+        <p
+          id="quiz-question-hint"
+          className="mb-5 text-left text-sm font-medium text-[var(--quiz-fg)]/85"
+        >
+          Choose one answer
+        </p>
 
         <RadioGroup
           value={value ?? ''}
           onValueChange={onValueChange}
-          className="flex flex-col gap-0"
+          aria-labelledby="quiz-question-heading"
+          aria-describedby="quiz-question-hint"
+          className="flex flex-col gap-3"
         >
           {question.options.map((opt) => {
             const id = `q${question.id}-${opt.value}`;
@@ -57,19 +68,28 @@ export function QuizQuestions({
               <div
                 key={opt.value}
                 className={cn(
-                  'rounded-xl border-l-4 border-transparent pl-1 transition-colors',
-                  selected && 'border-[var(--quiz-fg)] bg-white/10',
+                  'rounded-xl border border-white/30 border-l-4 border-l-transparent bg-white/5 pl-1 transition-all active:scale-[0.99]',
+                  selected &&
+                    'border-white/80 bg-white/15 ring-2 ring-white/40 border-l-[var(--quiz-fg)]',
                 )}
               >
                 <Label
                   htmlFor={id}
-                  className="flex min-h-[3rem] cursor-pointer items-start gap-3 py-2.5 pr-1"
+                  className="flex min-h-[3rem] cursor-pointer items-center gap-3 px-3 py-2.5 pr-2"
                 >
-                  <QuizCoffeeBean className="mt-0.5 shrink-0" />
-                  <span className="flex-1 pt-0.5 text-left text-base font-normal leading-snug text-[var(--quiz-fg)]">
+                  <QuizCoffeeBean className="shrink-0 self-start mt-0.5" />
+                  <span className="flex-1 text-left text-base font-normal leading-snug text-[var(--quiz-fg)]">
                     {opt.label}
                   </span>
-                  <RadioGroupItem value={opt.value} id={id} className="sr-only" />
+                  <RadioGroupItem
+                    value={opt.value}
+                    id={id}
+                    className={cn(
+                      'mt-0.5 h-5 w-5 shrink-0 self-center border-2 border-white/70 text-[var(--quiz-fg)]',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                      'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--quiz-bg)]',
+                    )}
+                  />
                 </Label>
               </div>
             );
