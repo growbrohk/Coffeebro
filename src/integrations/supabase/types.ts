@@ -821,7 +821,7 @@ export type Database = {
           lng: number | null
           district: string | null
           mtr_station: string | null
-          sample_hunt_id: string
+          sample_hunt_id: string | null
           sample_treasure_id: string | null
         }[]
       }

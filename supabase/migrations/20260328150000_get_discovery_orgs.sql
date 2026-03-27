@@ -1,5 +1,6 @@
--- Public-safe org directory for explorers: orgs that host at least one active hunt.
--- Uses security definer so consumers can read listing fields without broad orgs SELECT.
+-- Public-safe org directory for explorers: all orgs with listing fields.
+-- Picks a sample hunt (active first, else newest) and first treasure for deep links.
+-- Uses security definer so consumers can read these fields without broad orgs SELECT.
 
 create or replace function public.get_discovery_orgs()
 returns table (
@@ -19,7 +20,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select distinct on (o.id)
+  select
     o.id,
     o.org_name,
     o.preview_photo_url,
@@ -28,20 +29,28 @@ as $$
     o.lng,
     o.district,
     o.mtr_station,
-    h.id,
-    (
-      select t.id
-      from public.treasures t
-      where t.hunt_id = h.id
-      order by t.sort_order
-      limit 1
-    )
+    pick.hunt_id,
+    tr.treasure_id
   from public.orgs o
-  inner join public.hunts h on h.org_id = o.id and h.status = 'active'
-  order by o.id, h.created_at desc;
+  left join lateral (
+    select h2.id as hunt_id
+    from public.hunts h2
+    where h2.org_id = o.id
+    order by case when h2.status = 'active' then 0 else 1 end, h2.created_at desc nulls last
+    limit 1
+  ) pick on true
+  left join lateral (
+    select t.id as treasure_id
+    from public.treasures t
+    where pick.hunt_id is not null
+      and t.hunt_id = pick.hunt_id
+    order by t.sort_order
+    limit 1
+  ) tr on true
+  order by o.org_name;
 $$;
 
-comment on function public.get_discovery_orgs() is 'Orgs with an active hunt; safe columns for café discovery UI.';
+comment on function public.get_discovery_orgs() is 'All orgs with discovery fields; sample hunt/treasure for navigation when present.';
 
 grant execute on function public.get_discovery_orgs() to anon;
 grant execute on function public.get_discovery_orgs() to authenticated;

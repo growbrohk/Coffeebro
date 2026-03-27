@@ -11,6 +11,6 @@ export type HuntMapTreasure = Treasure & {
   orgPreviewPhotoUrl: string | null;
   quantityLimit: number | null;
   campaignTitle: string | null;
-  /** Recommended-café stub: open hunt map instead of a treasure detail URL. */
-  openHuntMapOnly?: boolean;
+  /** Recommended-café row from discovery org: treasure id for detail URL (list `id` stays org id). */
+  cafeDetailTreasureId?: string | null;
 };

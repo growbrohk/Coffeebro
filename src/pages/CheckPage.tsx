@@ -18,10 +18,9 @@ import type { HuntMapTreasure } from '@/types/huntMapTreasure';
 import { VoucherCarouselRow } from '@/components/VoucherCarouselCards';
 
 function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasure {
-  const openHuntMapOnly = row.sample_treasure_id == null;
   return {
-    id: row.sample_treasure_id ?? row.id,
-    hunt_id: row.sample_hunt_id,
+    id: row.id,
+    hunt_id: row.sample_hunt_id ?? '',
     qr_code_id: `discovery:${row.id}`,
     name: row.org_name,
     description: null,
@@ -39,7 +38,7 @@ function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasure {
     orgPreviewPhotoUrl: row.preview_photo_url,
     quantityLimit: null,
     campaignTitle: null,
-    openHuntMapOnly,
+    cafeDetailTreasureId: row.sample_treasure_id,
   };
 }
 
@@ -120,11 +119,15 @@ export default function CheckPage() {
   }, [discoveryOrgs, searchQuery]);
 
   const navigateToTreasure = (t: HuntMapTreasure) => {
-    if (t.openHuntMapOnly) {
+    if (t.cafeDetailTreasureId && t.hunt_id) {
+      navigate(`/hunts/${t.hunt_id}/treasures/${t.cafeDetailTreasureId}`);
+      return;
+    }
+    if (t.hunt_id) {
       navigate(`/hunts/${t.hunt_id}/map`);
       return;
     }
-    navigate(`/hunts/${t.hunt_id}/treasures/${t.id}`);
+    navigate('/hunts');
   };
 
   const isLoading =
