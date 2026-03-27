@@ -19,7 +19,7 @@ import {
 } from '@/hooks/useCoffees';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
-import { FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/constants';
+import { FROG_AVATAR_PATH, FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/constants';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings, Coffee } from 'lucide-react';
 
@@ -146,8 +146,12 @@ export default function ProfilePage() {
             <p className="mt-1 text-sm font-medium text-primary-foreground/90">{frogSubtitle}</p>
             <div className="mt-4 flex justify-center">
               <img
-                src="/profile-frog-hero.png"
-                alt=""
+                src={
+                  quizResultType
+                    ? FROG_AVATAR_PATH[quizResultType]
+                    : '/profile-frog-hero.png'
+                }
+                alt={quizResultType ? FROG_NAMES[quizResultType] : ''}
                 className="h-40 w-auto max-w-[min(100%,220px)] object-contain"
               />
             </div>
