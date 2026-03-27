@@ -12,6 +12,16 @@ export const FROG_NAMES: Record<FrogType, string> = {
   DIR: 'Dirty Frog',
 };
 
+export const FROG_AVATAR_PATH: Record<FrogType, string> = {
+  ESP: '/quiz-frogs/espresso.svg',
+  LAT: '/quiz-frogs/latte.svg',
+  AME: '/quiz-frogs/americano.svg',
+  MOC: '/quiz-frogs/mocha.svg',
+  CLD: '/quiz-frogs/cold-brew.svg',
+  MAT: '/quiz-frogs/matcha.svg',
+  DIR: '/quiz-frogs/dirty.svg',
+};
+
 // Legacy mapping for old DB rows (OAT, DRP from previous 11-question quiz).
 // Apply when reading result_type from DB for display.
 export const LEGACY_FROG_MAP: Record<string, FrogType> = {

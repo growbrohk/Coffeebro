@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "b1b6896e6edfddeaf0db005f30919862"
   }, {
     "url": "index.html",
-    "revision": "4d6acd03e427099cdff82d466db06636"
+    "revision": "e8e07206269914c4774c2b9e11dc1f98"
   }, {
     "url": "favicon.png",
     "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
@@ -101,6 +101,27 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
   }, {
     "url": "apple-touch-icon.png",
     "revision": "454324a36e277508bcc7a7b1b9d2fdee"
+  }, {
+    "url": "quiz-frogs/mocha.svg",
+    "revision": "92f35eac64a0f9d6497b4fc1380ed3bc"
+  }, {
+    "url": "quiz-frogs/matcha.svg",
+    "revision": "1a75b2b3ce3705ac1c686d372765f8ab"
+  }, {
+    "url": "quiz-frogs/latte.svg",
+    "revision": "ecadc4f3c194f855417366656acded78"
+  }, {
+    "url": "quiz-frogs/espresso.svg",
+    "revision": "99506ae00138bb9b6efce18b8ea8189f"
+  }, {
+    "url": "quiz-frogs/dirty.svg",
+    "revision": "221d20c324156fc87c361a264e5a1d95"
+  }, {
+    "url": "quiz-frogs/cold-brew.svg",
+    "revision": "f5675116de27083afc9e3aa33e96ba9b"
+  }, {
+    "url": "quiz-frogs/americano.svg",
+    "revision": "1fb8fec8abd71770847f73700e1cbaff"
   }, {
     "url": "icons/icon-maskable-512.png",
     "revision": "31ca53808b22e8e4b3232b47a0dedb26"
@@ -114,10 +135,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "icons/icon-192.png",
     "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
   }, {
-    "url": "assets/index-p-_xwo1r.js",
+    "url": "assets/index-BaW2OB32.css",
     "revision": null
   }, {
-    "url": "assets/index-BhX8npKO.css",
+    "url": "assets/index-BRphSSA9.js",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",

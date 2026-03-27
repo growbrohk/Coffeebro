@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
 import { FROG_NAMES } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 
@@ -31,7 +32,7 @@ export function QuizResultBlurred({ resultType, onSignUp }: QuizResultBlurredPro
             </Button>
           </div>
           <div className="p-6 pt-8">
-            <p className="text-center text-4xl">🐸</p>
+            <QuizFrogAvatar resultType={resultType} />
             <p className="mt-2 text-center text-xl font-bold text-[var(--quiz-fg)] blur-sm select-none">
               {name}
             </p>

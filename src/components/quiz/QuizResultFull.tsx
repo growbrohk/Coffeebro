@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
 import { FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +22,7 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
             Your Coffee Frog
           </h1>
-          <p className="text-4xl">🐸</p>
+          <QuizFrogAvatar resultType={resultType} />
           <p className="mt-2 text-xl font-bold text-[var(--quiz-fg)]">{desc.name}</p>
         </div>
 
