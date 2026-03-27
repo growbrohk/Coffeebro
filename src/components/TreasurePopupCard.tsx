@@ -49,7 +49,7 @@ export function TreasurePopupCard({
   const { pinKind, offerTitle } = treasure;
 
   const imageBlock = (
-    <div className="relative w-full aspect-[16/5] bg-muted shrink-0">
+    <div className="hunt-map-clue-strip">
       {clue ? (
         <img src={clue} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (

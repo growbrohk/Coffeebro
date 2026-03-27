@@ -85,11 +85,11 @@ export function HuntMapVoucherCarouselSheet({
                     onCardPress(treasure);
                   }
                 }}
-                className={`flex w-[min(140px,calc((100vw-4.5rem)/2))] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-card shadow-md ${
+                className={`flex w-[calc((min(430px,100vw-1.5rem)-1.5rem-1rem)/2.25)] shrink-0 snap-start flex-col overflow-hidden rounded-t-3xl rounded-b-2xl bg-card shadow-md ${
                   onCardPress ? 'cursor-pointer' : ''
                 }`}
               >
-                <div className="relative aspect-[16/5] w-full shrink-0 bg-muted">
+                <div className="hunt-map-voucher-preview-clue">
                   {clue ? (
                     <img src={clue} alt="" className="h-full w-full object-cover" />
                   ) : (
@@ -98,7 +98,7 @@ export function HuntMapVoucherCarouselSheet({
                     </div>
                   )}
                 </div>
-                <div className="flex min-w-0 flex-col gap-1 px-2.5 pb-2 pt-1.5">
+                <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
                   <div
                     className="flex min-w-0 items-center gap-1 text-sm font-bold leading-snug text-foreground"
                     title={nameQuotaTitle}

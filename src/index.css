@@ -132,6 +132,29 @@
 }
 
 @layer components {
+  /**
+   * Hunt map: clue image strip height aligned with TreasurePopupCard
+   * (same as aspect-[16/5] at max-w ~min(430px, 100vw - tab padding)).
+   */
+  .hunt-map-clue-strip {
+    position: relative;
+    width: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+    height: calc(min(430px, 100vw - 1.5rem) * 5 / 16);
+  }
+
+  /** Voucher carousel preview only — 80% height of hunt-map-clue-strip */
+  .hunt-map-voucher-preview-clue {
+    position: relative;
+    width: 100%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+    height: calc(min(430px, 100vw - 1.5rem) * 5 / 16 * 0.8);
+  }
+
   .card {
     background: var(--color-bg);
     border-radius: 16px;
