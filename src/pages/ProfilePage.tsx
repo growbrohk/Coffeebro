@@ -149,7 +149,7 @@ export default function ProfilePage() {
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">{profile.username}</h1>
             <p className="mt-1 text-sm font-medium text-primary-foreground/90">{frogSubtitle}</p>
-            <div className="mt-4 flex justify-center">
+            <div className="mt-2 flex justify-center">
               <img
                 src={
                   quizResultType
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                 <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-16 w-16" />
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-[#2E1A14]/12 pt-5">
+            <div className="mt-3 grid grid-cols-2 gap-6 border-t border-[#2E1A14]/12 pt-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#2E1A14]/55">
                   Top cafes
