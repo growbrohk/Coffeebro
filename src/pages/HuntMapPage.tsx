@@ -173,13 +173,13 @@ export default function HuntMapPage() {
             <button
               type="button"
               onClick={() => navigate('/hunts')}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-foreground shadow-md"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-card/95 text-foreground shadow-md backdrop-blur-sm"
               aria-label="Back"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
           ) : null}
-          <div className="relative flex items-center gap-2 rounded-full border border-border/60 bg-white px-3 py-2.5 shadow-md">
+          <div className="relative flex items-center gap-2 rounded-full border border-border/60 bg-card/95 px-3 py-2.5 shadow-md backdrop-blur-md">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
             <input
               type="search"
@@ -198,7 +198,7 @@ export default function HuntMapPage() {
                 'shrink-0 rounded-full px-3 py-2 text-sm font-medium transition-colors',
                 pillar === 'all'
                   ? 'bg-foreground text-background'
-                  : 'border border-border bg-white text-foreground'
+                  : 'border border-border bg-card text-foreground'
               )}
             >
               all
@@ -209,8 +209,8 @@ export default function HuntMapPage() {
               className={cn(
                 'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
                 pillar === 'coffee_shop'
-                  ? 'bg-[#1a1a1a] text-white'
-                  : 'border border-border bg-white text-foreground'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground'
               )}
             >
               <img
@@ -226,8 +226,8 @@ export default function HuntMapPage() {
               className={cn(
                 'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
                 pillar === 'grab'
-                  ? 'bg-[#1a1a1a] text-white'
-                  : 'border border-border bg-white text-foreground'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground'
               )}
             >
               <img src={huntPinGrab} alt="" className="h-5 w-5 object-contain" />
@@ -239,8 +239,8 @@ export default function HuntMapPage() {
               className={cn(
                 'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors',
                 pillar === 'hunt'
-                  ? 'bg-[#1a1a1a] text-white'
-                  : 'border border-border bg-white text-foreground'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground'
               )}
             >
               <img src={huntPinStar} alt="" className="h-5 w-5 object-contain" />

@@ -15,8 +15,6 @@ interface TreasurePopupCardProps {
   formatDistance?: (m: number) => string;
 }
 
-const ORANGE = '#F58220';
-
 function PillButton({
   children,
   onClick,
@@ -30,8 +28,7 @@ function PillButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md active:scale-[0.98] transition-transform"
-      style={{ backgroundColor: ORANGE }}
+      className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
     >
       {icon}
       {children}
@@ -63,7 +60,7 @@ export function TreasurePopupCard({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm"
+        className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-foreground shadow-sm"
         aria-label="Close"
       >
         <X className="h-4 w-4" />
@@ -82,7 +79,7 @@ export function TreasurePopupCard({
         className="fixed left-0 right-0 z-[1100] animate-slide-up px-3"
         style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       >
-        <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-white shadow-xl">
+        <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
           {imageBlock}
           <div className="px-4 pb-4 pt-3">
             <h3 className="text-lg font-bold text-foreground">{treasure.name}</h3>
@@ -91,7 +88,7 @@ export function TreasurePopupCard({
             )}
             {distanceRow}
             <div className="mt-4 flex justify-end">
-              <PillButton onClick={onDirections} icon={<Navigation className="h-4 w-4 text-white" />}>
+              <PillButton onClick={onDirections} icon={<Navigation className="h-4 w-4 text-primary-foreground" />}>
                 directions
               </PillButton>
             </div>
@@ -108,14 +105,12 @@ export function TreasurePopupCard({
         className="fixed left-0 right-0 z-[1100] animate-slide-up px-3"
         style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       >
-        <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-white shadow-xl">
+        <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
           {imageBlock}
           <div className="px-4 pb-4 pt-3">
             <div className="flex items-start gap-2">
               <img src={huntPinGrab} alt="" className="mt-0.5 h-6 w-6 shrink-0 object-contain" />
-              <p className="text-base font-bold leading-snug" style={{ color: '#B45309' }}>
-                {title}
-              </p>
+              <p className="text-base font-bold leading-snug text-primary">{title}</p>
             </div>
             <h3 className="mt-2 text-lg font-bold text-foreground">{treasure.name}</h3>
             {treasure.address && (
@@ -152,17 +147,12 @@ export function TreasurePopupCard({
       className="fixed left-0 right-0 z-[1100] animate-slide-up px-3"
       style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
-      <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-white shadow-xl">
+      <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
         {imageBlock}
         <div className="px-4 pb-4 pt-3">
           <div className="flex items-start gap-2">
             <img src={huntPinStar} alt="" className="mt-0.5 h-6 w-6 shrink-0 object-contain" />
-            <p
-              className="text-base font-bold italic leading-snug"
-              style={{ color: ORANGE }}
-            >
-              {huntTitle}
-            </p>
+            <p className="text-base font-bold italic leading-snug text-primary">{huntTitle}</p>
           </div>
           <h3 className="mt-2 text-lg font-bold text-foreground">{treasure.name}</h3>
           {treasure.address && (

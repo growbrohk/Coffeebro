@@ -306,8 +306,8 @@
 }
 
 .hunt-map-wrapper .leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.82) !important;
-  color: rgba(0, 0, 0, 0.42) !important;
+  background: hsl(var(--card) / 0.92) !important;
+  color: hsl(var(--muted-foreground)) !important;
   font-size: 9px !important;
   line-height: 1.25 !important;
   padding: 2px 6px !important;
@@ -319,11 +319,6 @@
   border-radius: 4px 0 0 0 !important;
   border: none !important;
   box-shadow: none !important;
-}
-
-.dark .hunt-map-wrapper .leaflet-control-attribution {
-  background: rgba(30, 30, 30, 0.82) !important;
-  color: rgba(255, 255, 255, 0.45) !important;
 }
 
 .hunt-map-wrapper .leaflet-control-attribution a {
