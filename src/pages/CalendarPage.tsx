@@ -192,17 +192,17 @@ export default function CalendarPage() {
             ))}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-9 w-9" />
+          <div className="mt-4 flex flex-nowrap items-center justify-center gap-2.5 text-xs">
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-6 w-6" />
               <span className="text-foreground">1 coffee</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-9 w-9" />
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-6 w-6" />
               <span className="text-foreground">2 coffee</span>
             </div>
-            <div className="flex items-center gap-2">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-9 w-9" />
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-6 w-6" />
               <span className="text-foreground">3+ coffee</span>
             </div>
           </div>
