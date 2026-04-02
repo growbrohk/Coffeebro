@@ -9,6 +9,7 @@ import 'leaflet/dist/leaflet.css';
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import coffeeShopPin from '@/assets/coffee-shop-pin.svg';
+import { isNearHongKong, MAP_FIT_SPAN_OUTLIER_DEG } from '@/lib/hkMapBounds';
 
 const TILE_LAYERS = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
@@ -85,6 +86,20 @@ function fitBoundsSignature(treasures: HuntMapTreasure[]): string {
     .join('|');
 }
 
+/** When the full set spans very wide (bad coordinate), fit the HK-area cluster so local pins stay visible. */
+function treasuresForFitBounds(withCoords: HuntMapTreasure[]): HuntMapTreasure[] {
+  if (withCoords.length <= 1) return withCoords;
+  const lats = withCoords.map((t) => t.lat!);
+  const lngs = withCoords.map((t) => t.lng!);
+  const latSpan = Math.max(...lats) - Math.min(...lats);
+  const lngSpan = Math.max(...lngs) - Math.min(...lngs);
+  const verySpread = latSpan > MAP_FIT_SPAN_OUTLIER_DEG || lngSpan > MAP_FIT_SPAN_OUTLIER_DEG;
+  if (!verySpread) return withCoords;
+  const nearHk = withCoords.filter((t) => isNearHongKong(t.lat!, t.lng!));
+  if (nearHk.length >= 1) return nearHk;
+  return withCoords;
+}
+
 function FitBounds({ treasures }: { treasures: HuntMapTreasure[] }) {
   const map = useMap();
   const signature = useMemo(() => fitBoundsSignature(treasures), [treasures]);
@@ -98,12 +113,13 @@ function FitBounds({ treasures }: { treasures: HuntMapTreasure[] }) {
         Number.isFinite(t.lng)
     );
     if (withCoords.length === 0) return;
-    if (withCoords.length === 1) {
-      map.setView([withCoords[0].lat!, withCoords[0].lng!], 15);
+    const forFit = treasuresForFitBounds(withCoords);
+    if (forFit.length === 1) {
+      map.setView([forFit[0].lat!, forFit[0].lng!], 15);
       return;
     }
     const bounds = L.latLngBounds(
-      withCoords.map((t) => [t.lat!, t.lng!] as [number, number])
+      forFit.map((t) => [t.lat!, t.lng!] as [number, number])
     );
     map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry changes

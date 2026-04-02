@@ -29,6 +29,7 @@ import {
 } from '@/lib/openingHours';
 import { HK_DISTRICTS } from '@/data/hkDistricts';
 import { HK_MTR_STATIONS } from '@/data/hkMtrStations';
+import { isNearHongKong } from '@/lib/hkMapBounds';
 
 const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
 const PREVIEW_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -134,6 +135,11 @@ export default function AdminOrgsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const refreshOrgRelatedQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
+  };
+
   const [activeOrgId, setActiveOrgId] = useState<string | null | 'new' | 'idle'>('idle');
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
@@ -193,6 +199,23 @@ export default function AdminOrgsPage() {
     if (!q) return [] as readonly string[];
     return HK_MTR_STATIONS.filter((s) => s.toLowerCase().includes(q)).slice(0, 12);
   }, [draft.mtr_station]);
+
+  const mapCoordHint = useMemo(() => {
+    const lat = parseCoord(draft.latStr);
+    const lng = parseCoord(draft.lngStr);
+    const latEmpty = !draft.latStr.trim();
+    const lngEmpty = !draft.lngStr.trim();
+    if (lat == null || lng == null) {
+      if (latEmpty && lngEmpty) {
+        return 'Without latitude and longitude, this organization will not show as a pin on the explorer map.';
+      }
+      return 'Enter both latitude and longitude so the café appears on the map.';
+    }
+    if (!isNearHongKong(lat, lng)) {
+      return 'These coordinates look outside the usual Hong Kong area. Check for typos or swapped latitude and longitude.';
+    }
+    return null;
+  }, [draft.latStr, draft.lngStr]);
 
   useEffect(() => {
     if (activeOrgId === 'idle' || activeOrgId === 'new') {
@@ -295,7 +318,7 @@ export default function AdminOrgsPage() {
         revokePendingOrgPreview();
         setPendingOrgPreviewFile(null);
         toast({ title: 'Photo uploaded!' });
-        queryClient.invalidateQueries({ queryKey: ['orgs'] });
+        refreshOrgRelatedQueries();
       } catch (err: unknown) {
         toast({
           title: 'Upload failed',
@@ -395,7 +418,7 @@ export default function AdminOrgsPage() {
         if (finalPreviewUrl) patchDraft({ preview_photo_url: finalPreviewUrl });
 
         toast({ title: 'Organization created' });
-        queryClient.invalidateQueries({ queryKey: ['orgs'] });
+        refreshOrgRelatedQueries();
         setActiveOrgId(orgId);
       } else if (typeof activeOrgId === 'string') {
         const orgId = activeOrgId;
@@ -433,7 +456,7 @@ export default function AdminOrgsPage() {
         }
 
         toast({ title: 'Organization updated' });
-        queryClient.invalidateQueries({ queryKey: ['orgs'] });
+        refreshOrgRelatedQueries();
       }
     } catch (err: unknown) {
       console.error(err);
@@ -554,6 +577,9 @@ export default function AdminOrgsPage() {
                   />
                 </div>
               </div>
+              {mapCoordHint ? (
+                <p className="text-sm text-muted-foreground">{mapCoordHint}</p>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram handle</Label>
                 <Input

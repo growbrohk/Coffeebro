@@ -25,6 +25,6 @@ export function useDiscoveryOrgs(options?: { enabled?: boolean }) {
       return (data || []) as DiscoveryOrgRow[];
     },
     enabled,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 }
