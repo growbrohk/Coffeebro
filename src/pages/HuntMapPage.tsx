@@ -16,6 +16,7 @@ import { HuntMap } from '@/components/HuntMap';
 import { TreasurePopupCard } from '@/components/TreasurePopupCard';
 import { HuntMapVoucherCarouselSheet } from '@/components/HuntMapVoucherCarouselSheet';
 import { useGeolocation, haversineDistance } from '@/hooks/useGeolocation';
+import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
 import { useHuntsOrgMeta } from '@/hooks/useHuntsOrgMeta';
 import {
   primaryOfferByTreasureId,
@@ -25,6 +26,7 @@ import {
   mapCalendarOfferRowToHuntMapTreasure,
   usePublicCalendarOffersForExplore,
 } from '@/hooks/usePublicCalendarOffersForExplore';
+import { discoveryOrgToCafeTreasure } from '@/lib/discoveryOrgToMapTreasure';
 import { pinKindForTreasure } from '@/lib/huntMapPinKind';
 import type { HuntMapTreasure } from '@/types/huntMapTreasure';
 import { Loader2, Search, ChevronLeft } from 'lucide-react';
@@ -71,6 +73,9 @@ export default function HuntMapPage() {
   const { position: userPosition } = useGeolocation();
   const { data: calendarOfferRows = [], isPending: calendarOffersLoading, refetch: refetchCalendar } =
     usePublicCalendarOffersForExplore();
+  const { data: discoveryOrgs = [], isLoading: discoveryOrgsLoading } = useDiscoveryOrgs({
+    enabled: isGlobalMode,
+  });
 
   const rawTreasures = isGlobalMode ? allTreasures : singleTreasures;
   const treasureIds = useMemo(() => rawTreasures.map((t) => t.id), [rawTreasures]);
@@ -134,9 +139,31 @@ export default function HuntMapPage() {
     });
   }, [calendarAsTreasures, searchQuery, pillar]);
 
+  const discoveryCafeTreasuresAll = useMemo(() => {
+    if (!isGlobalMode) return [];
+    return discoveryOrgs.map(discoveryOrgToCafeTreasure);
+  }, [isGlobalMode, discoveryOrgs]);
+
+  const filteredDiscoveryForMap = useMemo(() => {
+    if (!isGlobalMode) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return discoveryCafeTreasuresAll.filter((t) => {
+      if (pillar !== 'all' && pillar !== 'coffee_shop') return false;
+      if (!q) return true;
+      const row = discoveryOrgs.find((r) => r.id === t.id);
+      const hay = row
+        ? [row.org_name, row.location, row.district, row.mtr_station]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+        : [t.name, t.address, t.orgName].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }, [discoveryCafeTreasuresAll, discoveryOrgs, isGlobalMode, searchQuery, pillar]);
+
   const mapTreasures = useMemo(
-    () => [...filteredTreasures, ...filteredCalendarForMap],
-    [filteredTreasures, filteredCalendarForMap]
+    () => [...filteredTreasures, ...filteredCalendarForMap, ...filteredDiscoveryForMap],
+    [filteredTreasures, filteredCalendarForMap, filteredDiscoveryForMap]
   );
 
   const voucherTreasures = useMemo(() => {
@@ -157,7 +184,8 @@ export default function HuntMapPage() {
   const treasuresLoading =
     (isGlobalMode ? allTreasuresLoading : singleTreasuresLoading) ||
     huntOrgMetaLoading ||
-    calendarOffersLoading;
+    calendarOffersLoading ||
+    (isGlobalMode && discoveryOrgsLoading);
 
   const hasLocation =
     selectedTreasure &&
@@ -184,9 +212,19 @@ export default function HuntMapPage() {
       setSelectedTreasure(null);
       return;
     }
-    navigate(`/hunts/${t.hunt_id}/treasures/${t.id}`, {
-      state: { fromTab: 'map' as const },
-    });
+    if (t.cafeDetailTreasureId && t.hunt_id) {
+      navigate(`/hunts/${t.hunt_id}/treasures/${t.cafeDetailTreasureId}`, {
+        state: { fromTab: 'map' as const },
+      });
+      setSelectedTreasure(null);
+      return;
+    }
+    if (t.hunt_id) {
+      navigate(`/hunts/${t.hunt_id}/map`);
+      setSelectedTreasure(null);
+      return;
+    }
+    navigate('/hunts');
     setSelectedTreasure(null);
   };
 
@@ -237,11 +275,16 @@ export default function HuntMapPage() {
             treasures={mapTreasures}
             onSelectTreasure={(t) => setSelectedTreasure(t)}
             emptyMessage={
-              isGlobalMode && hunts.length === 0 && calendarAsTreasures.length === 0
-                ? 'No active hunts right now. Check back later or create one as a host.'
-                : mapTreasures.length === 0 &&
-                    (enrichedTreasures.length > 0 || calendarAsTreasures.length > 0)
-                  ? 'Nothing matches your search or filter.'
+              mapTreasures.length === 0 &&
+              (enrichedTreasures.length > 0 ||
+                calendarAsTreasures.length > 0 ||
+                discoveryCafeTreasuresAll.length > 0)
+                ? 'Nothing matches your search or filter.'
+                : isGlobalMode &&
+                    hunts.length === 0 &&
+                    calendarAsTreasures.length === 0 &&
+                    discoveryCafeTreasuresAll.length === 0
+                  ? 'No active hunts right now. Check back later or create one as a host.'
                   : undefined
             }
           />

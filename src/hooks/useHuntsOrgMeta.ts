@@ -33,7 +33,6 @@ export function useHuntsOrgMeta(huntIds: string[]) {
       }
       return map;
     },
-    enabled: sorted.length > 0,
     staleTime: 60_000,
   });
 }

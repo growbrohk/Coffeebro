@@ -14,8 +14,9 @@ export type DiscoveryOrgRow = {
   sample_treasure_id: string | null;
 };
 
-/** All orgs that have at least one active hunt (RPC; works without orgs-table SELECT). */
-export function useDiscoveryOrgs() {
+/** Every org row from RPC (see migration); optional `enabled` e.g. global map only. */
+export function useDiscoveryOrgs(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: ['discovery-orgs'],
     queryFn: async (): Promise<DiscoveryOrgRow[]> => {
@@ -23,6 +24,7 @@ export function useDiscoveryOrgs() {
       if (error) throw error;
       return (data || []) as DiscoveryOrgRow[];
     },
+    enabled,
     staleTime: 60_000,
   });
 }
