@@ -28,7 +28,7 @@ import {
   type DayHours,
 } from '@/lib/openingHours';
 import { HK_DISTRICTS } from '@/data/hkDistricts';
-import { HK_MTR_STATIONS } from '@/data/hkMtrStations';
+import { getMtrStationsForDistrict } from '@/data/mtrStationsByDistrict';
 import { isNearHongKong } from '@/lib/hkMapBounds';
 
 const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
@@ -194,11 +194,13 @@ export default function AdminOrgsPage() {
     },
   });
 
-  const mtrSuggestions = useMemo(() => {
-    const q = draft.mtr_station.trim().toLowerCase();
-    if (!q) return [] as readonly string[];
-    return HK_MTR_STATIONS.filter((s) => s.toLowerCase().includes(q)).slice(0, 12);
-  }, [draft.mtr_station]);
+  const mtrOptions = useMemo(() => {
+    const base = draft.district ? [...getMtrStationsForDistrict(draft.district)] : [];
+    const m = draft.mtr_station.trim();
+    if (m && !base.includes(m)) base.push(m);
+    base.sort((a, b) => a.localeCompare(b));
+    return base;
+  }, [draft.district, draft.mtr_station]);
 
   const mapCoordHint = useMemo(() => {
     const lat = parseCoord(draft.latStr);
@@ -734,7 +736,19 @@ export default function AdminOrgsPage() {
                 <Label>District</Label>
                 <Select
                   value={draft.district ? draft.district : '__none__'}
-                  onValueChange={(v) => patchDraft({ district: v === '__none__' ? '' : v })}
+                  onValueChange={(v) => {
+                    const district = v === '__none__' ? '' : v;
+                    const updates: Partial<Draft> = { district };
+                    if (!district) {
+                      updates.mtr_station = '';
+                    } else {
+                      const allowed = new Set(getMtrStationsForDistrict(district));
+                      if (draft.mtr_station && !allowed.has(draft.mtr_station)) {
+                        updates.mtr_station = '';
+                      }
+                    }
+                    patchDraft(updates);
+                  }}
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="District" />
@@ -751,28 +765,29 @@ export default function AdminOrgsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mtr">MTR station</Label>
-                <Input
-                  id="mtr"
-                  value={draft.mtr_station}
-                  onChange={(e) => patchDraft({ mtr_station: e.target.value })}
-                  placeholder="Start typing a station name"
-                  className="h-11"
-                  autoComplete="off"
-                />
-                {mtrSuggestions.length > 0 ? (
-                  <ul className="max-h-36 overflow-y-auto rounded-md border border-border bg-background text-sm">
-                    {mtrSuggestions.map((s) => (
-                      <li key={s}>
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-left hover:bg-muted"
-                          onClick={() => patchDraft({ mtr_station: s })}
-                        >
-                          {s}
-                        </button>
-                      </li>
+                <Select
+                  disabled={!draft.district}
+                  value={draft.mtr_station ? draft.mtr_station : '__none__'}
+                  onValueChange={(v) => patchDraft({ mtr_station: v === '__none__' ? '' : v })}
+                >
+                  <SelectTrigger id="mtr" className="h-11">
+                    <SelectValue
+                      placeholder={draft.district ? 'Station' : 'Select a district first'}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Not set</SelectItem>
+                    {mtrOptions.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
                     ))}
-                  </ul>
+                  </SelectContent>
+                </Select>
+                {!draft.district ? (
+                  <p className="text-xs text-muted-foreground">
+                    Select a district first to choose an MTR station.
+                  </p>
                 ) : null}
               </div>
             </section>
