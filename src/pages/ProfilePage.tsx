@@ -2,18 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useOrgs } from '@/hooks/useOrgs';
 import { useOrgStaff } from '@/hooks/useOrgStaff';
 import { assignmentsCanManageOffers } from '@/lib/orgStaff';
-import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
 import { useUserQuizResult } from '@/hooks/useUserQuizResult';
 import {
   useLifetimeCoffeeCount,
@@ -60,7 +52,6 @@ export default function ProfilePage() {
   const claimParam = searchParams.get('claim');
   /** Quiz unlock flow: show sign-up first, not login */
   const openAuthAsSignUp = Boolean(claimParam) || msgParam === 'quiz';
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const getMessage = () => {
     switch (msgParam) {
@@ -80,17 +71,14 @@ export default function ProfilePage() {
   };
 
   const authMessage = getMessage();
-  const { user, profile, loading, signIn, signUp, signOut } = useAuth();
-  const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
-  const { data: orgs = [] } = useOrgs();
+  const { user, profile, loading, signIn, signUp } = useAuth();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
 
   const canManageOffers = useMemo(
     () => isSuperAdmin || assignmentsCanManageOffers(staffAssignments),
     [isSuperAdmin, staffAssignments],
   );
-  const orgIds = orgs.map((o) => o.id);
-  const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
   const { data: quizResultType } = useUserQuizResult(user?.id);
   const { data: lifetimeTotal = 0, isLoading: lifetimeLoading } = useLifetimeCoffeeCount();
   const { data: profileStats, isLoading: profileStatsLoading } = useCoffeeProfileStats();
@@ -150,11 +138,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSignOut = async () => {
-    setSettingsOpen(false);
-    await signOut();
-  };
-
   if (user && profile) {
     const frogSubtitle = quizResultType
       ? FROG_NAMES[quizResultType].toLowerCase()
@@ -170,7 +153,7 @@ export default function ProfilePage() {
             type="button"
             className="absolute right-4 top-10 rounded-full p-2 text-primary-foreground/95 hover:bg-white/10"
             aria-label="Settings"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => navigate('/settings')}
           >
             <Settings className="h-6 w-6" strokeWidth={1.75} />
           </button>
@@ -334,77 +317,6 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
-
-        <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <SheetContent side="right" className="w-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>Settings</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 flex flex-col gap-6">
-              {conversionRates.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold uppercase text-muted-foreground">
-                    Quiz conversion
-                  </h3>
-                  {conversionRates.map((cr) => {
-                    const org = orgs.find((o) => o.id === cr.store_id);
-                    return (
-                      <div
-                        key={cr.store_id}
-                        className="flex items-center justify-between rounded-xl bg-muted/60 p-4"
-                      >
-                        <div>
-                          <p className="font-semibold">{org?.org_name ?? cr.store_id}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {cr.starts} starts · {cr.signups} signups
-                          </p>
-                        </div>
-                        <p className="text-xl font-black">{cr.conversion_rate}%</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {isSuperAdmin && (
-                <Button
-                  type="button"
-                  variant="default"
-                  className="w-full"
-                  onClick={() => {
-                    setSettingsOpen(false);
-                    navigate('/admin/orgs');
-                  }}
-                >
-                  Organizations
-                </Button>
-              )}
-
-              {isStaffUser && !isSuperAdmin && orgs.length > 0 && (
-                <Button
-                  type="button"
-                  variant="default"
-                  className="w-full"
-                  onClick={() => {
-                    setSettingsOpen(false);
-                    navigate('/host/orgs');
-                  }}
-                >
-                  My organizations
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                onClick={handleSignOut}
-                className="w-full btn-run btn-run-no"
-                variant="outline"
-              >
-                Logout
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
       </div>
     );
   }

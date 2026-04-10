@@ -8,6 +8,7 @@ import { Layout } from "@/components/Layout";
 import CheckPage from "./pages/CheckPage";
 import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
+import SettingsPage from "./pages/SettingsPage";
 import UserCalendarPage from "./pages/UserCalendarPage";
 import CreateCoffeeOffer from "./pages/CreateCoffeeOffer";
 import ScanPage from "./pages/Scan";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/check" element={<CheckPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
               <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
               <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />

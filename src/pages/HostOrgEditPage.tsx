@@ -510,7 +510,7 @@ export default function HostOrgEditPage() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-          <button type="button" onClick={() => navigate('/profile')} className="absolute left-0 p-2" aria-label="Back">
+          <button type="button" onClick={() => navigate('/host/orgs')} className="absolute left-0 p-2" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
           <h1 className="text-lg font-black uppercase tracking-tight">Organization</h1>
@@ -529,7 +529,7 @@ export default function HostOrgEditPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-        <button type="button" onClick={() => navigate('/profile')} className="absolute left-0 p-2" aria-label="Back">
+        <button type="button" onClick={() => navigate('/host/orgs')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
         <h1 className="text-lg font-black uppercase tracking-tight">Edit organization</h1>

@@ -44,15 +44,15 @@ export default function HostOrgsPage() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-          <button type="button" onClick={() => navigate('/profile')} className="absolute left-0 p-2" aria-label="Back">
+          <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
           <h1 className="text-lg font-black uppercase tracking-tight">Organizations</h1>
         </div>
         <div className="container max-w-lg px-4 py-8">
           <p className="text-center text-muted-foreground">This page is only for café staff accounts.</p>
-          <Button className="mx-auto mt-4 block" variant="outline" onClick={() => navigate('/profile')}>
-            Back to Profile
+          <Button className="mx-auto mt-4 block" variant="outline" onClick={() => navigate('/settings')}>
+            Back to settings
           </Button>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function HostOrgsPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-        <button type="button" onClick={() => navigate('/profile')} className="absolute left-0 p-2" aria-label="Back">
+        <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
         <h1 className="text-lg font-black uppercase tracking-tight">My organizations</h1>
