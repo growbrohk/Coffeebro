@@ -5,6 +5,7 @@ import { ArrowLeft, ImageIcon, MapPin, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { useSearchUsers } from '@/hooks/useUserRuns';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +31,14 @@ import { HK_DISTRICTS } from '@/data/hkDistricts';
 import { getMtrStationsForDistrict } from '@/data/mtrStationsByDistrict';
 import { isNearHongKong } from '@/lib/hkMapBounds';
 import type { Org } from '@/hooks/useOrgs';
-import { canEditOrgProfileForOrgRole } from '@/lib/orgStaff';
+import { canEditOrgProfileForOrgRole, canManageOrgStaff } from '@/lib/orgStaff';
+
+const ORG_ROLE_LABEL: Record<string, string> = {
+  owner: 'Primary owner',
+  host: 'Host',
+  manager: 'Manager',
+  barista: 'Barista',
+};
 
 const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
 const PREVIEW_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -136,6 +144,10 @@ export default function HostOrgEditPage() {
   const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
   const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
+  const [staffAddSearch, setStaffAddSearch] = useState('');
+  const [debouncedStaffQ, setDebouncedStaffQ] = useState('');
+  const [staffAddRole, setStaffAddRole] = useState<'host' | 'manager' | 'barista'>('host');
+  const [staffSaving, setStaffSaving] = useState(false);
 
   const orgRole = assignments.find((a) => a.org_id === orgId)?.role ?? null;
   const canEdit =
@@ -145,6 +157,56 @@ export default function HostOrgEditPage() {
   const noAccess =
     !orgId ||
     (!isSuperAdmin && !staffLoading && !assignments.some((a) => a.org_id === orgId));
+
+  const canViewOrgStaffList =
+    !!orgId &&
+    !!user &&
+    (isSuperAdmin || assignments.some((a) => a.org_id === orgId));
+  const showStaffSection = isSuperAdmin || (!staffLoading && canManageOrgStaff(orgRole));
+
+  const refreshOrgRelatedQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['org-staff-assignments'] });
+    if (orgId) {
+      queryClient.invalidateQueries({ queryKey: ['org-staff-admin', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['host-org-edit', orgId] });
+    }
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedStaffQ(staffAddSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [staffAddSearch]);
+
+  const { data: staffSearchResults = [] } = useSearchUsers(debouncedStaffQ);
+
+  const { data: orgStaffRows = [], isLoading: orgStaffLoading } = useQuery({
+    queryKey: ['org-staff-admin', orgId],
+    enabled: canViewOrgStaffList,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('org_hosts')
+        .select('id, user_id, role')
+        .eq('org_id', orgId!);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (rows.length === 0) return [] as { id: string; user_id: string; role: string; username: string }[];
+      const ids = [...new Set(rows.map((r) => r.user_id))];
+      const { data: profiles, error: pErr } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', ids);
+      if (pErr) throw pErr;
+      const map = new Map((profiles ?? []).map((p) => [p.user_id, p.username as string]));
+      return rows.map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        role: r.role,
+        username: map.get(r.user_id) ?? r.user_id,
+      }));
+    },
+  });
 
   const { data: org, isLoading: orgLoading } = useQuery({
     queryKey: ['host-org-edit', orgId],
@@ -276,7 +338,83 @@ export default function HostOrgEditPage() {
     }
   };
 
-  if (loading || roleLoading || staffLoading || orgLoading) {
+  const handleAddStaffMember = async (userId: string) => {
+    if (!orgId || !showStaffSection) return;
+    setStaffSaving(true);
+    try {
+      const { error } = await supabase.from('org_hosts').insert({
+        org_id: orgId,
+        user_id: userId,
+        role: staffAddRole,
+      });
+      if (error) throw error;
+      setStaffAddSearch('');
+      toast({ title: 'Staff added' });
+      refreshOrgRelatedQueries();
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Could not add staff',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setStaffSaving(false);
+    }
+  };
+
+  const handleRemoveStaffMember = async (row: { id: string; user_id: string; role: string }) => {
+    if (org && row.user_id === org.owner_user_id && row.role === 'owner') {
+      toast({
+        title: 'Cannot remove primary owner',
+        description: 'Assign a different primary owner first, then remove this row.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!orgId) return;
+    setStaffSaving(true);
+    try {
+      const { error } = await supabase.from('org_hosts').delete().eq('id', row.id);
+      if (error) throw error;
+      toast({ title: 'Removed' });
+      refreshOrgRelatedQueries();
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Remove failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setStaffSaving(false);
+    }
+  };
+
+  const handleStaffRoleChange = async (
+    row: { id: string; user_id: string; role: string },
+    newRole: 'host' | 'manager' | 'barista'
+  ) => {
+    if (row.role === 'owner' || !orgId) return;
+    setStaffSaving(true);
+    try {
+      const { error } = await supabase.from('org_hosts').update({ role: newRole }).eq('id', row.id);
+      if (error) throw error;
+      toast({ title: 'Role updated' });
+      refreshOrgRelatedQueries();
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Could not update role',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setStaffSaving(false);
+    }
+  };
+
+  if (loading || roleLoading || staffLoading || orgLoading || (canViewOrgStaffList && orgStaffLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
@@ -586,6 +724,116 @@ export default function HostOrgEditPage() {
               </Select>
             </div>
           </section>
+
+          {showStaffSection ? (
+            <section className="space-y-4">
+              <h3 className="text-sm font-semibold uppercase text-foreground">Staff</h3>
+              <p className="text-xs text-muted-foreground">
+                Add Host, Manager, or Barista roles for other accounts. The primary owner cannot be removed or
+                reassigned here; use the admin console to change primary ownership.
+              </p>
+              {orgStaffLoading ? (
+                <p className="text-sm text-muted-foreground">Loading staff…</p>
+              ) : orgStaffRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No staff rows yet.</p>
+              ) : (
+                <ul className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-border p-2 text-sm">
+                  {orgStaffRows.map((row) => {
+                    const isPrimaryOwnerRow =
+                      row.role === 'owner' &&
+                      !!org?.owner_user_id &&
+                      row.user_id === org.owner_user_id;
+                    return (
+                      <li
+                        key={row.id}
+                        className="flex flex-col gap-2 rounded-md px-2 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                      >
+                        <span className="min-w-0 font-medium">{row.username}</span>
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:justify-end">
+                          {row.role === 'owner' ? (
+                            <span className="text-xs text-muted-foreground">
+                              {ORG_ROLE_LABEL[row.role] ?? row.role}
+                            </span>
+                          ) : (
+                            <Select
+                              value={row.role}
+                              onValueChange={(v) =>
+                                handleStaffRoleChange(row, v as 'host' | 'manager' | 'barista')
+                              }
+                              disabled={staffSaving}
+                            >
+                              <SelectTrigger className="h-9 w-[140px]" aria-label="Staff role">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="host">Host</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                                <SelectItem value="barista">Barista</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="shrink-0 text-destructive"
+                            disabled={staffSaving || isPrimaryOwnerRow}
+                            onClick={() => handleRemoveStaffMember(row)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="host-staff-search">Add staff by username</Label>
+                <Input
+                  id="host-staff-search"
+                  value={staffAddSearch}
+                  onChange={(e) => setStaffAddSearch(e.target.value)}
+                  placeholder="At least 2 characters"
+                  className="h-11"
+                  autoComplete="off"
+                />
+                <div className="space-y-2">
+                  <Label>Role for new staff</Label>
+                  <Select
+                    value={staffAddRole}
+                    onValueChange={(v) => setStaffAddRole(v as 'host' | 'manager' | 'barista')}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="host">Host</SelectItem>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="barista">Barista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {staffSearchResults.length > 0 ? (
+                  <ul className="max-h-40 overflow-y-auto rounded-md border border-border bg-background text-sm">
+                    {staffSearchResults.map((u) => (
+                      <li key={u.user_id}>
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left hover:bg-muted"
+                          disabled={staffSaving}
+                          onClick={() => handleAddStaffMember(u.user_id)}
+                        >
+                          {u.username}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           {canEdit && !readOnlyManager ? (
             <Button type="submit" className="w-full btn-run" disabled={saving}>

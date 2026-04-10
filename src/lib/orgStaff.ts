@@ -11,6 +11,12 @@ export function canEditOrgProfileForOrgRole(role: string | null | undefined): bo
   return role === 'owner' || role === 'host';
 }
 
+/** Per-org staff management (list/add/remove/roles): owner or host only; managers/baristas cannot. */
+export function canManageOrgStaff(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return role === 'owner' || role === 'host';
+}
+
 export function assignmentsCanManageOffers(
   assignments: { role: string }[] | undefined
 ): boolean {
