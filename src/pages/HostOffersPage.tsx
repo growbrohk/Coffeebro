@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { assignmentsCanManageOffers } from '@/lib/orgStaff';
 import { useHostOffers } from '@/hooks/useHostOffers';
 import { ArrowLeft, Calendar, MapPin, Plus, Users } from 'lucide-react';
 import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
@@ -9,10 +11,12 @@ import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 export default function HostOffersPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
   const { data: offers = [], isLoading } = useHostOffers();
 
-  if (loading || roleLoading) {
+  if (loading || roleLoading || staffLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
@@ -40,7 +44,7 @@ export default function HostOffersPage() {
     );
   }
 
-  if (!canHostEvent) {
+  if (!canManageOffers) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">

@@ -138,12 +138,17 @@ export default function AdminOrgsPage() {
   const refreshOrgRelatedQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['orgs'] });
     queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['org-staff-assignments'] });
   };
 
   const [activeOrgId, setActiveOrgId] = useState<string | null | 'new' | 'idle'>('idle');
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
   const [debouncedHostQ, setDebouncedHostQ] = useState('');
+  const [staffAddSearch, setStaffAddSearch] = useState('');
+  const [debouncedStaffQ, setDebouncedStaffQ] = useState('');
+  const [staffAddRole, setStaffAddRole] = useState<'host' | 'manager' | 'barista'>('host');
+  const [staffSaving, setStaffSaving] = useState(false);
   const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
   const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
   const [pendingOrgPreviewFile, setPendingOrgPreviewFile] = useState<File | null>(null);
@@ -178,7 +183,44 @@ export default function AdminOrgsPage() {
     return () => clearTimeout(t);
   }, [draft.hostSearch]);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedStaffQ(staffAddSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [staffAddSearch]);
+
   const { data: hostResults = [] } = useSearchUsers(debouncedHostQ);
+  const { data: staffSearchResults = [] } = useSearchUsers(debouncedStaffQ);
+
+  const activeOrgIdForStaff =
+    typeof activeOrgId === 'string' && activeOrgId !== 'new' && activeOrgId !== 'idle' ? activeOrgId : null;
+
+  const { data: orgStaffRows = [], isLoading: orgStaffLoading } = useQuery({
+    queryKey: ['org-staff-admin', activeOrgIdForStaff],
+    enabled: !!activeOrgIdForStaff,
+    queryFn: async () => {
+      const orgId = activeOrgIdForStaff!;
+      const { data, error } = await supabase
+        .from('org_hosts')
+        .select('id, user_id, role')
+        .eq('org_id', orgId);
+      if (error) throw error;
+      const rows = data ?? [];
+      if (rows.length === 0) return [] as { id: string; user_id: string; role: string; username: string }[];
+      const ids = [...new Set(rows.map((r) => r.user_id))];
+      const { data: profiles, error: pErr } = await supabase
+        .from('profiles')
+        .select('user_id, username')
+        .in('user_id', ids);
+      if (pErr) throw pErr;
+      const map = new Map((profiles ?? []).map((p) => [p.user_id, p.username as string]));
+      return rows.map((r) => ({
+        id: r.id,
+        user_id: r.user_id,
+        role: r.role,
+        username: map.get(r.user_id) ?? r.user_id,
+      }));
+    },
+  });
 
   const { data: ownerProfile } = useQuery({
     queryKey: ['admin-org-owner-profile', draft.owner_user_id],
@@ -277,6 +319,67 @@ export default function AdminOrgsPage() {
   }
 
   const patchDraft = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  const ORG_ROLE_LABEL: Record<string, string> = {
+    owner: 'Primary owner',
+    host: 'Host',
+    manager: 'Manager',
+    barista: 'Barista',
+  };
+
+  const handleAddStaffMember = async (userId: string) => {
+    if (!activeOrgIdForStaff) return;
+    setStaffSaving(true);
+    try {
+      const { error } = await supabase.from('org_hosts').insert({
+        org_id: activeOrgIdForStaff,
+        user_id: userId,
+        role: staffAddRole,
+      });
+      if (error) throw error;
+      setStaffAddSearch('');
+      toast({ title: 'Staff added' });
+      queryClient.invalidateQueries({ queryKey: ['org-staff-admin', activeOrgIdForStaff] });
+      refreshOrgRelatedQueries();
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Could not add staff',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setStaffSaving(false);
+    }
+  };
+
+  const handleRemoveStaffMember = async (row: { id: string; user_id: string; role: string }) => {
+    if (row.user_id === draft.owner_user_id && row.role === 'owner') {
+      toast({
+        title: 'Cannot remove primary owner',
+        description: 'Assign a different primary owner first, then remove this row.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setStaffSaving(true);
+    try {
+      const { error } = await supabase.from('org_hosts').delete().eq('id', row.id);
+      if (error) throw error;
+      toast({ title: 'Removed' });
+      queryClient.invalidateQueries({ queryKey: ['org-staff-admin', activeOrgIdForStaff] });
+      refreshOrgRelatedQueries();
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Remove failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setStaffSaving(false);
+    }
+  };
 
   const handleSelectOrg = (id: string) => {
     setActiveOrgId(id);
@@ -834,6 +937,91 @@ export default function AdminOrgsPage() {
                 ) : null}
               </div>
             </section>
+
+            {activeOrgIdForStaff ? (
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase text-foreground">Staff (this organization)</h3>
+                <p className="text-xs text-muted-foreground">
+                  Primary owner is set above. Add Host, Manager, or Barista roles for other accounts. Removing all
+                  assignments for a user restores their global role to regular user.
+                </p>
+                {orgStaffLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading staff…</p>
+                ) : orgStaffRows.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No staff rows yet.</p>
+                ) : (
+                  <ul className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border p-2 text-sm">
+                    {orgStaffRows.map((row) => (
+                      <li
+                        key={row.id}
+                        className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted/80"
+                      >
+                        <span className="min-w-0">
+                          <span className="font-medium">{row.username}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {ORG_ROLE_LABEL[row.role] ?? row.role}
+                          </span>
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0 text-destructive"
+                          disabled={staffSaving}
+                          onClick={() => handleRemoveStaffMember(row)}
+                        >
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="staff-search">Add staff by username</Label>
+                  <Input
+                    id="staff-search"
+                    value={staffAddSearch}
+                    onChange={(e) => setStaffAddSearch(e.target.value)}
+                    placeholder="At least 2 characters"
+                    className="h-11"
+                    autoComplete="off"
+                  />
+                  <div className="space-y-2">
+                    <Label>Role for new staff</Label>
+                    <Select
+                      value={staffAddRole}
+                      onValueChange={(v) => setStaffAddRole(v as 'host' | 'manager' | 'barista')}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="host">Host</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="barista">Barista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {staffSearchResults.length > 0 ? (
+                    <ul className="max-h-40 overflow-y-auto rounded-md border border-border bg-background text-sm">
+                      {staffSearchResults.map((u) => (
+                        <li key={u.user_id}>
+                          <button
+                            type="button"
+                            className="w-full px-3 py-2 text-left hover:bg-muted"
+                            disabled={staffSaving}
+                            onClick={() => handleAddStaffMember(u.user_id)}
+                          >
+                            {u.username}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
 
             <Button type="submit" className="w-full btn-run" disabled={saving}>
               {saving ? 'Saving…' : activeOrgId === 'new' ? 'Create organization' : 'Save changes'}

@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useOfferParticipants } from '@/hooks/useOfferParticipants';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { canManageOrgOffers } from '@/lib/orgStaff';
+import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +17,30 @@ type SortDir = 'asc' | 'desc';
 export default function OfferParticipantsPage() {
   const { offerId } = useParams<{ offerId: string }>();
   const navigate = useNavigate();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+
+  const { data: offerOrgId } = useQuery({
+    queryKey: ['offer-org', offerId],
+    enabled: !!offerId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('offers')
+        .select('org_id')
+        .eq('id', offerId)
+        .single();
+      if (error) throw error;
+      return data?.org_id as string | undefined;
+    },
+  });
+
+  const roleForOfferOrg =
+    offerOrgId != null
+      ? staffAssignments.find((a) => a.org_id === offerOrgId)?.role
+      : undefined;
+  const canViewParticipants =
+    isSuperAdmin || (roleForOfferOrg !== undefined && canManageOrgOffers(roleForOfferOrg));
+
   const { data: participants = [], isLoading, error } = useOfferParticipants(offerId || null);
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
@@ -65,8 +92,7 @@ export default function OfferParticipantsPage() {
     });
   }, [filteredParticipants, sortKey, sortDir]);
 
-  // Host gate
-  if (!roleLoading && !canHostEvent) {
+  if (!roleLoading && !staffLoading && !canViewParticipants) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="flex flex-col items-center justify-center min-h-[400px] text-center">

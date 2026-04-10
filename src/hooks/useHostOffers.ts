@@ -23,13 +23,36 @@ export function useHostOffers() {
     queryFn: async (): Promise<HostOffer[]> => {
       if (!user) return [];
 
-      // 1. Calendar offers: created_by = user
-      const { data: calendarData, error: calendarError } = await (supabase as any)
+      const { data: accessRow } = await supabase
+        .from('user_access')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      const isSuperAdmin = accessRow?.role === 'super_admin';
+
+      const { data: staffRows } = await supabase
+        .from('org_hosts')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .in('role', ['owner', 'host', 'manager']);
+      const manageOrgIds = [...new Set((staffRows ?? []).map((r: { org_id: string }) => r.org_id))];
+
+      let calendarQuery = (supabase as any)
         .from('offers')
         .select('id, name, offer_type, event_date, event_time, location, created_at')
         .eq('source_type', 'calendar')
-        .eq('created_by', user.id)
         .order('event_date', { ascending: false });
+
+      if (isSuperAdmin) {
+        calendarQuery = calendarQuery;
+      } else if (manageOrgIds.length > 0) {
+        const inList = manageOrgIds.join(',');
+        calendarQuery = calendarQuery.or(`created_by.eq.${user.id},org_id.in.(${inList})`);
+      } else {
+        calendarQuery = calendarQuery.eq('created_by', user.id);
+      }
+
+      const { data: calendarData, error: calendarError } = await calendarQuery;
 
       if (calendarError) throw calendarError;
 

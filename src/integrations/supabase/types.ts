@@ -765,7 +765,19 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      can_edit_org_profile: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_host_event: { Args: { _user_id: string }; Returns: boolean }
+      can_manage_org_offers: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_scan_vouchers_for_org: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_org: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -848,6 +860,10 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      org_staff_role: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: string
+      }
       is_org_owner: {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
@@ -892,7 +908,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "run_club_host" | "user"
+      app_role: "super_admin" | "owner" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1020,7 +1036,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "run_club_host", "user"],
+      app_role: ["super_admin", "owner", "user"],
     },
   },
 } as const

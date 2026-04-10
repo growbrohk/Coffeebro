@@ -23,10 +23,10 @@ export interface Org {
  
  export function useOrgs() {
    const { user } = useAuth();
-   const { isSuperAdmin, isRunClubHost } = useUserRole();
+   const { isSuperAdmin, isStaffUser } = useUserRole();
 
    return useQuery({
-     queryKey: ['orgs', user?.id, isSuperAdmin, isRunClubHost],
+     queryKey: ['orgs', user?.id, isSuperAdmin, isStaffUser],
      queryFn: async () => {
        if (!user) return [];
 
@@ -45,8 +45,8 @@ export interface Org {
          return data as Org[];
        }
 
-       // Run club host sees only orgs they are assigned to in org_hosts
-       if (isRunClubHost) {
+       // Staff users see only orgs they are assigned to in org_hosts
+       if (isStaffUser) {
          const { data: orgHosts, error: orgHostsError } = await supabase
            .from('org_hosts')
            .select('org_id')
@@ -77,6 +77,6 @@ export interface Org {
        // Regular users can't see any orgs (they can't create coffee offers)
        return [];
      },
-     enabled: !!user && (isSuperAdmin || isRunClubHost),
+     enabled: !!user && (isSuperAdmin || isStaffUser),
    });
  }

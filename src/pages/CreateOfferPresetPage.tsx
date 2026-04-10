@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ImageIcon, Trash2 } from 'lucide-react';
@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
 import { useOrgs } from '@/hooks/useOrgs';
+import { assignmentsCanManageOffers, canManageOrgOffers } from '@/lib/orgStaff';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { OFFER_TYPES, type OfferTypeValue } from '@/lib/offerForm';
@@ -26,8 +28,18 @@ export default function CreateOfferPresetPage() {
   const isEditMode = !!presetId;
 
   const { user } = useAuth();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
   const { data: orgs = [], isLoading: orgsLoading } = useOrgs();
+
+  const manageableOrgs = useMemo(() => {
+    if (isSuperAdmin) return orgs;
+    const allowed = new Set(
+      staffAssignments.filter((a) => canManageOrgOffers(a.role)).map((a) => a.org_id)
+    );
+    return orgs.filter((o) => allowed.has(o.id));
+  }, [isSuperAdmin, orgs, staffAssignments]);
   const { toast } = useToast();
 
   const [orgId, setOrgId] = useState('');
@@ -82,10 +94,10 @@ export default function CreateOfferPresetPage() {
   });
 
   useEffect(() => {
-    if (!orgId && orgs.length > 0) {
-      setOrgId(orgs[0].id);
+    if (!orgId && manageableOrgs.length > 0) {
+      setOrgId(manageableOrgs[0].id);
     }
-  }, [orgs, orgId]);
+  }, [manageableOrgs, orgId]);
 
   useEffect(() => {
     if (!editPreset) return;
@@ -112,7 +124,7 @@ export default function CreateOfferPresetPage() {
     };
   }, []);
 
-  if (roleLoading || (isEditMode && editLoading)) {
+  if (roleLoading || staffLoading || (isEditMode && editLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
@@ -120,7 +132,7 @@ export default function CreateOfferPresetPage() {
     );
   }
 
-  if (!user || !canHostEvent) {
+  if (!user || !canManageOffers) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
@@ -313,12 +325,12 @@ export default function CreateOfferPresetPage() {
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
           <div className="space-y-2">
             <Label className="text-sm font-semibold uppercase">Organization *</Label>
-            <Select value={orgId} onValueChange={setOrgId} disabled={orgsLoading}>
+            <Select value={orgId} onValueChange={setOrgId} disabled={orgsLoading || staffLoading}>
               <SelectTrigger className="h-12 text-lg">
                 <SelectValue placeholder="Select organization" />
               </SelectTrigger>
               <SelectContent>
-                {orgs.map((org) => (
+                {manageableOrgs.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.org_name}
                   </SelectItem>

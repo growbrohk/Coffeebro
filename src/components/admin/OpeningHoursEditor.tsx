@@ -11,9 +11,10 @@ import {
 type Props = {
   value: Record<OpeningDayKey, DayHours>;
   onChange: (next: Record<OpeningDayKey, DayHours>) => void;
+  disabled?: boolean;
 };
 
-export function OpeningHoursEditor({ value, onChange }: Props) {
+export function OpeningHoursEditor({ value, onChange, disabled = false }: Props) {
   const patchDay = (key: OpeningDayKey, patch: Partial<DayHours>) => {
     onChange({
       ...value,
@@ -34,6 +35,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
               <Checkbox
                 id={`closed-${key}`}
                 checked={row.closed}
+                disabled={disabled}
                 onCheckedChange={(c) => patchDay(key, { closed: c === true })}
               />
               <Label htmlFor={`closed-${key}`} className="text-sm font-medium leading-none">
@@ -43,7 +45,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
             <div className="flex flex-1 flex-wrap items-center gap-2">
               <Input
                 type="time"
-                disabled={row.closed}
+                disabled={disabled || row.closed}
                 value={row.open}
                 onChange={(e) => patchDay(key, { open: e.target.value })}
                 className="h-9 w-[7.5rem]"
@@ -54,7 +56,7 @@ export function OpeningHoursEditor({ value, onChange }: Props) {
               </span>
               <Input
                 type="time"
-                disabled={row.closed}
+                disabled={disabled || row.closed}
                 value={row.close}
                 onChange={(e) => patchDay(key, { close: e.target.value })}
                 className="h-9 w-[7.5rem]"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import {
+  assignmentsCanManageOffers,
+  canEditOrgProfileForOrgRole,
+} from '@/lib/orgStaff';
 import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
 import { useUserQuizResult } from '@/hooks/useUserQuizResult';
 import {
@@ -79,8 +84,14 @@ export default function ProfilePage() {
 
   const authMessage = getMessage();
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
-  const { canHostEvent, isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [] } = useOrgs();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+
+  const canManageOffers = useMemo(
+    () => isSuperAdmin || assignmentsCanManageOffers(staffAssignments),
+    [isSuperAdmin, staffAssignments],
+  );
   const orgIds = orgs.map((o) => o.id);
   const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
   const { data: quizResultType } = useUserQuizResult(user?.id);
@@ -295,13 +306,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {canHostEvent && (
+          {canManageOffers && (
             <div className="space-y-3 pt-2">
               <Button
                 type="button"
                 onClick={() => navigate('/host/preset-offers')}
                 className="w-full btn-run mb-0 bg-orange-500 hover:bg-orange-600 text-white"
-                disabled={roleLoading}
+                disabled={roleLoading || staffLoading}
               >
                 Create / manage offer
               </Button>
@@ -310,7 +321,7 @@ export default function ProfilePage() {
                 onClick={() => navigate('/host/offer-campaign')}
                 variant="outline"
                 className="w-full btn-run mb-0"
-                disabled={roleLoading}
+                disabled={roleLoading || staffLoading}
               >
                 Create / manage offer campaign
               </Button>
@@ -319,10 +330,32 @@ export default function ProfilePage() {
                 onClick={() => navigate('/host/hunts')}
                 variant="outline"
                 className="w-full btn-run mb-0"
-                disabled={roleLoading}
+                disabled={roleLoading || staffLoading}
               >
                 Manage Hunts
               </Button>
+            </div>
+          )}
+
+          {!roleLoading && !staffLoading && orgs.length > 0 && (
+            <div className="space-y-2 pt-2">
+              {orgs.map((o) => {
+                const role = staffAssignments.find((a) => a.org_id === o.id)?.role;
+                const showEdit =
+                  isSuperAdmin || (role !== undefined && canEditOrgProfileForOrgRole(role));
+                if (!showEdit) return null;
+                return (
+                  <Button
+                    key={o.id}
+                    type="button"
+                    variant="outline"
+                    className="w-full btn-run mb-0"
+                    onClick={() => navigate(`/host/org/${o.id}`)}
+                  >
+                    Edit {o.org_name}
+                  </Button>
+                );
+              })}
             </div>
           )}
         </div>

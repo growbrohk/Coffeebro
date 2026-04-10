@@ -1,8 +1,12 @@
+import { useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { useOrgs } from '@/hooks/useOrgs';
+import { assignmentsCanManageOffers, canManageOrgOffers } from '@/lib/orgStaff';
 import { ArrowLeft, Layers, Plus } from 'lucide-react';
 import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,16 +23,25 @@ type PresetRow = {
 export default function OfferPresetsPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: orgs = [] } = useOrgs();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
+
+  const manageableOrgIds = useMemo(() => {
+    if (isSuperAdmin) return orgs.map((o) => o.id);
+    return staffAssignments.filter((a) => canManageOrgOffers(a.role)).map((a) => a.org_id);
+  }, [isSuperAdmin, orgs, staffAssignments]);
 
   const { data: presets = [], isLoading } = useQuery({
-    queryKey: ['preset-offers-list', user?.id],
-    enabled: !!user && canHostEvent,
+    queryKey: ['preset-offers-list', user?.id, manageableOrgIds],
+    enabled: !!user && canManageOffers && manageableOrgIds.length > 0,
     queryFn: async (): Promise<PresetRow[]> => {
       const { data, error } = await (supabase as any)
         .from('preset_offers')
         .select('id, org_id, name, offer_type, created_at, orgs(org_name)')
-        .eq('created_by', user!.id)
+        .in('org_id', manageableOrgIds)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -36,7 +49,7 @@ export default function OfferPresetsPage() {
     },
   });
 
-  if (loading || roleLoading) {
+  if (loading || roleLoading || staffLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
@@ -62,7 +75,7 @@ export default function OfferPresetsPage() {
     );
   }
 
-  if (!canHostEvent) {
+  if (!canManageOffers) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">

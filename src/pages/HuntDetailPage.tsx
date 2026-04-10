@@ -2,6 +2,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { assignmentsCanManageOffers } from '@/lib/orgStaff';
 import { useHunt, useIsParticipant, useJoinHunt } from '@/hooks/useHunts';
 import { MapPin, Camera, Loader2 } from 'lucide-react';
 
@@ -9,7 +11,9 @@ export default function HuntDetailPage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { canHostEvent } = useUserRole();
+  const { isSuperAdmin } = useUserRole();
+  const { data: staffAssignments = [] } = useOrgStaff();
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
   const { data: hunt, isLoading } = useHunt(huntId ?? null);
   const { data: isParticipant } = useIsParticipant(huntId ?? null);
   const joinHunt = useJoinHunt();
@@ -120,7 +124,7 @@ export default function HuntDetailPage() {
           </>
         )}
 
-        {canHostEvent && hunt.created_by === user.id && (
+        {canManageOffers && hunt.created_by === user.id && (
           <Button
             variant="outline"
             className="w-full"

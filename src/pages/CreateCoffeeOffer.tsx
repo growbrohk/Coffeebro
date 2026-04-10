@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,9 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
 import { useOrgs } from '@/hooks/useOrgs';
+import { assignmentsCanManageOffers, canManageOrgOffers } from '@/lib/orgStaff';
 import { useHunt, useMyHunts } from '@/hooks/useHunts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -67,8 +69,17 @@ function toTimeOnly(iso: string | null | undefined): string {
 export default function CreateCoffeeOffer() {
   const { user } = useAuth();
   const { offerId } = useParams<{ offerId: string }>();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
   const { data: orgs, isLoading: orgsLoading } = useOrgs();
+
+  const manageableOrgs = useMemo(() => {
+    if (isSuperAdmin) return orgs ?? [];
+    return (orgs ?? []).filter((o) =>
+      staffAssignments.some((a) => a.org_id === o.id && canManageOrgOffers(a.role))
+    );
+  }, [isSuperAdmin, orgs, staffAssignments]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -202,7 +213,6 @@ export default function CreateCoffeeOffer() {
       const { data, error } = await (supabase as any)
         .from('preset_offers')
         .select('id, org_id, name, offer_type, description, coffee_types')
-        .eq('created_by', user.id)
         .eq('org_id', orgId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -221,8 +231,8 @@ export default function CreateCoffeeOffer() {
 
   // Default org to first in allowed list when orgs load
   useEffect(() => {
-    if (orgs && orgs.length > 0 && !orgId) {
-      const first = orgs[0];
+    if (manageableOrgs && manageableOrgs.length > 0 && !orgId) {
+      const first = manageableOrgs[0];
       setOrgId(first.id);
       const loc = first.location ?? '';
       setLocation(loc);
@@ -234,11 +244,11 @@ export default function CreateCoffeeOffer() {
       lastAutoLatRef.current = latStr;
       lastAutoLngRef.current = lngStr;
     }
-  }, [orgs, orgId]);
+  }, [manageableOrgs, orgId]);
 
   // Auto-fill location from org when org changes (do not overwrite user edits)
   const handleOrgChange = (newOrgId: string) => {
-    const newOrg = orgs?.find((o) => o.id === newOrgId);
+    const newOrg = manageableOrgs?.find((o) => o.id === newOrgId);
     setOrgId(newOrgId);
     setPresetOfferId('');
 
@@ -329,7 +339,7 @@ export default function CreateCoffeeOffer() {
   };
 
   // Loading state
-  if (roleLoading || (isEditMode && editLoading)) {
+  if (roleLoading || staffLoading || (isEditMode && editLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">
@@ -401,7 +411,7 @@ export default function CreateCoffeeOffer() {
   }
 
   // User doesn't have permission
-  if (!canHostEvent) {
+  if (!canManageOffers) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 bg-background py-4 px-4 border-b border-border">
@@ -433,7 +443,7 @@ export default function CreateCoffeeOffer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const selectedOrg = orgs?.find((o) => o.id === orgId);
+    const selectedOrg = manageableOrgs?.find((o) => o.id === orgId);
     if (!selectedOrg?.org_name) {
       toast({
         title: 'Missing fields',
@@ -867,14 +877,14 @@ export default function CreateCoffeeOffer() {
                 <SelectValue placeholder={orgsLoading ? 'Loading...' : 'Select organization'} />
               </SelectTrigger>
               <SelectContent>
-                {orgs?.map((org) => (
+                {manageableOrgs.map((org) => (
                   <SelectItem key={org.id} value={org.id}>
                     {org.org_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {!orgsLoading && orgs?.length === 0 && (
+            {!orgsLoading && manageableOrgs.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No organizations available. Contact an admin to create one.
               </p>

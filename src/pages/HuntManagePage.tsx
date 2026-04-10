@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useOrgStaff } from '@/hooks/useOrgStaff';
+import { assignmentsCanManageOffers } from '@/lib/orgStaff';
 import { useHunt, useTreasures, type Treasure } from '@/hooks/useHunts';
 import { useTreasureReward } from '@/hooks/useTreasureReward';
 import { useOrgs } from '@/hooks/useOrgs';
@@ -45,7 +47,9 @@ export default function HuntManagePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { canHostEvent, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
+  const canManageOffers = isSuperAdmin || assignmentsCanManageOffers(staffAssignments);
   const { data: hunt, isLoading, isError, refetch } = useHunt(huntId ?? null);
   const { data: treasures = [] } = useTreasures(huntId ?? null, false);
   const { data: orgs = [] } = useOrgs();
@@ -116,7 +120,7 @@ export default function HuntManagePage() {
     );
   }
 
-  if (isLoading || roleLoading || !hunt) {
+  if (isLoading || roleLoading || staffLoading || !hunt) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
@@ -124,7 +128,7 @@ export default function HuntManagePage() {
     );
   }
 
-  if (!user || !canHostEvent || hunt.created_by !== user.id) {
+  if (!user || !canManageOffers || hunt.created_by !== user.id) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="container px-4 py-8 text-center">
