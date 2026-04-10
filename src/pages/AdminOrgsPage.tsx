@@ -605,7 +605,7 @@ export default function AdminOrgsPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
-                  <Label className="text-foreground">Preview photo</Label>
+                  <Label className="text-foreground">Logo</Label>
                 </div>
                 <Tabs
                   value={previewPhotoMode}
