@@ -341,8 +341,11 @@ export default function ProfilePage() {
             <div className="space-y-2 pt-2">
               {orgs.map((o) => {
                 const role = staffAssignments.find((a) => a.org_id === o.id)?.role;
+                const isPrimaryOwner = user?.id != null && o.owner_user_id === user.id;
                 const showEdit =
-                  isSuperAdmin || (role !== undefined && canEditOrgProfileForOrgRole(role));
+                  isSuperAdmin ||
+                  (role !== undefined && canEditOrgProfileForOrgRole(role)) ||
+                  isPrimaryOwner;
                 if (!showEdit) return null;
                 return (
                   <Button

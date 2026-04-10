@@ -149,23 +149,40 @@ export default function HostOrgEditPage() {
   const [staffAddRole, setStaffAddRole] = useState<'host' | 'manager' | 'barista'>('host');
   const [staffSaving, setStaffSaving] = useState(false);
 
-  const orgRole = assignments.find((a) => a.org_id === orgId)?.role ?? null;
+  const { data: org, isLoading: orgLoading } = useQuery({
+    queryKey: ['host-org-edit', orgId],
+    enabled: !!orgId && !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('orgs').select('*').eq('id', orgId!).single();
+      if (error) throw error;
+      return data as Org;
+    },
+  });
+
+  const isPrimaryOwner = Boolean(user && org && org.owner_user_id === user.id);
+  const orgRole =
+    assignments.find((a) => a.org_id === orgId)?.role ?? (isPrimaryOwner ? 'owner' : null);
   const canEdit =
     isSuperAdmin || (orgRole !== null && canEditOrgProfileForOrgRole(orgRole));
   const readOnlyManager = !isSuperAdmin && orgRole === 'manager';
   const blockedBarista = !isSuperAdmin && orgRole === 'barista';
   const noAccess =
     !orgId ||
-    (!isSuperAdmin && !staffLoading && !assignments.some((a) => a.org_id === orgId));
+    (!isSuperAdmin &&
+      !staffLoading &&
+      !orgLoading &&
+      !assignments.some((a) => a.org_id === orgId) &&
+      !isPrimaryOwner);
 
   const canViewOrgStaffList =
     !!orgId &&
     !!user &&
-    (isSuperAdmin || assignments.some((a) => a.org_id === orgId));
+    (isSuperAdmin || assignments.some((a) => a.org_id === orgId) || isPrimaryOwner);
   const showStaffSection = isSuperAdmin || (!staffLoading && canManageOrgStaff(orgRole));
 
   const refreshOrgRelatedQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['owned-org-id'] });
     queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
     queryClient.invalidateQueries({ queryKey: ['org-staff-assignments'] });
     if (orgId) {
@@ -205,16 +222,6 @@ export default function HostOrgEditPage() {
         role: r.role,
         username: map.get(r.user_id) ?? r.user_id,
       }));
-    },
-  });
-
-  const { data: org, isLoading: orgLoading } = useQuery({
-    queryKey: ['host-org-edit', orgId],
-    enabled: !!orgId && !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.from('orgs').select('*').eq('id', orgId!).single();
-      if (error) throw error;
-      return data as Org;
     },
   });
 

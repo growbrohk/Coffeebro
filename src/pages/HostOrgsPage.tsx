@@ -79,8 +79,12 @@ export default function HostOrgsPage() {
           <ul className="space-y-2">
             {orgs.map((o) => {
               const role = staffAssignments.find((a) => a.org_id === o.id)?.role;
-              const roleLabel = role ? ORG_ROLE_LABEL[role] ?? role : '';
-              const canEdit = role !== undefined && canEditOrgProfileForOrgRole(role);
+              const isPrimaryOwner = user?.id != null && o.owner_user_id === user.id;
+              const roleLabel =
+                (role ? ORG_ROLE_LABEL[role] ?? role : '') ||
+                (isPrimaryOwner ? ORG_ROLE_LABEL.owner : '');
+              const canEdit =
+                (role !== undefined && canEditOrgProfileForOrgRole(role)) || isPrimaryOwner;
 
               return (
                 <li

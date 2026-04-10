@@ -1,8 +1,8 @@
- import { useQuery } from '@tanstack/react-query';
- import { supabase } from '@/integrations/supabase/client';
- import { useAuth } from '@/contexts/AuthContext';
- import { useUserRole } from './useUserRole';
- 
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from './useUserRole';
+
 export interface Org {
   id: string;
   owner_user_id: string;
@@ -20,63 +20,80 @@ export interface Org {
   mtr_station?: string | null;
   preview_photo_url?: string | null;
 }
- 
- export function useOrgs() {
-   const { user } = useAuth();
-   const { isSuperAdmin, isStaffUser } = useUserRole();
 
-   return useQuery({
-     queryKey: ['orgs', user?.id, isSuperAdmin, isStaffUser],
-     queryFn: async () => {
-       if (!user) return [];
+export function useOrgs() {
+  const { user } = useAuth();
+  const { isSuperAdmin, isStaffUser } = useUserRole();
 
-       // Super admin sees all orgs
-       if (isSuperAdmin) {
-         const { data, error } = await supabase
-           .from('orgs')
-           .select('*')
-           .order('org_name');
+  return useQuery({
+    // isStaffUser: user_access, org_hosts, or orgs.owner_user_id (useUserRole).
+    queryKey: ['orgs', user?.id, isSuperAdmin, isStaffUser],
+    queryFn: async () => {
+      if (!user) return [];
 
-         if (error) {
-           console.error('Error fetching orgs:', error);
-           throw error;
-         }
+      // Super admin sees all orgs
+      if (isSuperAdmin) {
+        const { data, error } = await supabase
+          .from('orgs')
+          .select('*')
+          .order('org_name');
 
-         return data as Org[];
-       }
+        if (error) {
+          console.error('Error fetching orgs:', error);
+          throw error;
+        }
 
-       // Staff users see only orgs they are assigned to in org_hosts
-       if (isStaffUser) {
-         const { data: orgHosts, error: orgHostsError } = await supabase
-           .from('org_hosts')
-           .select('org_id')
-           .eq('user_id', user.id);
+        return data as Org[];
+      }
 
-         if (orgHostsError) {
-           console.error('Error fetching org_hosts:', orgHostsError);
-           throw orgHostsError;
-         }
+      // Staff: orgs from org_hosts plus any org where user is primary owner
+      if (isStaffUser) {
+        const { data: orgHosts, error: orgHostsError } = await supabase
+          .from('org_hosts')
+          .select('org_id')
+          .eq('user_id', user.id);
 
-         if (!orgHosts || orgHosts.length === 0) return [];
+        if (orgHostsError) {
+          console.error('Error fetching org_hosts:', orgHostsError);
+          throw orgHostsError;
+        }
 
-         const orgIds = orgHosts.map(oh => oh.org_id);
-         const { data, error } = await supabase
-           .from('orgs')
-           .select('*')
-           .in('id', orgIds)
-           .order('org_name');
+        const { data: ownedOrgs, error: ownedError } = await supabase
+          .from('orgs')
+          .select('id')
+          .eq('owner_user_id', user.id);
 
-         if (error) {
-           console.error('Error fetching orgs:', error);
-           throw error;
-         }
+        if (ownedError) {
+          console.error('Error fetching owned orgs:', ownedError);
+          throw ownedError;
+        }
 
-         return data as Org[];
-       }
+        const orgIds = [
+          ...new Set([
+            ...(orgHosts ?? []).map((oh) => oh.org_id),
+            ...(ownedOrgs ?? []).map((o) => o.id),
+          ]),
+        ];
 
-       // Regular users can't see any orgs (they can't create coffee offers)
-       return [];
-     },
-     enabled: !!user && (isSuperAdmin || isStaffUser),
-   });
- }
+        if (orgIds.length === 0) return [];
+
+        const { data, error } = await supabase
+          .from('orgs')
+          .select('*')
+          .in('id', orgIds)
+          .order('org_name');
+
+        if (error) {
+          console.error('Error fetching orgs:', error);
+          throw error;
+        }
+
+        return data as Org[];
+      }
+
+      // Regular users can't see any orgs (they can't create coffee offers)
+      return [];
+    },
+    enabled: !!user && (isSuperAdmin || isStaffUser),
+  });
+}
