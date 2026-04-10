@@ -12,10 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
 import { useOrgStaff } from '@/hooks/useOrgStaff';
-import {
-  assignmentsCanManageOffers,
-  canEditOrgProfileForOrgRole,
-} from '@/lib/orgStaff';
+import { assignmentsCanManageOffers } from '@/lib/orgStaff';
 import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
 import { useUserQuizResult } from '@/hooks/useUserQuizResult';
 import {
@@ -334,31 +331,6 @@ export default function ProfilePage() {
               >
                 Manage Hunts
               </Button>
-            </div>
-          )}
-
-          {!roleLoading && !staffLoading && orgs.length > 0 && (
-            <div className="space-y-2 pt-2">
-              {orgs.map((o) => {
-                const role = staffAssignments.find((a) => a.org_id === o.id)?.role;
-                const isPrimaryOwner = user?.id != null && o.owner_user_id === user.id;
-                const showEdit =
-                  isSuperAdmin ||
-                  (role !== undefined && canEditOrgProfileForOrgRole(role)) ||
-                  isPrimaryOwner;
-                if (!showEdit) return null;
-                return (
-                  <Button
-                    key={o.id}
-                    type="button"
-                    variant="outline"
-                    className="w-full btn-run mb-0"
-                    onClick={() => navigate(`/host/org/${o.id}`)}
-                  >
-                    Edit {o.org_name}
-                  </Button>
-                );
-              })}
             </div>
           )}
         </div>
