@@ -84,7 +84,7 @@ export default function ProfilePage() {
 
   const authMessage = getMessage();
   const { user, profile, loading, signIn, signUp, signOut } = useAuth();
-  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [] } = useOrgs();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
 
@@ -402,6 +402,20 @@ export default function ProfilePage() {
                   }}
                 >
                   Organizations
+                </Button>
+              )}
+
+              {isStaffUser && !isSuperAdmin && orgs.length > 0 && (
+                <Button
+                  type="button"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    navigate('/host/orgs');
+                  }}
+                >
+                  My organizations
                 </Button>
               )}
 

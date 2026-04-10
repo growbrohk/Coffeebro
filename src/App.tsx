@@ -27,6 +27,7 @@ import OfferPresetsPage from "./pages/OfferPresetsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import AdminOrgsPage from "./pages/AdminOrgsPage";
 import HostOrgEditPage from "./pages/HostOrgEditPage";
+import HostOrgsPage from "./pages/HostOrgsPage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/admin/orgs" element={<AdminOrgsPage />} />
+              <Route path="/host/orgs" element={<HostOrgsPage />} />
               <Route path="/host/org/:orgId" element={<HostOrgEditPage />} />
               <Route path="/host/hunt/create" element={<Navigate to="/host/offer-campaign/create?mode=hunt" replace />} />
               <Route path="/host/hunts" element={<HostHuntsPage />} />
