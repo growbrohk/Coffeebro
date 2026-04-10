@@ -100,6 +100,7 @@ export default function HuntMapPage() {
         offerDescription: po?.description ?? null,
         offerType: po?.offer_type ?? null,
         orgName: po?.org_name ?? huntOrg?.org_name ?? null,
+        orgLogoUrl: po?.org_logo_url ?? huntOrg?.logo_url ?? null,
         orgPreviewPhotoUrl: po?.org_preview_photo_url ?? huntOrg?.preview_photo_url ?? null,
         quantityLimit: po?.quantity_limit ?? null,
         campaignTitle: po?.campaign_title ?? null,

@@ -373,6 +373,7 @@ export type Database = {
           hk_area: string | null
           district: string | null
           mtr_station: string | null
+          logo_url: string | null
           preview_photo_url: string | null
         }
         Insert: {
@@ -390,6 +391,7 @@ export type Database = {
           hk_area?: string | null
           district?: string | null
           mtr_station?: string | null
+          logo_url?: string | null
           preview_photo_url?: string | null
         }
         Update: {
@@ -407,6 +409,7 @@ export type Database = {
           hk_area?: string | null
           district?: string | null
           mtr_station?: string | null
+          logo_url?: string | null
           preview_photo_url?: string | null
         }
         Relationships: []
@@ -827,6 +830,7 @@ export type Database = {
         Returns: {
           id: string
           org_name: string
+          logo_url: string | null
           preview_photo_url: string | null
           location: string | null
           lat: number | null

@@ -8,6 +8,7 @@ export type HuntMapTreasure = Treasure & {
   offerDescription: string | null;
   offerType: string | null;
   orgName: string | null;
+  orgLogoUrl: string | null;
   orgPreviewPhotoUrl: string | null;
   quantityLimit: number | null;
   campaignTitle: string | null;

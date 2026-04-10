@@ -91,9 +91,9 @@ export default function HostOrgsPage() {
                   key={o.id}
                   className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3"
                 >
-                  {o.preview_photo_url ? (
+                  {o.logo_url || o.preview_photo_url ? (
                     <img
-                      src={o.preview_photo_url}
+                      src={(o.logo_url || o.preview_photo_url) as string}
                       alt=""
                       className="h-12 w-12 shrink-0 rounded-lg object-cover"
                     />

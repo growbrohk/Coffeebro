@@ -82,12 +82,23 @@ export function TreasurePopupCard({
         <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
           {imageBlock(treasure.orgPreviewPhotoUrl ?? clue ?? null)}
           <div className="px-3 pb-2 pt-2">
-            <h3 className="text-base font-bold text-foreground">
-              {treasure.orgName?.trim() || treasure.name}
-            </h3>
-            {treasure.address && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
-            )}
+            <div className="flex gap-3">
+              {treasure.orgLogoUrl ? (
+                <img
+                  src={treasure.orgLogoUrl}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                />
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-foreground">
+                  {treasure.orgName?.trim() || treasure.name}
+                </h3>
+                {treasure.address && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+                )}
+              </div>
+            </div>
             {distanceRow}
             <div className="mt-2 flex justify-end">
               <PillButton onClick={onDirections} icon={<Navigation className="h-3.5 w-3.5 text-primary-foreground" />}>

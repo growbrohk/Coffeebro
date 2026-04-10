@@ -19,6 +19,7 @@ export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasur
     offerDescription: null,
     offerType: null,
     orgName: row.org_name,
+    orgLogoUrl: row.logo_url ?? null,
     orgPreviewPhotoUrl: row.preview_photo_url,
     quantityLimit: null,
     campaignTitle: null,

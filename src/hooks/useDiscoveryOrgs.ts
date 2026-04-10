@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export type DiscoveryOrgRow = {
   id: string;
   org_name: string;
+  logo_url: string | null;
   preview_photo_url: string | null;
   location: string | null;
   lat: number | null;

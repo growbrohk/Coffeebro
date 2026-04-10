@@ -10,6 +10,7 @@ export interface TreasurePrimaryOfferRow {
   quantity_limit: number;
   campaign_title: string | null;
   org_name: string | null;
+  org_logo_url: string | null;
   org_preview_photo_url: string | null;
   /** From linked preset; map UI prefers this over `treasures.clue_image`. */
   preset_clue_image: string | null;
@@ -44,7 +45,7 @@ export function useTreasuresPrimaryOffers(treasureIds: string[]) {
           sort_order: number;
           quantity_limit: number | null;
           campaign_title: string | null;
-          orgs?: { org_name: string; preview_photo_url: string | null } | null;
+          orgs?: { org_name: string; logo_url: string | null; preview_photo_url: string | null } | null;
           preset_offers?: { clue_image: string | null } | null;
         }): TreasurePrimaryOfferRow => ({
           treasure_id: r.treasure_id,
@@ -55,6 +56,7 @@ export function useTreasuresPrimaryOffers(treasureIds: string[]) {
           quantity_limit: r.quantity_limit ?? 17,
           campaign_title: r.campaign_title ?? null,
           org_name: r.orgs?.org_name ?? null,
+          org_logo_url: r.orgs?.logo_url ?? null,
           org_preview_photo_url: r.orgs?.preview_photo_url ?? null,
           preset_clue_image: r.preset_offers?.clue_image ?? null,
         })

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type HuntOrgMeta = {
   org_name: string | null;
+  logo_url: string | null;
   preview_photo_url: string | null;
 };
 
@@ -18,16 +19,21 @@ export function useHuntsOrgMeta(huntIds: string[]) {
 
       const { data, error } = await (supabase as any)
         .from('hunts')
-        .select('id, orgs(org_name, preview_photo_url)')
+        .select('id, orgs(org_name, logo_url, preview_photo_url)')
         .in('id', sorted);
 
       if (error) throw error;
 
       const map = new Map<string, HuntOrgMeta>();
       for (const row of data || []) {
-        const org = row.orgs as { org_name: string; preview_photo_url: string | null } | null;
+        const org = row.orgs as {
+          org_name: string;
+          logo_url: string | null;
+          preview_photo_url: string | null;
+        } | null;
         map.set(row.id, {
           org_name: org?.org_name ?? null,
+          logo_url: org?.logo_url ?? null,
           preview_photo_url: org?.preview_photo_url ?? null,
         });
       }

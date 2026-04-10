@@ -18,6 +18,7 @@ export interface PublicCalendarOfferRow {
     lat: number | null;
     lng: number | null;
     location: string | null;
+    logo_url: string | null;
     preview_photo_url: string | null;
   } | null;
   preset_offers: { clue_image: string | null } | null;
@@ -63,6 +64,7 @@ export function mapCalendarOfferRowToHuntMapTreasure(row: PublicCalendarOfferRow
     offerDescription: row.description,
     offerType: row.offer_type,
     orgName: org?.org_name ?? null,
+    orgLogoUrl: org?.logo_url ?? null,
     orgPreviewPhotoUrl: org?.preview_photo_url ?? null,
     quantityLimit: row.quantity_limit ?? null,
     campaignTitle: row.campaign_title,
@@ -93,7 +95,7 @@ export function usePublicCalendarOffersForExplore() {
           event_time,
           quantity_limit,
           org_id,
-          orgs ( org_name, lat, lng, location, preview_photo_url ),
+          orgs ( org_name, lat, lng, location, logo_url, preview_photo_url ),
           preset_offers ( clue_image )
         `
         )

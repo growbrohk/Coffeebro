@@ -82,6 +82,7 @@ type Draft = {
   district: string;
   mtr_station: string;
   openingHours: Record<OpeningDayKey, DayHours>;
+  logo_url: string;
   preview_photo_url: string;
 };
 
@@ -98,6 +99,7 @@ function emptyDraft(): Draft {
     district: '',
     mtr_station: '',
     openingHours: defaultWeeklyOpeningHours(),
+    logo_url: '',
     preview_photo_url: '',
   };
 }
@@ -115,12 +117,24 @@ function draftFromOrg(org: Org): Draft {
     district: org.district ?? '',
     mtr_station: org.mtr_station ?? '',
     openingHours: weeklyFromJson(org.opening_hours),
+    logo_url: org.logo_url ?? '',
     preview_photo_url: org.preview_photo_url ?? '',
   };
 }
 
 async function uploadOrgPreviewToStorage(orgId: string, file: File): Promise<string> {
   const path = `org-preview/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from('treasure-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function uploadOrgLogoToStorage(orgId: string, file: File): Promise<string> {
+  const path = `org-logo/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
     cacheControl: '3600',
     upsert: true,
@@ -141,6 +155,9 @@ export default function HostOrgEditPage() {
 
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
+  const [logoPhotoMode, setLogoPhotoMode] = useState<'link' | 'upload'>('link');
+  const [logoPhotoUploading, setLogoPhotoUploading] = useState(false);
+  const orgLogoFileRef = useRef<HTMLInputElement>(null);
   const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
   const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
@@ -262,7 +279,44 @@ export default function HostOrgEditPage() {
     parseCoord(draft.lngStr)
   );
 
+  const logoPhotoSrc = draft.logo_url.trim() as string;
   const previewPhotoSrc = draft.preview_photo_url.trim() as string;
+
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !orgId) return;
+    if (!PREVIEW_MIME.includes(file.type)) {
+      toast({ title: 'Invalid file type', variant: 'destructive' });
+      return;
+    }
+    if (file.size > MAX_PREVIEW_SIZE) {
+      toast({ title: 'File too large', variant: 'destructive' });
+      return;
+    }
+    setLogoPhotoUploading(true);
+    try {
+      const url = await uploadOrgLogoToStorage(orgId, file);
+      patchDraft({ logo_url: url });
+      setLogoPhotoMode('link');
+      toast({ title: 'Logo uploaded!' });
+      queryClient.invalidateQueries({ queryKey: ['orgs'] });
+      queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
+    } catch (err: unknown) {
+      toast({
+        title: 'Upload failed',
+        description: err instanceof Error ? err.message : 'Could not upload logo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLogoPhotoUploading(false);
+    }
+  };
+
+  const clearLogoPhoto = () => {
+    patchDraft({ logo_url: '' });
+    if (orgLogoFileRef.current) orgLogoFileRef.current.value = '';
+  };
 
   const handlePreviewFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -323,6 +377,7 @@ export default function HostOrgEditPage() {
       hk_area: draft.hk_area.trim() || null,
       district: draft.district.trim() || null,
       mtr_station: draft.mtr_station.trim() || null,
+      logo_url: draft.logo_url.trim() || null,
       preview_photo_url: draft.preview_photo_url.trim() || null,
     };
 
@@ -562,6 +617,69 @@ export default function HostOrgEditPage() {
               <div className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
                 <Label className="text-foreground">Logo</Label>
+              </div>
+              <Tabs
+                value={logoPhotoMode}
+                onValueChange={(v) => setLogoPhotoMode(v as 'link' | 'upload')}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger type="button" value="link" disabled={disabled}>
+                    Image URL
+                  </TabsTrigger>
+                  <TabsTrigger type="button" value="upload" disabled={disabled}>
+                    Upload
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="link" className="mt-3 space-y-2">
+                  <Input
+                    value={draft.logo_url}
+                    onChange={(e) => patchDraft({ logo_url: e.target.value })}
+                    disabled={disabled}
+                    className="h-11"
+                    type="url"
+                  />
+                </TabsContent>
+                <TabsContent value="upload" className="mt-3 space-y-2">
+                  <input
+                    ref={orgLogoFileRef}
+                    type="file"
+                    accept={PREVIEW_MIME.join(',')}
+                    className="hidden"
+                    onChange={handleLogoFile}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={disabled || logoPhotoUploading}
+                    onClick={() => orgLogoFileRef.current?.click()}
+                  >
+                    {logoPhotoUploading ? 'Uploading…' : 'Choose logo'}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+              {logoPhotoSrc ? (
+                <div className="relative mx-auto w-32 overflow-hidden rounded-lg border border-border">
+                  <img src={logoPhotoSrc} alt="" className="aspect-square w-full object-cover" />
+                  {!disabled ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute right-1 top-1 gap-1 px-2 py-1 text-xs shadow-sm"
+                      onClick={clearLogoPhoto}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                <Label className="text-foreground">Preview image</Label>
               </div>
               <Tabs
                 value={previewPhotoMode}

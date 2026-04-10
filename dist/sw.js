@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "b1b6896e6edfddeaf0db005f30919862"
   }, {
     "url": "index.html",
-    "revision": "651cb1f7a476eeccc948b735344b2d12"
+    "revision": "498de7a937c968561190ef7d66f91bfd"
   }, {
     "url": "favicon.png",
     "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
@@ -135,10 +135,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "icons/icon-192.png",
     "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
   }, {
-    "url": "assets/index-zy5V-7es.js",
+    "url": "assets/index-CBYmtAza.js",
     "revision": null
   }, {
-    "url": "assets/index-By5tgTxG.css",
+    "url": "assets/index-BKt6Vi55.css",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",

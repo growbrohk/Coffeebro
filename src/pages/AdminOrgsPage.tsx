@@ -73,6 +73,7 @@ type Draft = {
   district: string;
   mtr_station: string;
   openingHours: Record<OpeningDayKey, DayHours>;
+  logo_url: string;
   preview_photo_url: string;
   owner_user_id: string;
   hostSearch: string;
@@ -91,6 +92,7 @@ function emptyDraft(): Draft {
     district: '',
     mtr_station: '',
     openingHours: defaultWeeklyOpeningHours(),
+    logo_url: '',
     preview_photo_url: '',
     owner_user_id: '',
     hostSearch: '',
@@ -110,6 +112,7 @@ function draftFromOrg(org: Org): Draft {
     district: org.district ?? '',
     mtr_station: org.mtr_station ?? '',
     openingHours: weeklyFromJson(org.opening_hours),
+    logo_url: org.logo_url ?? '',
     preview_photo_url: org.preview_photo_url ?? '',
     owner_user_id: org.owner_user_id ?? '',
     hostSearch: '',
@@ -118,6 +121,17 @@ function draftFromOrg(org: Org): Draft {
 
 async function uploadOrgPreviewToStorage(orgId: string, file: File): Promise<string> {
   const path = `org-preview/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from('treasure-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function uploadOrgLogoToStorage(orgId: string, file: File): Promise<string> {
+  const path = `org-logo/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
     cacheControl: '3600',
     upsert: true,
@@ -149,12 +163,27 @@ export default function AdminOrgsPage() {
   const [debouncedStaffQ, setDebouncedStaffQ] = useState('');
   const [staffAddRole, setStaffAddRole] = useState<'host' | 'manager' | 'barista'>('host');
   const [staffSaving, setStaffSaving] = useState(false);
+  const [logoPhotoMode, setLogoPhotoMode] = useState<'link' | 'upload'>('link');
+  const [logoPhotoUploading, setLogoPhotoUploading] = useState(false);
+  const [pendingOrgLogoFile, setPendingOrgLogoFile] = useState<File | null>(null);
+  const [pendingOrgLogoUrl, setPendingOrgLogoUrl] = useState<string | null>(null);
+  const orgLogoFileRef = useRef<HTMLInputElement>(null);
+  const pendingOrgLogoObjectUrlRef = useRef<string | null>(null);
+
   const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
   const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
   const [pendingOrgPreviewFile, setPendingOrgPreviewFile] = useState<File | null>(null);
   const [pendingOrgPreviewUrl, setPendingOrgPreviewUrl] = useState<string | null>(null);
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
   const pendingOrgObjectUrlRef = useRef<string | null>(null);
+
+  const revokePendingOrgLogo = () => {
+    if (pendingOrgLogoObjectUrlRef.current) {
+      URL.revokeObjectURL(pendingOrgLogoObjectUrlRef.current);
+      pendingOrgLogoObjectUrlRef.current = null;
+    }
+    setPendingOrgLogoUrl(null);
+  };
 
   const revokePendingOrgPreview = () => {
     if (pendingOrgObjectUrlRef.current) {
@@ -165,12 +194,18 @@ export default function AdminOrgsPage() {
   };
 
   useEffect(() => {
+    revokePendingOrgLogo();
+    setPendingOrgLogoFile(null);
     revokePendingOrgPreview();
     setPendingOrgPreviewFile(null);
   }, [activeOrgId]);
 
   useEffect(() => {
     return () => {
+      if (pendingOrgLogoObjectUrlRef.current) {
+        URL.revokeObjectURL(pendingOrgLogoObjectUrlRef.current);
+        pendingOrgLogoObjectUrlRef.current = null;
+      }
       if (pendingOrgObjectUrlRef.current) {
         URL.revokeObjectURL(pendingOrgObjectUrlRef.current);
         pendingOrgObjectUrlRef.current = null;
@@ -389,6 +424,60 @@ export default function AdminOrgsPage() {
     setActiveOrgId('new');
   };
 
+  const handleOrgLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!PREVIEW_MIME.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please use JPEG, PNG, WebP, or GIF.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (file.size > MAX_PREVIEW_SIZE) {
+      toast({
+        title: 'File too large',
+        description: 'Maximum size is 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const existingOrgId =
+      typeof activeOrgId === 'string' && activeOrgId !== 'new' && activeOrgId !== 'idle' ? activeOrgId : null;
+
+    if (existingOrgId) {
+      setLogoPhotoUploading(true);
+      try {
+        const url = await uploadOrgLogoToStorage(existingOrgId, file);
+        patchDraft({ logo_url: url });
+        setLogoPhotoMode('link');
+        revokePendingOrgLogo();
+        setPendingOrgLogoFile(null);
+        toast({ title: 'Logo uploaded!' });
+        refreshOrgRelatedQueries();
+      } catch (err: unknown) {
+        toast({
+          title: 'Upload failed',
+          description: err instanceof Error ? err.message : 'Could not upload logo.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLogoPhotoUploading(false);
+      }
+    } else {
+      revokePendingOrgLogo();
+      setPendingOrgLogoFile(file);
+      const url = URL.createObjectURL(file);
+      pendingOrgLogoObjectUrlRef.current = url;
+      setPendingOrgLogoUrl(url);
+      patchDraft({ logo_url: '' });
+    }
+  };
+
   const handleOrgPreviewFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -443,6 +532,13 @@ export default function AdminOrgsPage() {
     }
   };
 
+  const clearOrgLogoPhoto = () => {
+    patchDraft({ logo_url: '' });
+    setPendingOrgLogoFile(null);
+    revokePendingOrgLogo();
+    if (orgLogoFileRef.current) orgLogoFileRef.current.value = '';
+  };
+
   const clearOrgPreviewPhoto = () => {
     patchDraft({ preview_photo_url: '' });
     setPendingOrgPreviewFile(null);
@@ -450,6 +546,7 @@ export default function AdminOrgsPage() {
     if (orgPreviewFileRef.current) orgPreviewFileRef.current.value = '';
   };
 
+  const logoPhotoSrc = (pendingOrgLogoUrl || draft.logo_url.trim()) as string;
   const previewPhotoSrc = (pendingOrgPreviewUrl || draft.preview_photo_url.trim()) as string;
 
   const handleSave = async (e: React.FormEvent) => {
@@ -468,6 +565,8 @@ export default function AdminOrgsPage() {
     const lng = parseCoord(draft.lngStr);
     const openingPayload = weeklyToJson(draft.openingHours);
 
+    const logoUrlForRow =
+      pendingOrgLogoFile && activeOrgId === 'new' ? null : draft.logo_url.trim() || null;
     const previewUrlForRow =
       pendingOrgPreviewFile && activeOrgId === 'new' ? null : draft.preview_photo_url.trim() || null;
 
@@ -483,6 +582,7 @@ export default function AdminOrgsPage() {
       hk_area: draft.hk_area.trim() || null,
       district: draft.district.trim() || null,
       mtr_station: draft.mtr_station.trim() || null,
+      logo_url: logoUrlForRow,
       preview_photo_url: previewUrlForRow,
       owner_user_id: draft.owner_user_id,
     };
@@ -517,10 +617,23 @@ export default function AdminOrgsPage() {
           finalPreviewUrl = uploaded;
         }
 
+        let finalLogoUrl = logoUrlForRow;
+        if (pendingOrgLogoFile) {
+          const uploaded = await uploadOrgLogoToStorage(orgId, pendingOrgLogoFile);
+          const { error: logoErr } = await supabase.from('orgs').update({ logo_url: uploaded }).eq('id', orgId);
+          if (logoErr) throw logoErr;
+          finalLogoUrl = uploaded;
+        }
+
         revokePendingOrgPreview();
         setPendingOrgPreviewFile(null);
         if (orgPreviewFileRef.current) orgPreviewFileRef.current.value = '';
         if (finalPreviewUrl) patchDraft({ preview_photo_url: finalPreviewUrl });
+
+        revokePendingOrgLogo();
+        setPendingOrgLogoFile(null);
+        if (orgLogoFileRef.current) orgLogoFileRef.current.value = '';
+        if (finalLogoUrl) patchDraft({ logo_url: finalLogoUrl });
 
         toast({ title: 'Organization created' });
         refreshOrgRelatedQueries();
@@ -607,9 +720,9 @@ export default function AdminOrgsPage() {
                       activeOrgId === o.id ? 'bg-muted' : ''
                     }`}
                   >
-                    {o.preview_photo_url ? (
+                    {o.logo_url || o.preview_photo_url ? (
                       <img
-                        src={o.preview_photo_url}
+                        src={(o.logo_url || o.preview_photo_url) as string}
                         alt=""
                         className="mt-0.5 h-10 w-10 shrink-0 rounded-md object-cover"
                       />
@@ -709,6 +822,81 @@ export default function AdminOrgsPage() {
                 <div className="flex items-center gap-2">
                   <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
                   <Label className="text-foreground">Logo</Label>
+                </div>
+                <Tabs
+                  value={logoPhotoMode}
+                  onValueChange={(v) => setLogoPhotoMode(v as 'link' | 'upload')}
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger type="button" value="link">
+                      Image URL
+                    </TabsTrigger>
+                    <TabsTrigger type="button" value="upload">
+                      Upload
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="link" className="mt-3 space-y-2">
+                    <Input
+                      value={draft.logo_url}
+                      onChange={(e) => {
+                        revokePendingOrgLogo();
+                        setPendingOrgLogoFile(null);
+                        patchDraft({ logo_url: e.target.value });
+                      }}
+                      placeholder="https://…"
+                      className="h-11"
+                      type="url"
+                      autoComplete="off"
+                    />
+                  </TabsContent>
+                  <TabsContent value="upload" className="mt-3 space-y-2">
+                    <input
+                      ref={orgLogoFileRef}
+                      type="file"
+                      accept={PREVIEW_MIME.join(',')}
+                      className="hidden"
+                      onChange={handleOrgLogoFileChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={logoPhotoUploading}
+                      onClick={() => orgLogoFileRef.current?.click()}
+                    >
+                      {logoPhotoUploading
+                        ? 'Uploading…'
+                        : activeOrgId === 'new'
+                          ? 'Choose logo (uploads after save)'
+                          : 'Choose logo'}
+                    </Button>
+                    {activeOrgId === 'new' ? (
+                      <p className="text-xs text-muted-foreground">
+                        For a new organization, the file is uploaded right after the org is created.
+                      </p>
+                    ) : null}
+                  </TabsContent>
+                </Tabs>
+                {logoPhotoSrc ? (
+                  <div className="relative mx-auto w-32 overflow-hidden rounded-lg border border-border">
+                    <img src={logoPhotoSrc} alt="" className="aspect-square w-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="absolute right-1 top-1 gap-1 px-2 py-1 text-xs shadow-sm"
+                      onClick={clearOrgLogoPhoto}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+                  <Label className="text-foreground">Preview image</Label>
                 </div>
                 <Tabs
                   value={previewPhotoMode}
