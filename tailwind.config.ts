@@ -66,7 +66,7 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         coffee: {
-          primary: "#F37721",
+          primary: "#f38132",
           dark: "#2E1A14",
           bg: "#FFFCF7",
           accent: "#B16850",

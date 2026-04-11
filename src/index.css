@@ -7,7 +7,7 @@
 /* CoffeeBro design tokens — hex references */
 @layer base {
   :root {
-    --color-primary: #f37721;
+    --color-primary: #f38132;
     --color-dark: #2e1a14;
     --color-bg: #fffcf7;
     --color-accent: #b16850;
@@ -22,7 +22,7 @@
     --popover: 40 43% 98%;
     --popover-foreground: 14 39% 13%;
 
-    --primary: 24 89% 54%;
+    --primary: 25 89% 57%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 40 35% 94%;
@@ -39,7 +39,7 @@
 
     --border: 30 25% 88%;
     --input: 30 25% 88%;
-    --ring: 24 89% 54%;
+    --ring: 25 89% 57%;
 
     --radius: 1rem;
 
@@ -47,12 +47,12 @@
 
     --sidebar-background: 40 43% 98%;
     --sidebar-foreground: 14 39% 13%;
-    --sidebar-primary: 24 89% 54%;
+    --sidebar-primary: 25 89% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 33% 94%;
     --sidebar-accent-foreground: 14 39% 13%;
     --sidebar-border: 30 25% 88%;
-    --sidebar-ring: 24 89% 54%;
+    --sidebar-ring: 25 89% 57%;
   }
 
   .dark {
@@ -64,7 +64,7 @@
     --popover: 14 28% 11%;
     --popover-foreground: 40 43% 96%;
 
-    --primary: 24 89% 54%;
+    --primary: 25 89% 57%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 14 25% 18%;
@@ -78,16 +78,16 @@
 
     --border: 14 20% 22%;
     --input: 14 20% 22%;
-    --ring: 24 89% 54%;
+    --ring: 25 89% 57%;
 
     --sidebar-background: 14 30% 6%;
     --sidebar-foreground: 40 43% 96%;
-    --sidebar-primary: 24 89% 54%;
+    --sidebar-primary: 25 89% 57%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 14 25% 16%;
     --sidebar-accent-foreground: 40 43% 96%;
     --sidebar-border: 14 20% 18%;
-    --sidebar-ring: 24 89% 54%;
+    --sidebar-ring: 25 89% 57%;
   }
 }
 
@@ -436,7 +436,7 @@
 
 /* Quiz flow (/q) — scoped orange shell; does not change global theme */
 .quiz-flow {
-  --quiz-bg: #f47c20;
+  --quiz-bg: #f38132;
   --quiz-fg: #ffffff;
   --quiz-segment-active: #1a0f0a;
   /* Sit above fixed TabNavigation (.tab-nav z-50); siblings can’t stack over it */
