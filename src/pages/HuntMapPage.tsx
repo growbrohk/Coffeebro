@@ -10,12 +10,9 @@ import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
 import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
-import { useClaimCampaign } from "@/hooks/useClaimCampaign";
-import { useAuth } from "@/contexts/AuthContext";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { Search, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 import coffeeShopPin from "@/assets/coffee-shop-pin.svg";
 import huntPinGrab from "@/assets/hunt-pin-grab.svg";
@@ -26,9 +23,6 @@ type PillarId = "all" | "coffee_shop" | "grab" | "hunt";
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const claim = useClaimCampaign();
 
   const [selectedTreasure, setSelectedTreasure] = useState<CampaignMapItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,34 +118,18 @@ export default function HuntMapPage() {
     if (!win) window.location.href = url;
   };
 
-  const handleCampaignCta = async (t: CampaignMapItem) => {
+  const handleCampaignCta = (t: CampaignMapItem) => {
     if (t.pinKind === "coffee_shop") {
       navigate("/check");
-      setSelectedTreasure(null);
-      return;
-    }
-    if (!user) {
-      navigate("/profile");
-      return;
-    }
-    if (t.campaign_type === "grab" && t.campaign_id) {
-      try {
-        await claim.mutateAsync(t.campaign_id);
-        toast({ title: "Claimed!", description: "Check your wallet." });
-      } catch (e) {
-        toast({
-          title: "Could not claim",
-          description: e instanceof Error ? e.message : "Try again later",
-          variant: "destructive",
-        });
-      }
       setSelectedTreasure(null);
       return;
     }
     if (t.campaign_id) {
       navigate(`/campaigns/${t.campaign_id}`);
       setSelectedTreasure(null);
+      return;
     }
+    navigate("/profile");
   };
 
   const handleDetailsClick = () => {

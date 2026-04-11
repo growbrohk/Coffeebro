@@ -6,28 +6,17 @@ import { cn } from '@/lib/utils';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 
-/** B1G1 / grab: prefer `offer_type` so CTA matches when `pinKind` tracks another reward row. */
-function isGrabOffer(t: CampaignMapItem): boolean {
-  return t.pinKind === 'grab' || t.offerType === 'buy1get1free';
+/** Card CTA + icon: use campaign type when present so B1G1 hunt stays "hunt". */
+function isGrabCampaignCard(t: CampaignMapItem): boolean {
+  if (t.campaign_type === "grab") return true;
+  if (t.campaign_type === "hunt") return false;
+  return t.pinKind === "grab" || t.offerType === "buy1get1free";
 }
 
 export function voucherCarouselTitle(items: CampaignMapItem[]): string {
   const n = items.length;
-  const hasGrab = items.some(isGrabOffer);
-  const hasHunt = items.some(
-    (t) => !isGrabOffer(t) && (t.pinKind === 'hunt' || t.pinKind === 'coffee_shop')
-  );
-  const voucherWord = n === 1 ? 'voucher' : 'vouchers';
-
-  if (hasGrab && !hasHunt) {
-    return `${n} ${voucherWord} for you to grab`;
-  }
-  if (hasHunt && !hasGrab) {
-    return `${n} ${voucherWord} for you to hunt`;
-  }
-  return n === 1
-    ? '1 voucher waiting for you to grab & hunt'
-    : `${n} vouchers waiting for you to grab & hunt`;
+  const voucherWord = n === 1 ? "voucher" : "vouchers";
+  return `${n} ${voucherWord} for you to grab/hunt`;
 }
 
 const cardWidthClass =
@@ -62,8 +51,8 @@ export function VoucherCarouselCard({
   const timeLine = formatHuntRedemptionPeriod(treasure.starts_at, treasure.ends_at);
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
-  const isGrab = isGrabOffer(treasure);
-  const isCoffeeShop = treasure.pinKind === 'coffee_shop' && !isGrab;
+  const isGrab = isGrabCampaignCard(treasure);
+  const isCoffeeShop = treasure.pinKind === "coffee_shop" && !isGrab;
   const ctaLabel = isGrab ? 'grab now' : isCoffeeShop ? 'open' : 'hunt now';
   const cafeTitle = orgLine;
   const cafeLocation = locationLine;
