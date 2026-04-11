@@ -13,6 +13,10 @@ export type HuntTreasureQrCardProps = {
   /** Pixel size of the QR module (default 256). */
   qrSize?: number;
   className?: string;
+  /** Line below the wordmark, e.g. "Hunt · buy1get1free · Americano". */
+  campaignTitle?: string;
+  /** Shown above the scan payload in the footer. */
+  orgName?: string;
 };
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -39,6 +43,8 @@ export function HuntTreasureQrCard({
   disabled,
   qrSize = 256,
   className,
+  campaignTitle,
+  orgName,
 }: HuntTreasureQrCardProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -132,14 +138,51 @@ export function HuntTreasureQrCard({
     }
   }, [qrPayload, toast]);
 
+  const showCampaignLine = Boolean(campaignTitle?.trim());
+  const showOrgLine = Boolean(orgName?.trim());
+
   return (
     <div
       className={cn("flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6", className)}
     >
-      <div ref={wrapRef} className="rounded-xl bg-white p-4 shadow-sm">
-        <QRCode value={qrPayload} size={qrSize} />
+      <div
+        ref={wrapRef}
+        className="w-full max-w-[320px] rounded-xl bg-white p-6 pb-5 shadow-sm sm:max-w-[340px]"
+      >
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-center text-3xl font-black lowercase tracking-tight text-foreground sm:text-4xl">
+            coffeebro
+          </p>
+          {showCampaignLine ? (
+            <p className="max-w-full px-1 text-center text-sm font-normal leading-snug text-foreground/90">
+              {campaignTitle!.trim()}
+            </p>
+          ) : null}
+          <div className="mt-1 rounded-lg bg-white p-3 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]">
+            <QRCode value={qrPayload} size={qrSize} />
+          </div>
+          <div className="mt-2 flex w-full flex-row items-end justify-center gap-3 pl-1">
+            <img
+              src="/quiz-frogs/americano-bw.svg"
+              alt=""
+              width={96}
+              height={96}
+              className="h-24 w-24 shrink-0 object-contain object-bottom select-none"
+              draggable={false}
+            />
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1 pb-0.5 text-center">
+              {showOrgLine ? (
+                <p className="w-full text-pretty text-base font-semibold leading-tight text-foreground">
+                  {orgName!.trim()}
+                </p>
+              ) : null}
+              <p className="w-full max-w-full break-all font-mono text-[10px] leading-snug text-muted-foreground sm:text-xs">
+                {qrPayload}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-      <p className="max-w-full break-all text-center font-mono text-xs text-muted-foreground">{qrPayload}</p>
       <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
         <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => void copyPayload()}>
           <Copy className="mr-2 h-4 w-4" />

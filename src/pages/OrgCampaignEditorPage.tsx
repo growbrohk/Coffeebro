@@ -127,6 +127,15 @@ export default function OrgCampaignEditorPage() {
     [vouchers, menuItems],
   );
 
+  const treasureQrFlyerTitle = useMemo(() => {
+    const autoTitle = buildCampaignDisplayTitle({
+      campaignType,
+      rewardMode,
+      vouchers: previewVouchers,
+    });
+    return displayTitle.trim() || autoTitle;
+  }, [displayTitle, campaignType, rewardMode, previewVouchers]);
+
   const handleSave = async () => {
     if (!orgId) return;
     const latNum = treasureLat.trim() ? Number(treasureLat) : null;
@@ -364,6 +373,8 @@ export default function OrgCampaignEditorPage() {
               qrPayload={campaign.qr_payload.trim()}
               campaignId={campaign.id}
               disabled={saveCampaign.isPending}
+              campaignTitle={treasureQrFlyerTitle}
+              orgName={org.org_name}
             />
           ) : (
             <section className="space-y-2">

@@ -13,9 +13,19 @@ type Props = {
   qrPayload: string;
   campaignId: string;
   disabled?: boolean;
+  campaignTitle?: string;
+  orgName?: string;
 };
 
-export function HuntTreasureQrDialog({ open, onOpenChange, qrPayload, campaignId, disabled }: Props) {
+export function HuntTreasureQrDialog({
+  open,
+  onOpenChange,
+  qrPayload,
+  campaignId,
+  disabled,
+  campaignTitle,
+  orgName,
+}: Props) {
   const ready = Boolean(qrPayload.trim() && campaignId.trim());
 
   return (
@@ -34,6 +44,8 @@ export function HuntTreasureQrDialog({ open, onOpenChange, qrPayload, campaignId
             disabled={disabled}
             qrSize={256}
             className="border-0 bg-transparent p-0 shadow-none"
+            campaignTitle={campaignTitle}
+            orgName={orgName}
           />
         ) : null}
       </DialogContent>

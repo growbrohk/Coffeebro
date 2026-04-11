@@ -4,9 +4,11 @@ type Props = {
   qrPayload: string;
   campaignId: string;
   disabled?: boolean;
+  campaignTitle: string;
+  orgName: string;
 };
 
-export function HuntTreasureQrPanel({ qrPayload, campaignId, disabled }: Props) {
+export function HuntTreasureQrPanel({ qrPayload, campaignId, disabled, campaignTitle, orgName }: Props) {
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Treasure QR</h2>
@@ -14,7 +16,13 @@ export function HuntTreasureQrPanel({ qrPayload, campaignId, disabled }: Props) 
         Print or display this code at the treasure location. Customers claim the reward in the app via Hunt → Scan and
         point the camera at this QR (or paste the payload manually).
       </p>
-      <HuntTreasureQrCard qrPayload={qrPayload} campaignId={campaignId} disabled={disabled} />
+      <HuntTreasureQrCard
+        qrPayload={qrPayload}
+        campaignId={campaignId}
+        disabled={disabled}
+        campaignTitle={campaignTitle}
+        orgName={orgName}
+      />
     </section>
   );
 }

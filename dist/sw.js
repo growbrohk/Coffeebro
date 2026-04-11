@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "14e3bd169d7a7d69293d374e6df8e376"
+    "revision": "7c45ab479748df5876e150bd91e7b919"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -138,13 +138,16 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/logo-source.png",
     "revision": "b97b61357cd99cfaaf6342f3f86da238"
   }, {
+    "url": "brand/coffeebro-frog.png",
+    "revision": "9f9a53f760b47cff2b42d379b837624f"
+  }, {
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-DTjQP-zU.js",
+    "url": "assets/index-CLkZmfZ5.js",
     "revision": null
   }, {
-    "url": "assets/index-Cv22wcbr.css",
+    "url": "assets/index-CCaQc5OM.css",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",

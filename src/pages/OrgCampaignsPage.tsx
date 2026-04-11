@@ -18,7 +18,11 @@ export default function OrgCampaignsPage() {
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: campaigns = [], isLoading: campLoading } = useOrgCampaigns(orgId);
-  const [qrDialog, setQrDialog] = useState<{ campaignId: string; payload: string } | null>(null);
+  const [qrDialog, setQrDialog] = useState<{
+    campaignId: string;
+    payload: string;
+    campaignTitle: string;
+  } | null>(null);
 
   const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
 
@@ -117,7 +121,7 @@ export default function OrgCampaignsPage() {
                           aria-label="Show treasure QR"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setQrDialog({ campaignId: c.id, payload: huntPayload });
+                            setQrDialog({ campaignId: c.id, payload: huntPayload, campaignTitle: title });
                           }}
                         >
                           <QRCode value={huntPayload} size={40} />
@@ -139,6 +143,8 @@ export default function OrgCampaignsPage() {
         }}
         qrPayload={qrDialog?.payload ?? ""}
         campaignId={qrDialog?.campaignId ?? ""}
+        campaignTitle={qrDialog?.campaignTitle}
+        orgName={org.org_name}
       />
     </div>
   );
