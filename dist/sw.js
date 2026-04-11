@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "7c45ab479748df5876e150bd91e7b919"
+    "revision": "cebd524e40bfd9d282dc2a0bfeb71625"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -123,6 +123,9 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "quiz-frogs/americano.svg",
     "revision": "1fb8fec8abd71770847f73700e1cbaff"
   }, {
+    "url": "quiz-frogs/americano-bw.svg",
+    "revision": "7793f1c81225d58c29f303eb0635bad1"
+  }, {
     "url": "icons/icon-maskable-512.png",
     "revision": "b52fa36f76f5fa573e63e70421155a73"
   }, {
@@ -144,10 +147,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-CLkZmfZ5.js",
+    "url": "assets/index-xdYq2GDN.js",
     "revision": null
   }, {
-    "url": "assets/index-CCaQc5OM.css",
+    "url": "assets/index-C7jybHZK.css",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",

@@ -17,6 +17,8 @@ export type HuntTreasureQrCardProps = {
   campaignTitle?: string;
   /** Shown above the scan payload in the footer. */
   orgName?: string;
+  /** Tighter layout for dialogs / small viewports (smaller QR and type). */
+  compact?: boolean;
 };
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -45,6 +47,7 @@ export function HuntTreasureQrCard({
   className,
   campaignTitle,
   orgName,
+  compact = false,
 }: HuntTreasureQrCardProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -143,58 +146,119 @@ export function HuntTreasureQrCard({
 
   return (
     <div
-      className={cn("flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6", className)}
+      className={cn(
+        "flex flex-col items-center rounded-xl border border-border bg-card",
+        compact ? "gap-2 p-0" : "gap-4 p-6",
+        className,
+      )}
     >
       <div
         ref={wrapRef}
-        className="w-full max-w-[320px] rounded-xl bg-white p-6 pb-5 shadow-sm sm:max-w-[340px]"
+        className={cn(
+          "w-full rounded-xl bg-white shadow-sm",
+          compact ? "max-w-[260px] p-3 pb-2.5" : "max-w-[320px] p-6 pb-5 sm:max-w-[340px]",
+        )}
       >
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-center text-3xl font-black lowercase tracking-tight text-foreground sm:text-4xl">
+        <div className={cn("flex flex-col items-center", compact ? "gap-1.5" : "gap-3")}>
+          <p
+            className={cn(
+              "text-center font-black lowercase tracking-tight text-foreground",
+              compact ? "text-2xl leading-none" : "text-3xl sm:text-4xl",
+            )}
+          >
             coffeebro
           </p>
           {showCampaignLine ? (
-            <p className="max-w-full px-1 text-center text-sm font-normal leading-snug text-foreground/90">
+            <p
+              className={cn(
+                "max-w-full px-0.5 text-center font-normal leading-snug text-foreground/90",
+                compact ? "text-[11px] leading-tight" : "text-sm",
+              )}
+            >
               {campaignTitle!.trim()}
             </p>
           ) : null}
-          <div className="mt-1 rounded-lg bg-white p-3 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]">
+          <div
+            className={cn(
+              "rounded-lg bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]",
+              compact ? "mt-0 p-1.5" : "mt-1 p-3",
+            )}
+          >
             <QRCode value={qrPayload} size={qrSize} />
           </div>
-          <div className="mt-2 flex w-full flex-row items-end justify-center gap-3 pl-1">
+          <div className={cn("flex w-full flex-row items-end justify-center pl-0.5", compact ? "mt-1 gap-2" : "mt-2 gap-3 pl-1")}>
             <img
               src="/quiz-frogs/americano-bw.svg"
               alt=""
-              width={96}
-              height={96}
-              className="h-24 w-24 shrink-0 object-contain object-bottom select-none"
+              width={compact ? 64 : 96}
+              height={compact ? 64 : 96}
+              className={cn(
+                "shrink-0 object-contain object-bottom select-none",
+                compact ? "h-16 w-16" : "h-24 w-24",
+              )}
               draggable={false}
             />
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-1 pb-0.5 text-center">
+            <div className={cn("flex min-w-0 flex-1 flex-col items-center text-center", compact ? "gap-0.5 pb-0" : "gap-1 pb-0.5")}>
               {showOrgLine ? (
-                <p className="w-full text-pretty text-base font-semibold leading-tight text-foreground">
+                <p
+                  className={cn(
+                    "w-full text-pretty font-semibold leading-tight text-foreground",
+                    compact ? "text-xs" : "text-base",
+                  )}
+                >
                   {orgName!.trim()}
                 </p>
               ) : null}
-              <p className="w-full max-w-full break-all font-mono text-[10px] leading-snug text-muted-foreground sm:text-xs">
+              <p
+                className={cn(
+                  "w-full max-w-full break-all font-mono leading-snug text-muted-foreground",
+                  compact ? "text-[8px] leading-tight" : "text-[10px] sm:text-xs",
+                )}
+              >
                 {qrPayload}
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => void copyPayload()}>
+      <div
+        className={cn(
+          "w-full justify-center",
+          compact ? "grid max-w-[260px] grid-cols-3 gap-1" : "flex flex-col gap-2 sm:flex-row sm:flex-wrap",
+        )}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
+          onClick={() => void copyPayload()}
+        >
           <Copy className="mr-2 h-4 w-4" />
-          Copy payload
+          {compact ? "Copy" : "Copy payload"}
         </Button>
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={downloadSvg}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
+          onClick={downloadSvg}
+        >
           <Download className="mr-2 h-4 w-4" />
-          Download SVG
+          {compact ? "SVG" : "Download SVG"}
         </Button>
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={downloadPng}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
+          onClick={downloadPng}
+        >
           <Download className="mr-2 h-4 w-4" />
-          Download PNG
+          {compact ? "PNG" : "Download PNG"}
         </Button>
       </div>
     </div>
