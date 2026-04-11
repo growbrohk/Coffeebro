@@ -11,8 +11,24 @@ interface TreasurePopupCardProps {
   onClose: () => void;
   onDirections: () => void;
   onDetails: () => void;
+  /** Hunt pillar: primary CTA (e.g. open QR scan). Falls back to `onDetails` if omitted. */
+  onHunt?: () => void;
   distance?: number | null;
   formatDistance?: (m: number) => string;
+}
+
+function OrgLogoThumb({ url }: { url: string | null | undefined }) {
+  return (
+    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+      {url ? (
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <ImageIcon className="h-6 w-6 text-muted-foreground/40" strokeWidth={1.25} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function PillButton({
@@ -41,6 +57,7 @@ export function TreasurePopupCard({
   onClose,
   onDirections,
   onDetails,
+  onHunt,
   distance = null,
   formatDistance = (m) => `${(m / 1000).toFixed(1)} km`,
 }: TreasurePopupCardProps) {
@@ -83,13 +100,7 @@ export function TreasurePopupCard({
           {imageBlock(treasure.orgPreviewPhotoUrl ?? clue ?? null)}
           <div className="px-3 pb-2 pt-2">
             <div className="flex gap-3">
-              {treasure.orgLogoUrl ? (
-                <img
-                  src={treasure.orgLogoUrl}
-                  alt=""
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              ) : null}
+              <OrgLogoThumb url={treasure.orgLogoUrl} />
               <div className="min-w-0 flex-1">
                 <h3 className="text-base font-bold text-foreground">
                   {treasure.orgName?.trim() || treasure.name}
@@ -121,32 +132,39 @@ export function TreasurePopupCard({
         <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
           {imageBlock(clue ?? null)}
           <div className="px-3 pb-2 pt-2">
-            <div className="flex items-start gap-1.5">
-              <img src={huntPinGrab} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
-              <p className="text-sm font-bold leading-snug text-primary">{title}</p>
-            </div>
-            <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
-            {treasure.address && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
-            )}
-            {redemption && (
-              <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
-            )}
-            {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
-            <div className="mt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={onDirections}
-                className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
-              >
-                map
-              </button>
-              <PillButton
-                onClick={onDetails}
-                icon={<img src={huntPinGrab} alt="" className="h-3.5 w-3.5 object-contain brightness-0 invert" />}
-              >
-                grab
-              </PillButton>
+            <div className="flex gap-2.5">
+              <OrgLogoThumb url={treasure.orgLogoUrl} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start gap-1.5">
+                  <img src={huntPinGrab} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
+                  <p className="text-sm font-bold leading-snug text-primary">{title}</p>
+                </div>
+                <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
+                {treasure.address && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+                )}
+                {redemption && (
+                  <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
+                )}
+                {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
+              </div>
+              <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-2.5">
+                <button
+                  type="button"
+                  onClick={onDirections}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
+                >
+                  map
+                </button>
+                <PillButton
+                  onClick={onDetails}
+                  icon={
+                    <img src={huntPinGrab} alt="" className="h-3.5 w-3.5 object-contain brightness-0 invert" />
+                  }
+                >
+                  grab
+                </PillButton>
+              </div>
             </div>
           </div>
         </div>
@@ -155,6 +173,8 @@ export function TreasurePopupCard({
   }
 
   const huntTitle = offerTitle ?? 'Offer';
+  const huntPrimary = onHunt ?? onDetails;
+
   return (
     <div
       className="fixed left-0 right-0 z-[1100] animate-slide-up px-3"
@@ -163,34 +183,39 @@ export function TreasurePopupCard({
       <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
         {imageBlock(clue ?? null)}
         <div className="px-3 pb-2 pt-2">
-          <div className="flex items-start gap-1.5">
-            <img src={huntPinStar} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
-            <p className="text-sm font-bold italic leading-snug text-primary">{huntTitle}</p>
-          </div>
-          <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
-          {treasure.address && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
-          )}
-          {redemption && (
-            <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
-          )}
-          {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onDirections}
-              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
-            >
-              map
-            </button>
-            <PillButton
-              onClick={onDetails}
-              icon={
-                <img src={huntPinStar} alt="" className="h-3.5 w-3.5 object-contain brightness-0 invert" />
-              }
-            >
-              hunt
-            </PillButton>
+          <div className="flex gap-2.5">
+            <OrgLogoThumb url={treasure.orgLogoUrl} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start gap-1.5">
+                <img src={huntPinStar} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
+                <p className="text-sm font-bold italic leading-snug text-primary">{huntTitle}</p>
+              </div>
+              <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
+              {treasure.address && (
+                <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+              )}
+              {redemption && (
+                <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
+              )}
+              {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
+            </div>
+            <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-2.5">
+              <button
+                type="button"
+                onClick={onDetails}
+                className="rounded-full border border-primary/80 px-3 py-1.5 text-xs font-semibold capitalize text-primary transition-colors hover:bg-primary/10"
+              >
+                details
+              </button>
+              <PillButton
+                onClick={huntPrimary}
+                icon={
+                  <img src={huntPinStar} alt="" className="h-3.5 w-3.5 object-contain brightness-0 invert" />
+                }
+              >
+                hunt
+              </PillButton>
+            </div>
           </div>
         </div>
       </div>

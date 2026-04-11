@@ -263,6 +263,10 @@ export default function HuntMapPage() {
           onClose={() => setSelectedTreasure(null)}
           onDirections={openInMaps}
           onDetails={handleDetailsClick}
+          onHunt={() => {
+            navigate("/hunts/scan");
+            setSelectedTreasure(null);
+          }}
           distance={distanceToSelected}
         />
       ) : !voucherSheetDismissed && voucherTreasures.length > 0 ? (
