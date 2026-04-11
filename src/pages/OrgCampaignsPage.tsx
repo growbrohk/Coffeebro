@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
+import QRCode from "react-qr-code";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
 import { useOrgCampaigns } from "@/hooks/useOrgCampaigns";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { HuntTreasureQrDialog } from "@/components/campaigns/HuntTreasureQrDialog";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 
 export default function OrgCampaignsPage() {
@@ -15,6 +18,7 @@ export default function OrgCampaignsPage() {
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: campaigns = [], isLoading: campLoading } = useOrgCampaigns(orgId);
+  const [qrDialog, setQrDialog] = useState<{ campaignId: string; payload: string } | null>(null);
 
   const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
 
@@ -83,24 +87,43 @@ export default function OrgCampaignsPage() {
                     item_name: v.menu_items?.item_name ?? null,
                   })),
                 });
+              const huntPayload =
+                c.campaign_type === "hunt" && c.qr_payload?.trim() ? c.qr_payload.trim() : null;
+
               return (
                 <li key={c.id}>
-                  <Card className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => navigate(`/org/${orgId}/campaigns/${c.id}`)}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">{title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1 text-sm text-muted-foreground">
-                      <p>
-                        {c.campaign_type} · {c.reward_mode} · {c.status}
-                      </p>
-                      {c.start_at && c.end_at ? (
-                        <p className="text-xs">
-                          {new Date(c.start_at).toLocaleString()} → {new Date(c.end_at).toLocaleString()}
+                  <Card
+                    className="cursor-pointer rounded-2xl border-border/80 transition-colors hover:bg-muted/40"
+                    onClick={() => navigate(`/org/${orgId}/campaigns/${c.id}`)}
+                  >
+                    <div className="flex flex-row items-center gap-4 p-5 sm:p-6">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-base font-semibold leading-snug text-foreground">{title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {c.campaign_type} · {c.reward_mode} · {c.status}
                         </p>
-                      ) : (
-                        <p className="text-xs">Schedule not set</p>
-                      )}
-                    </CardContent>
+                        {c.start_at && c.end_at ? (
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(c.start_at).toLocaleString()} → {new Date(c.end_at).toLocaleString()}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Schedule not set</p>
+                        )}
+                      </div>
+                      {huntPayload ? (
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-xl border border-border/60 bg-white p-1.5 shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label="Show treasure QR"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQrDialog({ campaignId: c.id, payload: huntPayload });
+                          }}
+                        >
+                          <QRCode value={huntPayload} size={40} />
+                        </button>
+                      ) : null}
+                    </div>
                   </Card>
                 </li>
               );
@@ -108,6 +131,15 @@ export default function OrgCampaignsPage() {
           </ul>
         )}
       </div>
+
+      <HuntTreasureQrDialog
+        open={qrDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setQrDialog(null);
+        }}
+        qrPayload={qrDialog?.payload ?? ""}
+        campaignId={qrDialog?.campaignId ?? ""}
+      />
     </div>
   );
 }

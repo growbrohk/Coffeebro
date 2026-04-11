@@ -25,6 +25,7 @@ import {
   toDatetimeLocalValue,
 } from "@/components/campaigns/sections/CampaignScheduleSection";
 import { TreasureLocationSection } from "@/components/campaigns/sections/TreasureLocationSection";
+import { HuntTreasureQrPanel } from "@/components/campaigns/HuntTreasureQrPanel";
 import { CampaignVouchersSection } from "@/components/campaigns/sections/CampaignVouchersSection";
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
@@ -347,6 +348,30 @@ export default function OrgCampaignEditorPage() {
           onTreasureAreaName={setTreasureAreaName}
           disabled={saveCampaign.isPending}
         />
+
+        {campaignType === "hunt" ? (
+          isNew ? (
+            <section className="space-y-2">
+              <h2 className="text-lg font-semibold">Treasure QR</h2>
+              <p className="text-sm text-muted-foreground">
+                Save the campaign once to generate a printable QR code for the treasure location.
+              </p>
+            </section>
+          ) : campaign?.qr_payload?.trim() ? (
+            <HuntTreasureQrPanel
+              qrPayload={campaign.qr_payload.trim()}
+              campaignId={campaign.id}
+              disabled={saveCampaign.isPending}
+            />
+          ) : (
+            <section className="space-y-2">
+              <h2 className="text-lg font-semibold">Treasure QR</h2>
+              <p className="text-sm text-muted-foreground">
+                No treasure QR yet. Save the campaign to generate one (needed for customers to scan and claim).
+              </p>
+            </section>
+          )
+        ) : null}
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Hints (hunt)</h2>

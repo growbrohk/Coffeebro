@@ -33,6 +33,21 @@ export function useCampaignMutations() {
         const patch = Object.fromEntries(
           Object.entries(rest).filter(([, v]) => v !== undefined),
         ) as TablesUpdate<"campaigns">;
+
+        const { data: existingRow, error: loadExistingErr } = await supabase
+          .from("campaigns")
+          .select("campaign_type, qr_payload")
+          .eq("id", id)
+          .single();
+        if (loadExistingErr) throw loadExistingErr;
+
+        const effectiveType = patch.campaign_type ?? existingRow?.campaign_type;
+        const effectiveQr =
+          patch.qr_payload !== undefined ? patch.qr_payload : existingRow?.qr_payload ?? null;
+        if (effectiveType === "hunt" && !effectiveQr?.trim()) {
+          patch.qr_payload = `hunt_${randomQrPayload()}`;
+        }
+
         const { data, error } = await supabase.from("campaigns").update(patch).eq("id", id).select("id").single();
         if (error) throw error;
         campaignId = data.id;
@@ -97,8 +112,12 @@ export function useCampaignMutations() {
 
       return fresh;
     },
-    onSuccess: (_data, vars) => {
+    onSuccess: (data, vars) => {
       void queryClient.invalidateQueries({ queryKey: orgCampaignsQueryKey(vars.orgId) });
+      const id = data && typeof data === "object" && "id" in data ? (data as { id: string }).id : undefined;
+      if (id) {
+        void queryClient.invalidateQueries({ queryKey: ["campaign", vars.orgId, id] });
+      }
     },
   });
 }
