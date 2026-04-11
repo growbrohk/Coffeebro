@@ -40,15 +40,15 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
         )}
       >
         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-          {voucher.thumbnail_url ? (
+          {voucher.org_logo_url ? (
             <img
-              src={voucher.thumbnail_url}
+              src={voucher.org_logo_url}
               alt=""
               className="h-full w-full object-cover"
             />
-          ) : voucher.org_logo_url ? (
+          ) : voucher.thumbnail_url ? (
             <img
-              src={voucher.org_logo_url}
+              src={voucher.thumbnail_url}
               alt=""
               className="h-full w-full object-cover"
             />

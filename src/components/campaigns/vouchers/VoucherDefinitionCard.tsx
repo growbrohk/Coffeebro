@@ -60,20 +60,6 @@ export function VoucherDefinitionCard({
           </Button>
         )}
       </div>
-      <div className="grid gap-2">
-        <Label>Menu item</Label>
-        <MenuItemPicker
-          items={menuItems}
-          value={value.menu_item_id}
-          onChange={(menu_item_id) => {
-            const m = menuItems.find((x) => x.id === menu_item_id);
-            const nextTemp = m ? allowedTemperatureRules(m)[0] : "n_a";
-            const nextFul = m ? allowedFulfillmentRules(m)[0] : "all_supported";
-            patch({ menu_item_id, temperature_rule: nextTemp, fulfillment_rule: nextFul });
-          }}
-          disabled={disabled}
-        />
-      </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label>Offer</Label>
@@ -115,6 +101,20 @@ export function VoucherDefinitionCard({
             disabled={disabled}
           />
         </div>
+      </div>
+      <div className="grid gap-2">
+        <Label>Menu item</Label>
+        <MenuItemPicker
+          items={menuItems}
+          value={value.menu_item_id}
+          onChange={(menu_item_id) => {
+            const m = menuItems.find((x) => x.id === menu_item_id);
+            const nextTemp = m ? allowedTemperatureRules(m)[0] : "n_a";
+            const nextFul = m ? allowedFulfillmentRules(m)[0] : "all_supported";
+            patch({ menu_item_id, temperature_rule: nextTemp, fulfillment_rule: nextFul });
+          }}
+          disabled={disabled}
+        />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="grid gap-2">

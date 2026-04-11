@@ -152,8 +152,8 @@ export default function OrgCampaignEditorPage() {
       treasure_lng: campaignType === "grab" ? org?.lng ?? lngNum : lngNum,
       treasure_address: treasureAddress.trim() || null,
       treasure_area_name: treasureAreaName.trim() || null,
-      hint_text: hintText.trim() || null,
-      hint_image_url: hintImageUrl.trim() || null,
+      hint_text: campaignType === "grab" ? null : hintText.trim() || null,
+      hint_image_url: campaignType === "grab" ? null : hintImageUrl.trim() || null,
       status,
       vouchers: vouchers.map((v, i) => ({
         ...(v.id ? { id: v.id } : {}),
@@ -334,20 +334,22 @@ export default function OrgCampaignEditorPage() {
           disabled={saveCampaign.isPending}
         />
 
-        <TreasureLocationSection
-          campaignType={campaignType}
-          treasureLocationType={treasureLocationType}
-          onTreasureLocationType={setTreasureLocationType}
-          treasureLat={treasureLat}
-          treasureLng={treasureLng}
-          treasureAddress={treasureAddress}
-          treasureAreaName={treasureAreaName}
-          onTreasureLat={setTreasureLat}
-          onTreasureLng={setTreasureLng}
-          onTreasureAddress={setTreasureAddress}
-          onTreasureAreaName={setTreasureAreaName}
-          disabled={saveCampaign.isPending}
-        />
+        {campaignType === "hunt" ? (
+          <TreasureLocationSection
+            campaignType={campaignType}
+            treasureLocationType={treasureLocationType}
+            onTreasureLocationType={setTreasureLocationType}
+            treasureLat={treasureLat}
+            treasureLng={treasureLng}
+            treasureAddress={treasureAddress}
+            treasureAreaName={treasureAreaName}
+            onTreasureLat={setTreasureLat}
+            onTreasureLng={setTreasureLng}
+            onTreasureAddress={setTreasureAddress}
+            onTreasureAreaName={setTreasureAreaName}
+            disabled={saveCampaign.isPending}
+          />
+        ) : null}
 
         {campaignType === "hunt" ? (
           isNew ? (
@@ -373,28 +375,30 @@ export default function OrgCampaignEditorPage() {
           )
         ) : null}
 
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Hints (hunt)</h2>
-          <div className="grid gap-2">
-            <Label htmlFor="hint">Hint text</Label>
-            <Input
-              id="hint"
-              value={hintText}
-              onChange={(e) => setHintText(e.target.value)}
-              disabled={saveCampaign.isPending}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="hintimg">Hint image URL</Label>
-            <Input
-              id="hintimg"
-              value={hintImageUrl}
-              onChange={(e) => setHintImageUrl(e.target.value)}
-              disabled={saveCampaign.isPending}
-              placeholder="https://…"
-            />
-          </div>
-        </section>
+        {campaignType === "hunt" ? (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Hints (hunt)</h2>
+            <div className="grid gap-2">
+              <Label htmlFor="hint">Hint text</Label>
+              <Input
+                id="hint"
+                value={hintText}
+                onChange={(e) => setHintText(e.target.value)}
+                disabled={saveCampaign.isPending}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="hintimg">Hint image URL</Label>
+              <Input
+                id="hintimg"
+                value={hintImageUrl}
+                onChange={(e) => setHintImageUrl(e.target.value)}
+                disabled={saveCampaign.isPending}
+                placeholder="https://…"
+              />
+            </div>
+          </section>
+        ) : null}
 
         <CampaignVouchersSection
           rewardMode={rewardMode}
