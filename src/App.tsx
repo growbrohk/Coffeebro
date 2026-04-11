@@ -59,7 +59,6 @@ const App = () => (
               <Route path="/host/org/:orgId" element={<HostOrgEditPage />} />
               <Route path="/org/:orgId/menu" element={<OrgMenuPage />} />
               <Route path="/org/:orgId/campaigns" element={<OrgCampaignsPage />} />
-              <Route path="/org/:orgId/campaigns/new" element={<OrgCampaignEditorPage />} />
               <Route path="/org/:orgId/campaigns/:campaignId" element={<OrgCampaignEditorPage />} />
               <Route
                 path="/org/:orgId/campaigns/:campaignId/participants"
