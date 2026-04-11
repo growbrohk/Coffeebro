@@ -91,16 +91,16 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "200ab33cd4ffc5424f60ab425e47699f"
+    "revision": "8a2c158c57f9464339d57cc517d15c03"
   }, {
     "url": "favicon.png",
-    "revision": "21b8458083bf893f61ea1515adc35442"
+    "revision": "bded9006240c02849570f21f32689383"
   }, {
     "url": "favicon.ico",
-    "revision": "0e919272d421273bdb08eec57228f5bc"
+    "revision": "9accbc416b9f6e77327316082dc07a0f"
   }, {
     "url": "apple-touch-icon.png",
-    "revision": "0cfd15255cb6b7a930e06ca2002bac10"
+    "revision": "c899ae9b6f501c0f55a567cb28cab7b9"
   }, {
     "url": "quiz-frogs/mocha.svg",
     "revision": "92f35eac64a0f9d6497b4fc1380ed3bc"
@@ -130,16 +130,16 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "54d16b8fa1f17d2ba6e063f58ada4daf"
   }, {
     "url": "icons/icon-512.png",
-    "revision": "d53505b56875bc08f3a988e2d32c22dc"
+    "revision": "8a1024828355f0bc970a368e6c353a0d"
   }, {
     "url": "icons/icon-192.png",
-    "revision": "1bf9dd39db659639311e2d1bde8437ea"
+    "revision": "5fc6aeae06b9db2271987300d0f9b8e3"
   }, {
     "url": "brand/logo-source.png",
     "revision": "b97b61357cd99cfaaf6342f3f86da238"
   }, {
     "url": "brand/app-mark.png",
-    "revision": "f15f8421ba7d69d4b5d88593e4c83cae"
+    "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
     "url": "assets/index-xIxPjdKL.js",
     "revision": null

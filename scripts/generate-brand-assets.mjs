@@ -3,7 +3,7 @@
  * Run: node scripts/generate-brand-assets.mjs
  */
 import sharp from 'sharp';
-import toIco from 'to-ico';
+import pngToIco from 'png-to-ico';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +13,12 @@ const root = join(__dirname, '..');
 const src = join(root, 'public/brand/logo-source.png');
 const BRAND = { r: 243, g: 129, b: 50, alpha: 1 }; // #f38132
 
+/** Truecolor PNG for consistent favicon / PWA decoding. */
 async function pngResize(w, h) {
-  return sharp(src).resize(w, h, { fit: 'cover' }).png().toBuffer();
+  return sharp(src)
+    .resize(w, h, { fit: 'cover' })
+    .png({ palette: false, compressionLevel: 9 })
+    .toBuffer();
 }
 
 async function squareOnBrand(size, innerRatio = 1) {
@@ -39,10 +43,10 @@ async function main() {
   mkdirSync(join(root, 'public/icons'), { recursive: true });
 
   const buf48 = await pngResize(48, 48);
-  writeFileSync(join(root, 'public/favicon.png'), buf48);
+  const faviconPngPath = join(root, 'public/favicon.png');
+  writeFileSync(faviconPngPath, buf48);
 
-  const sizes16_32_48 = await Promise.all([pngResize(16, 16), pngResize(32, 32), pngResize(48, 48)]);
-  const ico = await toIco(sizes16_32_48);
+  const ico = await pngToIco(faviconPngPath);
   writeFileSync(join(root, 'public/favicon.ico'), ico);
 
   writeFileSync(join(root, 'public/apple-touch-icon.png'), await pngResize(180, 180));
@@ -76,7 +80,7 @@ async function main() {
     .toBuffer();
   writeFileSync(join(root, 'public/og-image.png'), og);
 
-  console.log('Wrote public/favicon.png, favicon.ico, apple-touch-icon.png, og-image.png');
+  console.log('Wrote public/favicon.png, favicon.ico (from PNG), apple-touch-icon.png, og-image.png');
   console.log('Wrote public/icons/icon-{192,512}.png, icon-maskable-{192,512}.png');
   console.log('Wrote public/brand/app-mark.png');
 }
