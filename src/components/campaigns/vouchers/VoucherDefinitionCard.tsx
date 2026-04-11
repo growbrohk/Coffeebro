@@ -60,47 +60,24 @@ export function VoucherDefinitionCard({
           </Button>
         )}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="grid gap-2">
-          <Label>Offer</Label>
-          <Select
-            value={value.offer_type}
-            onValueChange={(offer_type) => patch({ offer_type: offer_type as VoucherDraft["offer_type"] })}
-            disabled={disabled}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="free">Free</SelectItem>
-              <SelectItem value="b1g1">Buy 1 get 1</SelectItem>
-              <SelectItem value="fixed_price_17" disabled={!menu || menu.category !== "coffee"}>
-                $17 fixed (coffee only)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label>Pool quantity</Label>
-          <Input
-            type="number"
-            min={1}
-            value={value.quantity}
-            onChange={(e) => patch({ quantity: Number(e.target.value) })}
-            disabled={disabled}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label>Valid days after claim</Label>
-          <Input
-            type="number"
-            min={1}
-            max={90}
-            value={value.redeem_valid_days}
-            onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
-            disabled={disabled}
-          />
-        </div>
+      <div className="grid gap-2">
+        <Label>Offer</Label>
+        <Select
+          value={value.offer_type}
+          onValueChange={(offer_type) => patch({ offer_type: offer_type as VoucherDraft["offer_type"] })}
+          disabled={disabled}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="free">Free</SelectItem>
+            <SelectItem value="b1g1">Buy 1 get 1</SelectItem>
+            <SelectItem value="fixed_price_17" disabled={!menu || menu.category !== "coffee"}>
+              $17 fixed (coffee only)
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-2">
         <Label>Menu item</Label>
@@ -116,45 +93,64 @@ export function VoucherDefinitionCard({
           disabled={disabled}
         />
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="grid gap-2">
-          <Label>Temperature rule</Label>
-          <Select
-            value={value.temperature_rule}
-            onValueChange={(temperature_rule) => patch({ temperature_rule })}
-            disabled={disabled || !menu}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {tempOpts.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-2">
-          <Label>Fulfillment rule</Label>
-          <Select
-            value={value.fulfillment_rule}
-            onValueChange={(fulfillment_rule) => patch({ fulfillment_rule })}
-            disabled={disabled || !menu}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {fulfillOpts.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="grid gap-2">
+        <Label>Pool quantity</Label>
+        <Input
+          type="number"
+          min={1}
+          value={value.quantity}
+          onChange={(e) => patch({ quantity: Number(e.target.value) })}
+          disabled={disabled}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Valid days after claim</Label>
+        <Input
+          type="number"
+          min={1}
+          max={90}
+          value={value.redeem_valid_days}
+          onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
+          disabled={disabled}
+        />
+      </div>
+      <div className="grid gap-2">
+        <Label>Temperature rule</Label>
+        <Select
+          value={value.temperature_rule}
+          onValueChange={(temperature_rule) => patch({ temperature_rule })}
+          disabled={disabled || !menu}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {tempOpts.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2">
+        <Label>Fulfillment rule</Label>
+        <Select
+          value={value.fulfillment_rule}
+          onValueChange={(fulfillment_rule) => patch({ fulfillment_rule })}
+          disabled={disabled || !menu}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {fulfillOpts.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
