@@ -98,3 +98,16 @@ export function useOrgs() {
     enabled: !!user && (isSuperAdmin || isStaffUser),
   });
 }
+
+export function useOrg(orgId: string | undefined) {
+  return useQuery({
+    queryKey: ["org", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async () => {
+      if (!orgId) return null;
+      const { data, error } = await supabase.from("orgs").select("*").eq("id", orgId).single();
+      if (error) throw error;
+      return data as Org;
+    },
+  });
+}

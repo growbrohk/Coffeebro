@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import { ImageIcon, Navigation, X } from 'lucide-react';
 import { formatHuntRedemptionPeriod } from '@/lib/formatHuntRedemption';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
+import type { CampaignMapItem } from "@/types/campaignMapItem";
 
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 
 interface TreasurePopupCardProps {
-  treasure: HuntMapTreasure;
+  treasure: CampaignMapItem;
   onClose: () => void;
   onDirections: () => void;
   onDetails: () => void;

@@ -1,17 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { OFFER_TYPE_LABELS } from '@/lib/offerTypes';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
 
 export interface MyVoucher {
   id: string;
   code: string;
-  status: 'active' | 'redeemed' | 'expired' | 'refunded';
-  source_type: 'coffee_offer' | 'hunt_stop';
+  status: "active" | "redeemed" | "expired" | "refunded";
   created_at: string;
   redeemed_at: string | null;
   expires_at: string | null;
-  /** Campaign display: campaign_title || offer name */
   title: string;
   org_name?: string;
   offer_type?: string;
@@ -19,103 +17,111 @@ export interface MyVoucher {
   location?: string | null;
   event_date?: string | null;
   thumbnail_url?: string | null;
+  campaign_id?: string;
 }
 
 export function formatVoucherRedemptionPeriod(
   expiresAt: string | null | undefined,
-  eventDate: string | null | undefined
+  eventDate: string | null | undefined,
 ): string {
   if (expiresAt) {
     const d = new Date(expiresAt);
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
     }
   }
   if (eventDate) {
-    const d = new Date(eventDate + 'T12:00:00');
+    const d = new Date(eventDate + "T12:00:00");
     if (!Number.isNaN(d.getTime())) {
       return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
     }
   }
-  return '—';
+  return "—";
 }
 
 export function useMyVouchers() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['vouchers', 'my', user?.id],
+    queryKey: ["vouchers", "my", user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      const { data: vouchers, error } = await (supabase as any)
-        .from('vouchers')
-        .select(`
+      const { data: vouchers, error } = await supabase
+        .from("vouchers")
+        .select(
+          `
           id,
           code,
           status,
-          source_type,
           created_at,
           redeemed_at,
           expires_at,
-          offer_id,
-          org_id,
-          orgs(org_name),
-          offers(
-            name,
+          campaign_id,
+          orgs ( org_name ),
+          campaign_vouchers (
             offer_type,
-            description,
-            location,
-            campaign_title,
-            event_date,
-            treasure_id,
-            preset_offers ( clue_image ),
-            treasures ( clue_image, name )
+            menu_items ( item_name ),
+            campaigns ( display_title, campaign_type, start_at, end_at, hint_text, hint_image_url )
           )
-        `)
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const result: MyVoucher[] = (vouchers || []).map((v: any) => {
-        const offer = v.offers;
-        const campaignTitle =
-          (offer?.campaign_title?.trim() || offer?.name?.trim() || 'Voucher') as string;
-        let offerType: string | undefined;
-        if (offer?.offer_type) {
-          offerType = OFFER_TYPE_LABELS[offer.offer_type] ?? offer.offer_type;
-        }
-        const tr = offer?.treasures;
-        const treasure = Array.isArray(tr) ? tr[0] : tr;
-        const po = offer?.preset_offers;
-        const preset = Array.isArray(po) ? po[0] : po;
-        const presetClue = preset?.clue_image as string | null | undefined;
-        const treasureClue = treasure?.clue_image as string | null | undefined;
-        const thumb = presetClue || treasureClue || null;
+      const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
+        const rawCv = v.campaign_vouchers;
+        const cv = (Array.isArray(rawCv) ? rawCv[0] : rawCv) as
+          | {
+              offer_type: string;
+              menu_items: { item_name: string } | null;
+              campaigns: {
+                display_title: string | null;
+                campaign_type: string;
+                start_at: string | null;
+                end_at: string | null;
+                hint_text: string | null;
+                hint_image_url: string | null;
+              } | null;
+            }
+          | null
+          | undefined;
+        const rawCamp = cv?.campaigns;
+        const camp = Array.isArray(rawCamp) ? rawCamp[0] : rawCamp;
+        const rawMenu = cv?.menu_items;
+        const menu = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
+        const title =
+          camp?.display_title?.trim() ||
+          menu?.item_name?.trim() ||
+          (camp?.campaign_type === "hunt" ? "Hunt reward" : "Campaign reward");
+        const offerType = cv?.offer_type ? voucherOfferLabel(cv.offer_type) : undefined;
+        const thumb = camp?.hint_image_url || null;
+
         return {
-          id: v.id,
-          code: v.code,
-          status: v.status,
-          source_type: v.source_type,
-          created_at: v.created_at,
-          redeemed_at: v.redeemed_at,
-          expires_at: v.expires_at,
-          title: campaignTitle,
-          org_name: v.orgs?.org_name,
+          id: v.id as string,
+          code: v.code as string,
+          status: v.status as MyVoucher["status"],
+          created_at: v.created_at as string,
+          redeemed_at: (v.redeemed_at as string | null) ?? null,
+          expires_at: (v.expires_at as string | null) ?? null,
+          title,
+          org_name: (v.orgs as { org_name: string } | null)?.org_name,
           offer_type: offerType,
-          description: offer?.description ?? null,
-          location: offer?.location ?? null,
-          event_date: offer?.event_date ?? null,
-          thumbnail_url: thumb || null,
+          description: camp?.hint_text ?? null,
+          location: null,
+          event_date: camp?.end_at ?? null,
+          thumbnail_url: thumb,
+          campaign_id: v.campaign_id as string,
         };
       });
 

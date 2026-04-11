@@ -1,0 +1,106 @@
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+type Props = {
+  campaignType: "grab" | "hunt";
+  treasureLocationType: "shop" | "custom";
+  onTreasureLocationType: (v: "shop" | "custom") => void;
+  treasureLat: string;
+  treasureLng: string;
+  treasureAddress: string;
+  treasureAreaName: string;
+  onTreasureLat: (v: string) => void;
+  onTreasureLng: (v: string) => void;
+  onTreasureAddress: (v: string) => void;
+  onTreasureAreaName: (v: string) => void;
+  disabled?: boolean;
+};
+
+export function TreasureLocationSection({
+  campaignType,
+  treasureLocationType,
+  onTreasureLocationType,
+  treasureLat,
+  treasureLng,
+  treasureAddress,
+  treasureAreaName,
+  onTreasureLat,
+  onTreasureLng,
+  onTreasureAddress,
+  onTreasureAreaName,
+  disabled,
+}: Props) {
+  const isGrab = campaignType === "grab";
+
+  return (
+    <section className="space-y-4">
+      <h2 className="text-lg font-semibold">Treasure location</h2>
+      {isGrab && (
+        <p className="text-sm text-muted-foreground">Grab campaigns always use your shop coordinates.</p>
+      )}
+      {!isGrab && (
+        <>
+          <RadioGroup
+            value={treasureLocationType}
+            onValueChange={(v) => onTreasureLocationType(v as "shop" | "custom")}
+            className="flex flex-col gap-2"
+            disabled={disabled}
+          >
+            <label className="flex items-center gap-2 text-sm">
+              <RadioGroupItem value="shop" id="tl-shop" />
+              Same as shop
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <RadioGroupItem value="custom" id="tl-custom" />
+              Custom pin / address
+            </label>
+          </RadioGroup>
+          {treasureLocationType === "custom" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="tlat">Latitude</Label>
+                <Input
+                  id="tlat"
+                  value={treasureLat}
+                  onChange={(e) => onTreasureLat(e.target.value)}
+                  disabled={disabled}
+                  placeholder="22.3"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="tlng">Longitude</Label>
+                <Input
+                  id="tlng"
+                  value={treasureLng}
+                  onChange={(e) => onTreasureLng(e.target.value)}
+                  disabled={disabled}
+                  placeholder="114.17"
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="taddr">Address</Label>
+                <Input
+                  id="taddr"
+                  value={treasureAddress}
+                  onChange={(e) => onTreasureAddress(e.target.value)}
+                  disabled={disabled}
+                />
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="tarea">Area name</Label>
+                <Input
+                  id="tarea"
+                  value={treasureAreaName}
+                  onChange={(e) => onTreasureAreaName(e.target.value)}
+                  disabled={disabled}
+                  placeholder="e.g. Central"
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

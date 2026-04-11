@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useTheme } from 'next-themes';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
+import type { CampaignMapItem } from "@/types/campaignMapItem";
 import type { HuntMapPinKind } from '@/lib/huntMapPinKind';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -72,13 +72,13 @@ function iconForPinKind(kind: HuntMapPinKind, scanned: boolean): L.DivIcon {
 }
 
 interface HuntMapProps {
-  treasures: HuntMapTreasure[];
-  onSelectTreasure?: (treasure: HuntMapTreasure) => void;
+  treasures: CampaignMapItem[];
+  onSelectTreasure?: (treasure: CampaignMapItem) => void;
   emptyMessage?: string;
 }
 
 /** Only refit when pin locations / set membership change — not on unrelated re-renders (e.g. closing popup). */
-function fitBoundsSignature(treasures: HuntMapTreasure[]): string {
+function fitBoundsSignature(treasures: CampaignMapItem[]): string {
   return treasures
     .filter((t) => t.lat != null && t.lng != null && Number.isFinite(t.lat) && Number.isFinite(t.lng))
     .map((t) => `${t.id}:${t.lat},${t.lng}`)
@@ -87,7 +87,7 @@ function fitBoundsSignature(treasures: HuntMapTreasure[]): string {
 }
 
 /** When the full set spans very wide (bad coordinate), fit the HK-area cluster so local pins stay visible. */
-function treasuresForFitBounds(withCoords: HuntMapTreasure[]): HuntMapTreasure[] {
+function treasuresForFitBounds(withCoords: CampaignMapItem[]): CampaignMapItem[] {
   if (withCoords.length <= 1) return withCoords;
   const lats = withCoords.map((t) => t.lat!);
   const lngs = withCoords.map((t) => t.lng!);
@@ -100,7 +100,7 @@ function treasuresForFitBounds(withCoords: HuntMapTreasure[]): HuntMapTreasure[]
   return withCoords;
 }
 
-function FitBounds({ treasures }: { treasures: HuntMapTreasure[] }) {
+function FitBounds({ treasures }: { treasures: CampaignMapItem[] }) {
   const map = useMap();
   const signature = useMemo(() => fitBoundsSignature(treasures), [treasures]);
 
@@ -144,6 +144,15 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
     [treasures]
   );
 
+  const [centerLat, centerLng] = useMemo(() => {
+    if (treasuresWithCoords.length === 0) return [22.3193, 114.1694] as const;
+    const lat =
+      treasuresWithCoords.reduce((a, t) => a + t.lat!, 0) / treasuresWithCoords.length;
+    const lng =
+      treasuresWithCoords.reduce((a, t) => a + t.lng!, 0) / treasuresWithCoords.length;
+    return [lat, lng] as const;
+  }, [treasuresWithCoords]);
+
   const hasCoords = treasuresWithCoords.length > 0;
 
   if (treasures.length > 0 && !hasCoords) {
@@ -176,15 +185,6 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
       </div>
     );
   }
-
-  const [centerLat, centerLng] = useMemo(() => {
-    if (treasuresWithCoords.length === 0) return [22.3193, 114.1694] as const;
-    const lat =
-      treasuresWithCoords.reduce((a, t) => a + t.lat!, 0) / treasuresWithCoords.length;
-    const lng =
-      treasuresWithCoords.reduce((a, t) => a + t.lng!, 0) / treasuresWithCoords.length;
-    return [lat, lng] as const;
-  }, [treasuresWithCoords]);
 
   const emptyHint = emptyMessage ?? 'No treasures on this hunt yet.';
 

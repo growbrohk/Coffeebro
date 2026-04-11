@@ -14,62 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      coffee_offers: {
-        Row: {
-          coffee_types: string[] | null
-          created_at: string
-          created_by: string
-          description: string | null
-          event_date: string
-          event_time: string | null
-          id: string
-          location: string | null
-          name: string
-          offer_type: string
-          org_id: string
-          quantity_limit: number
-          redeem_before_time: string | null
-        }
-        Insert: {
-          coffee_types?: string[] | null
-          created_at?: string
-          created_by: string
-          description?: string | null
-          event_date: string
-          event_time?: string | null
-          id?: string
-          location?: string | null
-          name: string
-          offer_type?: string
-          org_id: string
-          quantity_limit?: number
-          redeem_before_time?: string | null
-        }
-        Update: {
-          coffee_types?: string[] | null
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          event_date?: string
-          event_time?: string | null
-          id?: string
-          location?: string | null
-          name?: string
-          offer_type?: string
-          org_id?: string
-          quantity_limit?: number
-          redeem_before_time?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "coffee_offers_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "orgs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       daily_coffees: {
         Row: {
           beans: string | null
@@ -226,105 +170,6 @@ export type Database = {
           },
         ]
       }
-      hunt_claims: {
-        Row: {
-          claimed_at: string
-          id: string
-          treasure_id: string
-          user_id: string
-        }
-        Insert: {
-          claimed_at?: string
-          id?: string
-          treasure_id: string
-          user_id: string
-        }
-        Update: {
-          claimed_at?: string
-          id?: string
-          treasure_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hunt_claims_treasure_id_fkey"
-            columns: ["treasure_id"]
-            isOneToOne: false
-            referencedRelation: "treasures"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hunt_participants: {
-        Row: {
-          hunt_id: string
-          joined_at: string
-          user_id: string
-        }
-        Insert: {
-          hunt_id: string
-          joined_at?: string
-          user_id: string
-        }
-        Update: {
-          hunt_id?: string
-          joined_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hunt_participants_hunt_id_fkey"
-            columns: ["hunt_id"]
-            isOneToOne: false
-            referencedRelation: "hunts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hunts: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string | null
-          ends_at: string | null
-          id: string
-          name: string
-          org_id: string
-          starts_at: string | null
-          status: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          description?: string | null
-          ends_at?: string | null
-          id?: string
-          name: string
-          org_id: string
-          starts_at?: string | null
-          status?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          ends_at?: string | null
-          id?: string
-          name?: string
-          org_id?: string
-          starts_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hunts_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "orgs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       org_hosts: {
         Row: {
           created_at: string
@@ -435,56 +280,6 @@ export type Database = {
         }
         Relationships: []
       }
-      preset_offers: {
-        Row: {
-          clue_image: string | null
-          coffee_types: string[] | null
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          offer_type: string
-          org_id: string
-          updated_at: string
-        }
-        Insert: {
-          clue_image?: string | null
-          coffee_types?: string[] | null
-          created_at?: string
-          created_by: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          offer_type: string
-          org_id: string
-          updated_at?: string
-        }
-        Update: {
-          clue_image?: string | null
-          coffee_types?: string[] | null
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          offer_type?: string
-          org_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "preset_offers_org_id_fkey"
-            columns: ["org_id"]
-            isOneToOne: false
-            referencedRelation: "orgs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quiz_results: {
         Row: {
           answers: Json
@@ -545,91 +340,180 @@ export type Database = {
         }
         Relationships: []
       }
-      treasure_reward: {
+      campaign_vouchers: {
         Row: {
-          description: string | null
+          campaign_id: string
+          created_at: string
+          fulfillment_rule: string
           id: string
-          org_id: string
+          menu_item_id: string
+          offer_type: string
+          quantity: number
+          redeem_valid_days: number
           sort_order: number
-          title: string
-          treasure_id: string
+          temperature_rule: string
+          updated_at: string
         }
         Insert: {
-          description?: string | null
+          campaign_id: string
+          created_at?: string
+          fulfillment_rule: string
           id?: string
-          org_id: string
+          menu_item_id: string
+          offer_type: string
+          quantity: number
+          redeem_valid_days?: number
           sort_order?: number
-          title: string
-          treasure_id: string
+          temperature_rule: string
+          updated_at?: string
         }
         Update: {
-          description?: string | null
+          campaign_id?: string
+          created_at?: string
+          fulfillment_rule?: string
           id?: string
-          org_id?: string
+          menu_item_id?: string
+          offer_type?: string
+          quantity?: number
+          redeem_valid_days?: number
           sort_order?: number
-          title?: string
-          treasure_id?: string
+          temperature_rule?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "treasure_reward_org_id_fkey"
+            foreignKeyName: "campaign_vouchers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_vouchers_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          campaign_type: string
+          created_at: string
+          display_title: string | null
+          end_at: string | null
+          hint_image_url: string | null
+          hint_text: string | null
+          id: string
+          org_id: string
+          qr_payload: string | null
+          reward_mode: string
+          reward_per_action: number
+          start_at: string | null
+          status: string
+          treasure_address: string | null
+          treasure_area_name: string | null
+          treasure_lat: number | null
+          treasure_lng: number | null
+          treasure_location_type: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_type: string
+          created_at?: string
+          display_title?: string | null
+          end_at?: string | null
+          hint_image_url?: string | null
+          hint_text?: string | null
+          id?: string
+          org_id: string
+          qr_payload?: string | null
+          reward_mode: string
+          reward_per_action?: number
+          start_at?: string | null
+          status?: string
+          treasure_address?: string | null
+          treasure_area_name?: string | null
+          treasure_lat?: number | null
+          treasure_lng?: number | null
+          treasure_location_type?: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_type?: string
+          created_at?: string
+          display_title?: string | null
+          end_at?: string | null
+          hint_image_url?: string | null
+          hint_text?: string | null
+          id?: string
+          org_id?: string
+          qr_payload?: string | null
+          reward_mode?: string
+          reward_per_action?: number
+          start_at?: string | null
+          status?: string
+          treasure_address?: string | null
+          treasure_area_name?: string | null
+          treasure_lat?: number | null
+          treasure_lng?: number | null
+          treasure_location_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "treasure_reward_treasure_id_fkey"
-            columns: ["treasure_id"]
-            isOneToOne: false
-            referencedRelation: "treasures"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      treasures: {
+      menu_items: {
         Row: {
-          address: string | null
-          clue_image: string | null
-          description: string | null
-          hunt_id: string
+          base_price: number
+          category: string
+          created_at: string
+          fulfillment_option: string
           id: string
-          lat: number | null
-          lng: number | null
-          name: string
-          qr_code_id: string
-          sort_order: number
+          item_name: string
+          org_id: string
+          status: string
+          temperature_option: string
+          updated_at: string
         }
         Insert: {
-          address?: string | null
-          clue_image?: string | null
-          description?: string | null
-          hunt_id: string
+          base_price: number
+          category: string
+          created_at?: string
+          fulfillment_option: string
           id?: string
-          lat?: number | null
-          lng?: number | null
-          name: string
-          qr_code_id: string
-          sort_order?: number
+          item_name: string
+          org_id: string
+          status?: string
+          temperature_option: string
+          updated_at?: string
         }
         Update: {
-          address?: string | null
-          clue_image?: string | null
-          description?: string | null
-          hunt_id?: string
+          base_price?: number
+          category?: string
+          created_at?: string
+          fulfillment_option?: string
           id?: string
-          lat?: number | null
-          lng?: number | null
-          name?: string
-          qr_code_id?: string
-          sort_order?: number
+          item_name?: string
+          org_id?: string
+          status?: string
+          temperature_option?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "treasures_hunt_id_fkey"
-            columns: ["hunt_id"]
+            foreignKeyName: "menu_items_org_id_fkey"
+            columns: ["org_id"]
             isOneToOne: false
-            referencedRelation: "hunts"
+            referencedRelation: "orgs"
             referencedColumns: ["id"]
           },
         ]
@@ -657,66 +541,57 @@ export type Database = {
       }
       vouchers: {
         Row: {
+          campaign_id: string
+          campaign_voucher_id: string
           code: string
-          coffee_offer_id: string | null
           created_at: string
           expires_at: string | null
-          hunt_claim_id: string | null
           id: string
           org_id: string
           owner_id: string
           redeemed_at: string | null
           redeemed_by: string | null
-          selected_coffee_type: string | null
-          source_type: string
           status: string
-          treasure_reward_id: string | null
         }
         Insert: {
+          campaign_id: string
+          campaign_voucher_id: string
           code: string
-          coffee_offer_id?: string | null
           created_at?: string
           expires_at?: string | null
-          hunt_claim_id?: string | null
           id?: string
           org_id: string
           owner_id: string
           redeemed_at?: string | null
           redeemed_by?: string | null
-          selected_coffee_type?: string | null
-          source_type?: string
           status?: string
-          treasure_reward_id?: string | null
         }
         Update: {
+          campaign_id?: string
+          campaign_voucher_id?: string
           code?: string
-          coffee_offer_id?: string | null
           created_at?: string
           expires_at?: string | null
-          hunt_claim_id?: string | null
           id?: string
           org_id?: string
           owner_id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
-          selected_coffee_type?: string | null
-          source_type?: string
           status?: string
-          treasure_reward_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "vouchers_coffee_offer_id_fkey"
-            columns: ["coffee_offer_id"]
+            foreignKeyName: "vouchers_campaign_id_fkey"
+            columns: ["campaign_id"]
             isOneToOne: false
-            referencedRelation: "coffee_offers"
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "vouchers_hunt_claim_id_fkey"
-            columns: ["hunt_claim_id"]
+            foreignKeyName: "vouchers_campaign_voucher_id_fkey"
+            columns: ["campaign_voucher_id"]
             isOneToOne: false
-            referencedRelation: "hunt_claims"
+            referencedRelation: "campaign_vouchers"
             referencedColumns: ["id"]
           },
           {
@@ -724,13 +599,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vouchers_treasure_reward_id_fkey"
-            columns: ["treasure_reward_id"]
-            isOneToOne: false
-            referencedRelation: "treasure_reward"
             referencedColumns: ["id"]
           },
         ]
@@ -792,14 +660,6 @@ export type Database = {
           status: string
         }[]
       }
-      claim_treasure_atomic: {
-        Args: { p_qr_code_id: string }
-        Returns: {
-          message: string
-          status: string
-          voucher_data: Json
-        }[]
-      }
       complete_quiz_anon: {
         Args: {
           p_answers: Json
@@ -839,6 +699,7 @@ export type Database = {
           mtr_station: string | null
           sample_hunt_id: string | null
           sample_treasure_id: string | null
+          sample_campaign_id: string | null
         }[]
       }
       get_store_conversion_rates: {
@@ -872,33 +733,41 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
-      list_offer_participants: {
-        Args: { p_offer_id: string }
-        Returns: {
-          created_at: string
-          owner_handle: string
-          owner_id: string
-          owner_name: string
-          redeemed_at: string
-          selected_coffee_type: string
-          status: string
-          voucher_id: string
-        }[]
-      }
-      mint_voucher_atomic: {
-        Args: { p_offer_id: string; p_selected_coffee_type: string }
-        Returns: {
-          code: string
-          remaining: number
-          total: number
-          voucher_id: string
-        }[]
-      }
       my_voucher_hunter_top_percent: { Args: never; Returns: number | null }
       redeem_voucher_atomic: {
         Args: { p_code: string }
         Returns: {
+          campaign_title: string | null
+          item_name: string | null
           message: string
+          offer_type: string | null
+          org_name: string | null
+          status: string
+          voucher_id: string | null
+        }[]
+      }
+      claim_campaign_voucher: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          code: string
+          id: string
+        }[]
+      }
+      claim_hunt_campaign: {
+        Args: { p_qr_payload: string }
+        Returns: {
+          code: string
+          id: string
+        }[]
+      }
+      list_campaign_participants: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          code: string
+          created_at: string
+          owner_id: string
+          owner_name: string
+          redeemed_at: string | null
           status: string
           voucher_id: string
         }[]

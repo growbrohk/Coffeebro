@@ -535,6 +535,12 @@ export default function HostOrgEditPage() {
         <h1 className="text-lg font-black uppercase tracking-tight">Edit organization</h1>
       </div>
 
+      <div className="container max-w-lg px-4 pt-4">
+        <Button type="button" variant="secondary" className="w-full" onClick={() => navigate(`/org/${orgId}/menu`)}>
+          Menu &amp; campaigns
+        </Button>
+      </div>
+
       <div className="container max-w-lg space-y-6 px-4 py-6">
         {readOnlyManager ? (
           <p className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">

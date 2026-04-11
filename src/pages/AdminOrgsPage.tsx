@@ -750,6 +750,11 @@ export default function AdminOrgsPage() {
           </p>
         ) : (
           <form onSubmit={handleSave} className="space-y-8">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={() => navigate(`/org/${activeOrgId}/menu`)}>
+                Menu &amp; campaigns
+              </Button>
+            </div>
             <section className="space-y-4">
               <h3 className="text-sm font-semibold uppercase text-foreground">Core info</h3>
               <div className="space-y-2">

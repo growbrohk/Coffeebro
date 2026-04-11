@@ -290,29 +290,11 @@ export default function ProfilePage() {
             <div className="space-y-3 pt-2">
               <Button
                 type="button"
-                onClick={() => navigate('/host/preset-offers')}
+                onClick={() => navigate('/host/orgs')}
                 className="w-full btn-run mb-0 bg-orange-500 hover:bg-orange-600 text-white"
                 disabled={roleLoading || staffLoading}
               >
-                Create / manage offer
-              </Button>
-              <Button
-                type="button"
-                onClick={() => navigate('/host/offer-campaign')}
-                variant="outline"
-                className="w-full btn-run mb-0"
-                disabled={roleLoading || staffLoading}
-              >
-                Create / manage offer campaign
-              </Button>
-              <Button
-                type="button"
-                onClick={() => navigate('/host/hunts')}
-                variant="outline"
-                className="w-full btn-run mb-0"
-                disabled={roleLoading || staffLoading}
-              >
-                Manage Hunts
+                Menu &amp; campaigns
               </Button>
             </div>
           )}

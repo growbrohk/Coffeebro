@@ -1,229 +1,147 @@
-import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  useAllTreasures,
-  useHunts,
-  useMyClaimedTreasureIds,
-} from '@/hooks/useHunts';
-import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
-import { useHuntsOrgMeta } from '@/hooks/useHuntsOrgMeta';
-import {
-  primaryOfferByTreasureId,
-  useTreasuresPrimaryOffers,
-} from '@/hooks/useTreasuresPrimaryOffers';
-import {
-  mapCalendarOfferRowToHuntMapTreasure,
-  usePublicCalendarOffersForExplore,
-} from '@/hooks/usePublicCalendarOffersForExplore';
-import { discoveryOrgToCafeTreasure } from '@/lib/discoveryOrgToMapTreasure';
-import { pinKindForTreasure } from '@/lib/huntMapPinKind';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
-import { VoucherCarouselRow } from '@/components/VoucherCarouselCards';
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDiscoveryOrgs } from "@/hooks/useDiscoveryOrgs";
+import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
+import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
+import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
+import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
+import type { CampaignMapItem } from "@/types/campaignMapItem";
+import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
 
 export default function CheckPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: hunts = [], isLoading: huntsLoading } = useHunts();
-  const {
-    data: rawTreasures = [],
-    isLoading: treasuresLoading,
-    isError: treasuresError,
-  } = useAllTreasures(null, true);
-  const { data: claimedIds } = useMyClaimedTreasureIds();
-
-  const treasureIds = useMemo(() => rawTreasures.map((t) => t.id), [rawTreasures]);
-  const huntIdsForOrg = useMemo(
-    () => [...new Set(rawTreasures.map((t) => t.hunt_id))],
-    [rawTreasures]
-  );
-  const { data: huntOrgMap = new Map(), isPending: huntOrgMetaLoading } =
-    useHuntsOrgMeta(huntIdsForOrg);
+  const { data: campaigns = [], isLoading: campaignsLoading } = usePublishedCampaigns();
+  const { data: claimedIds = new Set<string>() } = useMyClaimedCampaignIds();
   const { data: discoveryOrgs = [], isPending: discoveryOrgsLoading } = useDiscoveryOrgs();
-  const { data: calendarOfferRows = [], isPending: calendarOffersLoading } =
-    usePublicCalendarOffersForExplore();
-  const { data: offerRows = [] } = useTreasuresPrimaryOffers(treasureIds);
-  const offerByTreasure = useMemo(() => primaryOfferByTreasureId(offerRows), [offerRows]);
 
-  const enrichedTreasures: HuntMapTreasure[] = useMemo(() => {
-    return rawTreasures.map((t) => {
-      const po = offerByTreasure.get(t.id);
-      const huntOrg = huntOrgMap.get(t.hunt_id);
-      return {
-        ...t,
-        scanned: claimedIds?.has(t.id) ?? false,
-        pinKind: pinKindForTreasure(po?.offer_type ?? null),
-        offerTitle: po?.name ?? null,
-        offerDescription: po?.description ?? null,
-        offerType: po?.offer_type ?? null,
-        orgName: po?.org_name ?? huntOrg?.org_name ?? null,
-        orgLogoUrl: po?.org_logo_url ?? huntOrg?.logo_url ?? null,
-        orgPreviewPhotoUrl: po?.org_preview_photo_url ?? huntOrg?.preview_photo_url ?? null,
-        quantityLimit: po?.quantity_limit ?? null,
-        campaignTitle: po?.campaign_title ?? null,
-        clue_image: po?.preset_clue_image ?? t.clue_image ?? null,
-      };
-    });
-  }, [rawTreasures, offerByTreasure, claimedIds, huntOrgMap]);
+  const campaignItems: CampaignMapItem[] = useMemo(() => {
+    const out: CampaignMapItem[] = [];
+    for (const c of campaigns) {
+      const m = publishedCampaignToMapItem(c, claimedIds);
+      if (m) out.push(m);
+    }
+    return out;
+  }, [campaigns, claimedIds]);
 
-  const filteredBySearch = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return enrichedTreasures.filter((t) => {
-      if (!q) return true;
-      const hay = [t.name, t.address, t.offerTitle, t.orgName].filter(Boolean).join(' ').toLowerCase();
-      return hay.includes(q);
-    });
-  }, [enrichedTreasures, searchQuery]);
-
-  const calendarAsTreasures = useMemo(
-    () => (calendarOfferRows || []).map(mapCalendarOfferRowToHuntMapTreasure),
-    [calendarOfferRows]
+  const discoveryItems = useMemo(
+    () => discoveryOrgs.map(discoveryOrgToCafeTreasure),
+    [discoveryOrgs],
   );
 
-  const filteredCalendarBySearch = useMemo(() => {
+  const filteredCampaigns = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return calendarAsTreasures.filter((t) => {
+    return campaignItems.filter((t) => {
       if (!q) return true;
       const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
         .filter(Boolean)
-        .join(' ')
+        .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [calendarAsTreasures, searchQuery]);
+  }, [campaignItems, searchQuery]);
+
+  const filteredDiscovery = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return discoveryItems.filter((t) => {
+      if (!q) return true;
+      const hay = [t.name, t.address, t.orgName].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [discoveryItems, searchQuery]);
 
   const voucherTreasures = useMemo(() => {
-    const hunt = filteredBySearch.filter((t) => !t.scanned);
-    return [...hunt, ...filteredCalendarBySearch];
-  }, [filteredBySearch, filteredCalendarBySearch]);
-
-  /** All orgs with an active hunt (server RPC), filtered by search. */
-  const cafeTreasures = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const rows = !q
-      ? discoveryOrgs
-      : discoveryOrgs.filter((r) => {
-          const hay = [r.org_name, r.location, r.district, r.mtr_station]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          return hay.includes(q);
-        });
-    return rows.map(discoveryOrgToCafeTreasure);
-  }, [discoveryOrgs, searchQuery]);
+    const matches = (t: CampaignMapItem) => {
+      if (!q) return true;
+      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    };
+    return campaignItems.filter((t) => !t.scanned && matches(t));
+  }, [campaignItems, searchQuery]);
 
-  const navigateToTreasure = (t: HuntMapTreasure) => {
-    if (t.calendarOfferId) {
-      navigate('/calendar');
-      return;
-    }
-    if (t.cafeDetailTreasureId && t.hunt_id) {
-      navigate(`/hunts/${t.hunt_id}/treasures/${t.cafeDetailTreasureId}`);
-      return;
-    }
-    if (t.hunt_id) {
-      navigate(`/hunts/${t.hunt_id}/map`);
-      return;
-    }
-    navigate('/hunts');
-  };
-
-  const isLoading =
-    authLoading ||
-    huntsLoading ||
-    treasuresLoading ||
-    huntOrgMetaLoading ||
-    discoveryOrgsLoading ||
-    calendarOffersLoading;
+  const loading = authLoading || campaignsLoading || discoveryOrgsLoading;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pb-28">
-      <div
-        className="px-5 pt-6"
-        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-      >
-        <h1 className="text-[22px] font-bold leading-tight tracking-tight text-foreground">
-          Ready to hunt some hidden gem?
-        </h1>
+    <div className="min-h-screen bg-background pb-24">
+      <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-4">
+        <h1 className="text-center text-lg font-black uppercase tracking-tight">Check</h1>
+      </div>
 
-        <div className="relative mt-6 flex items-center gap-3 rounded-full bg-muted/80 px-4 py-3.5">
-          <Search className="h-5 w-5 shrink-0 text-muted-foreground" strokeWidth={2} />
+      <div className="container max-w-lg space-y-6 px-4 py-6">
+        <div className="relative flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-2">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search where you wanna explore today..."
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+            placeholder="Search cafés and campaigns…"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             autoComplete="off"
           />
         </div>
 
-        {isLoading ? (
-          <div className="mt-16 flex justify-center">
-            <div className="animate-pulse text-sm font-semibold text-muted-foreground">Loading…</div>
-          </div>
-        ) : treasuresError ? (
-          <p className="mt-10 text-center text-sm text-muted-foreground">
-            Couldn&apos;t load explore content. Pull to refresh or try again later.
-          </p>
+        {loading ? (
+          <p className="text-center text-sm text-muted-foreground">Loading…</p>
         ) : (
           <>
-            <section className="mt-8">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-bold text-foreground">Vouchers</h2>
-                <Link
-                  to="/vouchers"
-                  className="text-sm font-normal text-foreground underline-offset-2 hover:underline"
-                >
-                  See all
-                </Link>
-              </div>
-              {voucherTreasures.length === 0 ? (
-                <p className="rounded-2xl bg-card/80 px-4 py-6 text-center text-sm text-muted-foreground shadow-sm">
-                  {hunts.length === 0 && calendarAsTreasures.length === 0
-                    ? 'No vouchers yet. Check back when new hunts go live.'
-                    : 'No matching vouchers. Try another search or open the map to hunt.'}
-                </p>
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase text-muted-foreground">Campaigns</h2>
+              {filteredCampaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No matching campaigns.</p>
               ) : (
+                <VoucherCarouselRow
+                  items={filteredCampaigns}
+                  onCta={(t) => {
+                    if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
+                  }}
+                  showRedemptionPeriod
+                  className="pl-0 pr-0"
+                />
+              )}
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase text-muted-foreground">Cafés</h2>
+              {filteredDiscovery.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No matching cafés.</p>
+              ) : (
+                <VoucherCarouselRow
+                  items={filteredDiscovery}
+                  variant="cafe"
+                  onCta={() => navigate("/hunts")}
+                  showRedemptionPeriod={false}
+                  className="pl-0 pr-0"
+                />
+              )}
+            </section>
+
+            {user && voucherTreasures.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold uppercase text-muted-foreground">For you</h2>
                 <VoucherCarouselRow
                   items={voucherTreasures}
-                  onCta={navigateToTreasure}
-                  onCardPress={navigateToTreasure}
-                  showRedemptionPeriod={false}
-                  className="-mx-1 pl-1 pr-5"
+                  onCta={(t) => {
+                    if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
+                  }}
+                  showRedemptionPeriod
+                  className="pl-0 pr-0"
                 />
-              )}
-            </section>
-
-            <section className="mt-10">
-              <h2 className="mb-3 text-lg font-bold text-foreground">Recommended Cafes</h2>
-              {cafeTreasures.length === 0 ? (
-                <p className="rounded-2xl bg-card/80 px-4 py-6 text-center text-sm text-muted-foreground shadow-sm">
-                  No cafe spots to show yet.
-                </p>
-              ) : (
-                <VoucherCarouselRow
-                  variant="cafe"
-                  items={cafeTreasures}
-                  onCta={navigateToTreasure}
-                  onCardPress={navigateToTreasure}
-                  showRedemptionPeriod={false}
-                  className="-mx-1 pl-1 pr-5"
-                />
-              )}
-            </section>
-
-            {!user ? (
-              <p className="mt-8 text-center text-xs text-muted-foreground">
-                <Link to="/profile" className="font-medium text-foreground underline">
-                  Sign in
-                </Link>{' '}
-                to save vouchers and join hunts.
-              </p>
+              </section>
             ) : null}
+
+            <p className="text-center text-sm text-muted-foreground">
+              <Link to="/hunts" className="underline">
+                Open map
+              </Link>
+            </p>
           </>
         )}
       </div>

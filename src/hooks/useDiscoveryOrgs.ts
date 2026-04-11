@@ -13,6 +13,7 @@ export type DiscoveryOrgRow = {
   mtr_station: string | null;
   sample_hunt_id: string | null;
   sample_treasure_id: string | null;
+  sample_campaign_id: string | null;
 };
 
 /** Every org row from RPC (see migration); optional `enabled` e.g. global map only. */

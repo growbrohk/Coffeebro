@@ -9,8 +9,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 
-type ResultType = 'success' | 'error' | null;
+type ResultType = "success" | "error" | null;
 type ResultMessage = string | null;
+
+type RedeemSuccessDetail = {
+  orgName: string | null;
+  campaignTitle: string | null;
+  itemName: string | null;
+  offerType: string | null;
+};
 
 export default function ScanPage() {
   const navigate = useNavigate();
@@ -22,6 +29,7 @@ export default function ScanPage() {
     type: null,
     message: null,
   });
+  const [successDetail, setSuccessDetail] = useState<RedeemSuccessDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [cameraStatus, setCameraStatus] = useState<string>('Initializing camera...');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -64,6 +72,7 @@ export default function ScanPage() {
     lastCodeTimeRef.current = now;
     setLoading(true);
     setResult({ type: null, message: null });
+    setSuccessDetail(null);
 
     try {
       const { data, error } = await supabase.rpc('redeem_voucher_atomic', { p_code: trimmedCode });
@@ -80,9 +89,17 @@ export default function ScanPage() {
         return;
       }
       
-      if (res.status === 'OK') {
-        setResult({ type: 'success', message: 'Success!' });
-        setTimeout(() => { lastCodeRef.current = null; }, 5000);
+      if (res.status === "OK") {
+        setResult({ type: "success", message: res.message || "Redeemed" });
+        setSuccessDetail({
+          orgName: res.org_name ?? null,
+          campaignTitle: res.campaign_title ?? null,
+          itemName: res.item_name ?? null,
+          offerType: res.offer_type ?? null,
+        });
+        setTimeout(() => {
+          lastCodeRef.current = null;
+        }, 5000);
         return;
       }
       
@@ -200,9 +217,18 @@ export default function ScanPage() {
         </Tabs>
 
         {result.type && (
-          <Alert variant={result.type === 'error' ? 'destructive' : 'default'}>
-            {result.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-            <AlertDescription>{result.message}</AlertDescription>
+          <Alert variant={result.type === "error" ? "destructive" : "default"}>
+            {result.type === "success" ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            <AlertDescription className="space-y-1">
+              <span className="block font-medium">{result.message}</span>
+              {result.type === "success" && successDetail && (
+                <span className="block text-sm text-muted-foreground">
+                  {[successDetail.orgName, successDetail.campaignTitle, successDetail.itemName, successDetail.offerType]
+                    .filter(Boolean)
+                    .join(" · ") || "Voucher redeemed."}
+                </span>
+              )}
+            </AlertDescription>
           </Alert>
         )}
       </div>

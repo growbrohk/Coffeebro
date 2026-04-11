@@ -1,17 +1,17 @@
 import { ImageIcon } from 'lucide-react';
 import { formatHuntRedemptionPeriod } from '@/lib/formatHuntRedemption';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
+import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { cn } from '@/lib/utils';
 
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 
 /** B1G1 / grab: prefer `offer_type` so CTA matches when `pinKind` tracks another reward row. */
-function isGrabOffer(t: HuntMapTreasure): boolean {
+function isGrabOffer(t: CampaignMapItem): boolean {
   return t.pinKind === 'grab' || t.offerType === 'buy1get1free';
 }
 
-export function voucherCarouselTitle(items: HuntMapTreasure[]): string {
+export function voucherCarouselTitle(items: CampaignMapItem[]): string {
   const n = items.length;
   const hasGrab = items.some(isGrabOffer);
   const hasHunt = items.some(
@@ -36,9 +36,9 @@ const cardWidthClass =
 export type VoucherCarouselVariant = 'voucher' | 'cafe';
 
 interface VoucherCarouselCardProps {
-  treasure: HuntMapTreasure;
-  onCta: (treasure: HuntMapTreasure) => void;
-  onCardPress?: (treasure: HuntMapTreasure) => void;
+  treasure: CampaignMapItem;
+  onCta: (treasure: CampaignMapItem) => void;
+  onCardPress?: (treasure: CampaignMapItem) => void;
   showRedemptionPeriod?: boolean;
   variant?: VoucherCarouselVariant;
 }
@@ -175,9 +175,9 @@ export function VoucherCarouselCard({
 }
 
 interface VoucherCarouselRowProps {
-  items: HuntMapTreasure[];
-  onCta: (treasure: HuntMapTreasure) => void;
-  onCardPress?: (treasure: HuntMapTreasure) => void;
+  items: CampaignMapItem[];
+  onCta: (treasure: CampaignMapItem) => void;
+  onCardPress?: (treasure: CampaignMapItem) => void;
   showRedemptionPeriod?: boolean;
   variant?: VoucherCarouselVariant;
   className?: string;

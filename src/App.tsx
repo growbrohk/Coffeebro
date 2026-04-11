@@ -10,25 +10,22 @@ import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import UserCalendarPage from "./pages/UserCalendarPage";
-import CreateCoffeeOffer from "./pages/CreateCoffeeOffer";
 import ScanPage from "./pages/Scan";
-import OfferParticipantsPage from "./pages/OfferParticipantsPage";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
 import NotFound from "./pages/NotFound";
 import HuntMapPage from "./pages/HuntMapPage";
 import HuntScanPage from "./pages/HuntScanPage";
-import TreasureDetailPage from "./pages/TreasureDetailPage";
 import MyVouchersPage from "./pages/MyVouchersPage";
-import HostHuntsPage from "./pages/HostHuntsPage";
-import HostOffersPage from "./pages/HostOffersPage";
-import HuntManagePage from "./pages/HuntManagePage";
-import CreateOfferPresetPage from "./pages/CreateOfferPresetPage";
-import OfferPresetsPage from "./pages/OfferPresetsPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import AdminOrgsPage from "./pages/AdminOrgsPage";
 import HostOrgEditPage from "./pages/HostOrgEditPage";
 import HostOrgsPage from "./pages/HostOrgsPage";
+import OrgMenuPage from "./pages/OrgMenuPage";
+import OrgCampaignsPage from "./pages/OrgCampaignsPage";
+import OrgCampaignEditorPage from "./pages/OrgCampaignEditorPage";
+import CampaignParticipantsPage from "./pages/CampaignParticipantsPage";
+import CampaignDetailPage from "./pages/CampaignDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -47,29 +44,30 @@ const App = () => (
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
-              <Route path="/host/offer/create" element={<CreateCoffeeOffer />} />
-              <Route path="/host/offer/:offerId/edit" element={<CreateCoffeeOffer />} />
-              <Route path="/host/offer-campaign/create" element={<CreateCoffeeOffer />} />
-              <Route path="/host/offer-campaign/:offerId/edit" element={<CreateCoffeeOffer />} />
-              <Route path="/host/offer-campaign" element={<HostOffersPage />} />
-              <Route path="/host/preset-offers" element={<OfferPresetsPage />} />
-              <Route path="/host/preset-offer/create" element={<CreateOfferPresetPage />} />
-              <Route path="/host/preset-offer/:presetId" element={<CreateOfferPresetPage />} />
-              <Route path="/offers/:offerId/participants" element={<OfferParticipantsPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/hunts" element={<HuntMapPage />} />
-              <Route path="/hunts/:huntId" element={<Navigate to="map" replace />} />
-              <Route path="/hunts/:huntId/map" element={<HuntMapPage />} />
-              <Route path="/hunts/:huntId/treasures/:treasureId" element={<TreasureDetailPage />} />
-              <Route path="/hunts/:huntId/scan" element={<HuntScanPage />} />
+              <Route path="/hunts/:huntId" element={<Navigate to="/hunts" replace />} />
+              <Route path="/hunts/:huntId/map" element={<Navigate to="/hunts" replace />} />
+              <Route path="/hunts/:huntId/treasures/:treasureId" element={<Navigate to="/hunts" replace />} />
+              <Route path="/hunts/scan" element={<HuntScanPage />} />
+              <Route path="/hunts/:huntId/scan" element={<Navigate to="/hunts/scan" replace />} />
+              <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/admin/orgs" element={<AdminOrgsPage />} />
               <Route path="/host/orgs" element={<HostOrgsPage />} />
               <Route path="/host/org/:orgId" element={<HostOrgEditPage />} />
-              <Route path="/host/hunt/create" element={<Navigate to="/host/offer-campaign/create?mode=hunt" replace />} />
-              <Route path="/host/hunts" element={<HostHuntsPage />} />
-              <Route path="/host/hunts/:huntId" element={<HuntManagePage />} />
+              <Route path="/org/:orgId/menu" element={<OrgMenuPage />} />
+              <Route path="/org/:orgId/campaigns" element={<OrgCampaignsPage />} />
+              <Route path="/org/:orgId/campaigns/new" element={<OrgCampaignEditorPage />} />
+              <Route path="/org/:orgId/campaigns/:campaignId" element={<OrgCampaignEditorPage />} />
+              <Route
+                path="/org/:orgId/campaigns/:campaignId/participants"
+                element={<CampaignParticipantsPage />}
+              />
+              <Route path="/host/hunt/create" element={<Navigate to="/host/orgs" replace />} />
+              <Route path="/host/hunts" element={<Navigate to="/host/orgs" replace />} />
+              <Route path="/host/hunts/:huntId" element={<Navigate to="/host/orgs" replace />} />
               <Route path="/q" element={<QuizPage />} />
               <Route path="/q/result" element={<QuizResultPage />} />
               <Route path="*" element={<NotFound />} />

@@ -1,12 +1,12 @@
 import { X } from 'lucide-react';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
+import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow, voucherCarouselTitle } from '@/components/VoucherCarouselCards';
 
 interface HuntMapVoucherCarouselSheetProps {
-  items: HuntMapTreasure[];
+  items: CampaignMapItem[];
   onClose: () => void;
-  onCta: (treasure: HuntMapTreasure) => void;
-  onCardPress?: (treasure: HuntMapTreasure) => void;
+  onCta: (treasure: CampaignMapItem) => void;
+  onCardPress?: (treasure: CampaignMapItem) => void;
 }
 
 export function HuntMapVoucherCarouselSheet({

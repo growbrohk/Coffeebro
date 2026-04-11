@@ -1,10 +1,10 @@
-import type { DiscoveryOrgRow } from '@/hooks/useDiscoveryOrgs';
-import type { HuntMapTreasure } from '@/types/huntMapTreasure';
+import type { DiscoveryOrgRow } from "@/hooks/useDiscoveryOrgs";
+import type { CampaignMapItem } from "@/types/campaignMapItem";
 
-export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasure {
+export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): CampaignMapItem {
   return {
-    id: row.id,
-    hunt_id: row.sample_hunt_id ?? '',
+    id: `discovery-org:${row.id}`,
+    hunt_id: "",
     qr_code_id: `discovery:${row.id}`,
     name: row.org_name,
     description: null,
@@ -12,9 +12,9 @@ export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasur
     lng: row.lng,
     address: row.location,
     sort_order: 0,
-    clue_image: null,
+    clue_image: row.preview_photo_url ?? row.logo_url ?? null,
     scanned: false,
-    pinKind: 'coffee_shop',
+    pinKind: "coffee_shop",
     offerTitle: null,
     offerDescription: null,
     offerType: null,
@@ -23,6 +23,6 @@ export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): HuntMapTreasur
     orgPreviewPhotoUrl: row.preview_photo_url,
     quantityLimit: null,
     campaignTitle: null,
-    cafeDetailTreasureId: row.sample_treasure_id,
+    org_id: row.id,
   };
 }

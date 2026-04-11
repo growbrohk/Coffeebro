@@ -112,16 +112,27 @@ export default function HostOrgsPage() {
                     ) : null}
                   </div>
                   {canEdit ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="shrink-0 gap-1"
-                      onClick={() => navigate(`/host/org/${o.id}`)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      Edit
-                    </Button>
+                    <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => navigate(`/org/${o.id}/menu`)}
+                      >
+                        Menu &amp; campaigns
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => navigate(`/host/org/${o.id}`)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    </div>
                   ) : null}
                 </li>
               );
