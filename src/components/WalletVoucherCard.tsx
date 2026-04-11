@@ -46,6 +46,12 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
               alt=""
               className="h-full w-full object-cover"
             />
+          ) : voucher.org_logo_url ? (
+            <img
+              src={voucher.org_logo_url}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <ImageIcon className="h-7 w-7 text-muted-foreground/50" strokeWidth={1.5} />

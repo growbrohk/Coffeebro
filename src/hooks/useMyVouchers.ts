@@ -17,6 +17,7 @@ export interface MyVoucher {
   location?: string | null;
   event_date?: string | null;
   thumbnail_url?: string | null;
+  org_logo_url?: string | null;
   campaign_id?: string;
 }
 
@@ -66,7 +67,7 @@ export function useMyVouchers() {
           redeemed_at,
           expires_at,
           campaign_id,
-          orgs ( org_name ),
+          orgs ( org_name, logo_url ),
           campaign_vouchers (
             offer_type,
             menu_items ( item_name ),
@@ -106,6 +107,7 @@ export function useMyVouchers() {
           (camp?.campaign_type === "hunt" ? "Hunt reward" : "Campaign reward");
         const offerType = cv?.offer_type ? voucherOfferLabel(cv.offer_type) : undefined;
         const thumb = camp?.hint_image_url || null;
+        const orgsRow = v.orgs as { org_name: string; logo_url?: string | null } | null;
 
         return {
           id: v.id as string,
@@ -115,7 +117,8 @@ export function useMyVouchers() {
           redeemed_at: (v.redeemed_at as string | null) ?? null,
           expires_at: (v.expires_at as string | null) ?? null,
           title,
-          org_name: (v.orgs as { org_name: string } | null)?.org_name,
+          org_name: orgsRow?.org_name,
+          org_logo_url: orgsRow?.logo_url ?? null,
           offer_type: offerType,
           description: camp?.hint_text ?? null,
           location: null,
