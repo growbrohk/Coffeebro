@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useClaimCampaign } from "@/hooks/useClaimCampaign";
+import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
 
@@ -49,7 +49,7 @@ export default function CampaignDetailPage() {
     } catch (e) {
       toast({
         title: "Could not claim",
-        description: e instanceof Error ? e.message : "Try again later",
+        description: describeClaimCampaignError(e),
         variant: "destructive",
       });
     }
