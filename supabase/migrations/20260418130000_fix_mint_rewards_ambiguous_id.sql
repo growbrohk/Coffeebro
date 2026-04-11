@@ -1,5 +1,5 @@
--- Allow claims when schedule bounds are unset; only enforce bounds that exist.
--- Previous logic rejected any campaign with start_at or end_at null.
+-- PL/pgSQL: RETURNS TABLE (id, code) defines variables named id/code, so
+-- `where id = p_campaign_id` on campaigns was ambiguous. Qualify the table column.
 
 create or replace function public._mint_campaign_rewards(p_campaign_id uuid)
 returns table (id uuid, code text)
