@@ -88,19 +88,19 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "35707bd9960ba5281c72af927b79291f"
   }, {
     "url": "og-image.png",
-    "revision": "b1b6896e6edfddeaf0db005f30919862"
+    "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "1b046f009cabcb0761beb0db5e0c2e6d"
+    "revision": "43ec23cc1b23618c617cd7398107272c"
   }, {
     "url": "favicon.png",
-    "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
+    "revision": "21b8458083bf893f61ea1515adc35442"
   }, {
     "url": "favicon.ico",
-    "revision": "5af3cae3d4bcf968e90a16bec0ff714d"
+    "revision": "0e919272d421273bdb08eec57228f5bc"
   }, {
     "url": "apple-touch-icon.png",
-    "revision": "454324a36e277508bcc7a7b1b9d2fdee"
+    "revision": "0cfd15255cb6b7a930e06ca2002bac10"
   }, {
     "url": "quiz-frogs/mocha.svg",
     "revision": "92f35eac64a0f9d6497b4fc1380ed3bc"
@@ -124,21 +124,27 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "1fb8fec8abd71770847f73700e1cbaff"
   }, {
     "url": "icons/icon-maskable-512.png",
-    "revision": "31ca53808b22e8e4b3232b47a0dedb26"
+    "revision": "b52fa36f76f5fa573e63e70421155a73"
   }, {
     "url": "icons/icon-maskable-192.png",
-    "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
+    "revision": "54d16b8fa1f17d2ba6e063f58ada4daf"
   }, {
     "url": "icons/icon-512.png",
-    "revision": "31ca53808b22e8e4b3232b47a0dedb26"
+    "revision": "d53505b56875bc08f3a988e2d32c22dc"
   }, {
     "url": "icons/icon-192.png",
-    "revision": "5c4ecb52b1e6c19d4cb438eae0eb77f1"
+    "revision": "1bf9dd39db659639311e2d1bde8437ea"
   }, {
-    "url": "assets/index-Cjm_eYzt.js",
+    "url": "brand/logo-source.png",
+    "revision": "b97b61357cd99cfaaf6342f3f86da238"
+  }, {
+    "url": "brand/app-mark.png",
+    "revision": "f15f8421ba7d69d4b5d88593e4c83cae"
+  }, {
+    "url": "assets/index-DaHRWBeC.css",
     "revision": null
   }, {
-    "url": "assets/index-BKt6Vi55.css",
+    "url": "assets/index-Bc3R5T6W.js",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",
