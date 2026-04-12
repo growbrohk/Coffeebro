@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import QRCode from "react-qr-code";
+import { toBlob, toSvg } from "html-to-image";
 import { Copy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +36,13 @@ export function huntTreasureQrFileSuffix(campaignId: string): string {
   return clean.slice(0, 8) || "treasure";
 }
 
+const captureOptions = {
+  cacheBust: true,
+  backgroundColor: "#ffffff",
+} as const;
+
 /**
- * Treasure hunt QR: scannable code, payload text, copy + SVG/PNG export.
+ * Treasure hunt QR: printable card (wordmark, QR, footer) with copy image + SVG/PNG export of the whole card.
  * Reusable inside panels, dialogs, or compact previews (set `qrSize`).
  */
 export function HuntTreasureQrCard({
@@ -49,97 +55,76 @@ export function HuntTreasureQrCard({
   orgName,
   compact = false,
 }: HuntTreasureQrCardProps) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const suffix = huntTreasureQrFileSuffix(campaignId);
 
-  const getSvgEl = useCallback((): SVGSVGElement | null => {
-    return wrapRef.current?.querySelector("svg") ?? null;
-  }, []);
+  const getCardEl = useCallback((): HTMLElement | null => cardRef.current, []);
 
-  const downloadSvg = useCallback(() => {
-    const svg = getSvgEl();
-    if (!svg) {
-      toast({ title: "Could not export", description: "QR not ready.", variant: "destructive" });
+  const downloadSvg = useCallback(async () => {
+    const el = getCardEl();
+    if (!el) {
+      toast({ title: "Could not export", description: "Card not ready.", variant: "destructive" });
       return;
     }
-    const clone = svg.cloneNode(true) as SVGSVGElement;
-    if (!clone.getAttribute("xmlns")) {
-      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    }
-    const serialized = new XMLSerializer().serializeToString(clone);
-    const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-    downloadBlob(blob, `hunt-qr-${suffix}.svg`);
-  }, [getSvgEl, suffix, toast]);
-
-  const downloadPng = useCallback(() => {
-    const svg = getSvgEl();
-    if (!svg) {
-      toast({ title: "Could not export", description: "QR not ready.", variant: "destructive" });
-      return;
-    }
-    const clone = svg.cloneNode(true) as SVGSVGElement;
-    if (!clone.getAttribute("xmlns")) {
-      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    }
-    const serialized = new XMLSerializer().serializeToString(clone);
-    const svgBlob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    const scale = 2;
-
-    img.onload = () => {
-      try {
-        const baseW = img.naturalWidth || qrSize;
-        const baseH = img.naturalHeight || qrSize;
-        const w = Math.round(baseW * scale);
-        const h = Math.round(baseH * scale);
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          toast({ title: "PNG export failed", description: "Try SVG download.", variant: "destructive" });
-          URL.revokeObjectURL(url);
-          return;
-        }
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(url);
-            if (!blob) {
-              toast({ title: "PNG export failed", description: "Try SVG download.", variant: "destructive" });
-              return;
-            }
-            downloadBlob(blob, `hunt-qr-${suffix}.png`);
-          },
-          "image/png",
-          1,
-        );
-      } catch {
-        URL.revokeObjectURL(url);
-        toast({ title: "PNG export failed", description: "Try SVG download.", variant: "destructive" });
-      }
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      toast({ title: "PNG export failed", description: "Try SVG download.", variant: "destructive" });
-    };
-
-    img.src = url;
-  }, [getSvgEl, qrSize, suffix, toast]);
-
-  const copyPayload = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(qrPayload);
-      toast({ title: "Copied", description: "Hunt QR payload copied to clipboard." });
+      const dataUrl = await toSvg(el, { ...captureOptions, pixelRatio: 1 });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      downloadBlob(blob, `hunt-qr-card-${suffix}.svg`);
     } catch {
-      toast({ title: "Copy failed", description: "Select and copy the payload manually.", variant: "destructive" });
+      toast({ title: "SVG export failed", description: "Try PNG download.", variant: "destructive" });
     }
-  }, [qrPayload, toast]);
+  }, [getCardEl, suffix, toast]);
+
+  const downloadPng = useCallback(async () => {
+    const el = getCardEl();
+    if (!el) {
+      toast({ title: "Could not export", description: "Card not ready.", variant: "destructive" });
+      return;
+    }
+    try {
+      const blob = await toBlob(el, { ...captureOptions, pixelRatio: 2 });
+      if (!blob) {
+        toast({ title: "PNG export failed", description: "Try again in a moment.", variant: "destructive" });
+        return;
+      }
+      downloadBlob(blob, `hunt-qr-card-${suffix}.png`);
+    } catch {
+      toast({ title: "PNG export failed", description: "Try SVG download.", variant: "destructive" });
+    }
+  }, [getCardEl, suffix, toast]);
+
+  const copyCardImage = useCallback(async () => {
+    const el = getCardEl();
+    if (!el) {
+      toast({ title: "Copy failed", description: "Card not ready.", variant: "destructive" });
+      return;
+    }
+    if (!navigator.clipboard?.write) {
+      toast({
+        title: "Copy failed",
+        description: "Your browser does not support copying images.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const blob = await toBlob(el, { ...captureOptions, pixelRatio: 2 });
+      if (!blob) {
+        toast({ title: "Copy failed", description: "Could not render the card.", variant: "destructive" });
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast({ title: "Copied", description: "Treasure QR card image copied to clipboard." });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Try downloading PNG instead, or copy the payload text manually.",
+        variant: "destructive",
+      });
+    }
+  }, [getCardEl, toast]);
 
   const showCampaignLine = Boolean(campaignTitle?.trim());
   const showOrgLine = Boolean(orgName?.trim());
@@ -153,7 +138,7 @@ export function HuntTreasureQrCard({
       )}
     >
       <div
-        ref={wrapRef}
+        ref={cardRef}
         className={cn(
           "w-full rounded-xl bg-white shadow-sm",
           compact ? "max-w-[260px] p-3 pb-2.5" : "max-w-[320px] p-6 pb-5 sm:max-w-[340px]",
@@ -233,10 +218,10 @@ export function HuntTreasureQrCard({
           size="sm"
           disabled={disabled}
           className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
-          onClick={() => void copyPayload()}
+          onClick={() => void copyCardImage()}
         >
           <Copy className="mr-2 h-4 w-4" />
-          {compact ? "Copy" : "Copy payload"}
+          {compact ? "Copy" : "Copy image"}
         </Button>
         <Button
           type="button"
@@ -244,7 +229,7 @@ export function HuntTreasureQrCard({
           size="sm"
           disabled={disabled}
           className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
-          onClick={downloadSvg}
+          onClick={() => void downloadSvg()}
         >
           <Download className="mr-2 h-4 w-4" />
           {compact ? "SVG" : "Download SVG"}
@@ -255,7 +240,7 @@ export function HuntTreasureQrCard({
           size="sm"
           disabled={disabled}
           className={cn(compact && "h-8 gap-0.5 px-1.5 text-[10px] [&_svg]:h-3 [&_svg]:w-3 [&_svg]:mr-0")}
-          onClick={downloadPng}
+          onClick={() => void downloadPng()}
         >
           <Download className="mr-2 h-4 w-4" />
           {compact ? "PNG" : "Download PNG"}
