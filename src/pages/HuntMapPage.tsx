@@ -11,14 +11,14 @@ import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
-import { Search, ChevronLeft } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import coffeeShopPin from "@/assets/coffee-shop-pin.svg";
 import huntPinGrab from "@/assets/hunt-pin-grab.svg";
 import huntPinStar from "@/assets/hunt-pin-star.svg";
 
-type PillarId = "all" | "coffee_shop" | "grab" | "hunt";
+type PillarId = "hunt_grab" | "coffee_shop";
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -26,7 +26,7 @@ export default function HuntMapPage() {
 
   const [selectedTreasure, setSelectedTreasure] = useState<CampaignMapItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pillar, setPillar] = useState<PillarId>("all");
+  const [pillar, setPillar] = useState<PillarId>("hunt_grab");
   const [voucherSheetDismissed, setVoucherSheetDismissed] = useState(false);
   const prevSelectedTreasureRef = useRef<CampaignMapItem | null>(null);
 
@@ -59,7 +59,11 @@ export default function HuntMapPage() {
   const filteredCampaigns = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return campaignItems.filter((t) => {
-      if (pillar !== "all" && t.pinKind !== pillar) return false;
+      if (pillar === "hunt_grab") {
+        if (t.pinKind !== "grab" && t.pinKind !== "hunt") return false;
+      } else if (t.pinKind !== "coffee_shop") {
+        return false;
+      }
       if (!q) return true;
       const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
         .filter(Boolean)
@@ -72,7 +76,7 @@ export default function HuntMapPage() {
   const filteredDiscovery = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return discoveryItems.filter((t) => {
-      if (pillar !== "all" && pillar !== "coffee_shop") return false;
+      if (pillar !== "coffee_shop") return false;
       if (!q) return true;
       const hay = [t.name, t.address, t.orgName].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
@@ -94,7 +98,12 @@ export default function HuntMapPage() {
         .toLowerCase();
       return hay.includes(q);
     };
-    return campaignItems.filter((t) => !t.scanned && matches(t));
+    return campaignItems.filter(
+      (t) =>
+        !t.scanned &&
+        (t.pinKind === "grab" || t.pinKind === "hunt") &&
+        matches(t),
+    );
   }, [campaignItems, searchQuery]);
 
   const loading = campaignsLoading || discoveryLoading || claimedLoading;
@@ -202,13 +211,21 @@ export default function HuntMapPage() {
           <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               type="button"
-              onClick={() => setPillar("all")}
+              onClick={() => setPillar("hunt_grab")}
               className={cn(
-                "shrink-0 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                pillar === "all" ? "bg-foreground text-background" : "border border-border bg-card text-foreground",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                pillar === "hunt_grab"
+                  ? "bg-foreground text-background"
+                  : "border border-border bg-card text-foreground",
               )}
             >
-              all
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <img src={huntPinStar} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span>hunt</span>
+                <span className={cn(pillar === "hunt_grab" ? "opacity-80" : "text-muted-foreground")}>&</span>
+                <img src={huntPinGrab} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                <span>grab</span>
+              </span>
             </button>
             <button
               type="button"
@@ -227,32 +244,6 @@ export default function HuntMapPage() {
               />
               coffee shops
             </button>
-            <button
-              type="button"
-              onClick={() => setPillar("grab")}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                pillar === "grab"
-                  ? "bg-foreground text-background"
-                  : "border border-border bg-card text-foreground",
-              )}
-            >
-              <img src={huntPinGrab} alt="" className="h-5 w-5 object-contain" />
-              grab
-            </button>
-            <button
-              type="button"
-              onClick={() => setPillar("hunt")}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                pillar === "hunt"
-                  ? "bg-foreground text-background"
-                  : "border border-border bg-card text-foreground",
-              )}
-            >
-              <img src={huntPinStar} alt="" className="h-5 w-5 object-contain" />
-              hunt
-            </button>
           </div>
         </div>
       </div>
@@ -269,7 +260,7 @@ export default function HuntMapPage() {
           }}
           distance={distanceToSelected}
         />
-      ) : !voucherSheetDismissed && voucherTreasures.length > 0 ? (
+      ) : pillar === "hunt_grab" && !voucherSheetDismissed && voucherTreasures.length > 0 ? (
         <HuntMapVoucherCarouselSheet
           items={voucherTreasures}
           onClose={() => setVoucherSheetDismissed(true)}
