@@ -109,9 +109,9 @@ export function useMyVouchers() {
             : null;
         const title =
           voucherName ??
-          camp?.display_title?.trim() ||
-          menu?.item_name?.trim() ||
-          (camp?.campaign_type === "hunt" ? "Hunt reward" : "Campaign reward");
+          (camp?.display_title?.trim() ||
+            menu?.item_name?.trim() ||
+            (camp?.campaign_type === "hunt" ? "Hunt reward" : "Campaign reward"));
         const campaignDetails = camp?.display_title?.trim() || null;
         const offerType = cv?.offer_type ? voucherOfferLabel(cv.offer_type) : undefined;
         const thumb = camp?.hint_image_url || null;
