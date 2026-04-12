@@ -290,7 +290,7 @@ export default function ProfilePage() {
             <div className="space-y-3 pt-2">
               <Button
                 type="button"
-                onClick={() => navigate('/host/orgs')}
+                onClick={() => navigate(isSuperAdmin ? '/admin/orgs' : '/host/orgs')}
                 className="w-full btn-run mb-0 bg-orange-500 hover:bg-orange-600 text-white"
                 disabled={roleLoading || staffLoading}
               >

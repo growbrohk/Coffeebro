@@ -40,7 +40,7 @@ export default function HostOrgsPage() {
     );
   }
 
-  if (isSuperAdmin || !isStaffUser) {
+  if (!isSuperAdmin && !isStaffUser) {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
@@ -65,16 +65,22 @@ export default function HostOrgsPage() {
         <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">My organizations</h1>
+        <h1 className="text-lg font-black uppercase tracking-tight">
+          {isSuperAdmin ? 'Organizations' : 'My organizations'}
+        </h1>
       </div>
 
       <div className="container max-w-lg space-y-4 px-4 py-6">
         <p className="text-sm text-muted-foreground">
-          Organizations you are assigned to. Only these cafés appear here.
+          {isSuperAdmin
+            ? 'All cafés. Open menu and campaigns or edit org details from each row.'
+            : 'Organizations you are assigned to. Only these cafés appear here.'}
         </p>
 
         {orgs.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground">No organizations assigned yet.</p>
+          <p className="text-center text-sm text-muted-foreground">
+            {isSuperAdmin ? 'No organizations yet.' : 'No organizations assigned yet.'}
+          </p>
         ) : (
           <ul className="space-y-2">
             {orgs.map((o) => {
@@ -84,7 +90,9 @@ export default function HostOrgsPage() {
                 (role ? ORG_ROLE_LABEL[role] ?? role : '') ||
                 (isPrimaryOwner ? ORG_ROLE_LABEL.owner : '');
               const canEdit =
-                (role !== undefined && canEditOrgProfileForOrgRole(role)) || isPrimaryOwner;
+                isSuperAdmin ||
+                (role !== undefined && canEditOrgProfileForOrgRole(role)) ||
+                isPrimaryOwner;
 
               return (
                 <li

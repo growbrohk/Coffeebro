@@ -712,11 +712,11 @@ export default function AdminOrgsPage() {
           ) : (
             <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
               {orgs.map((o) => (
-                <li key={o.id}>
+                <li key={o.id} className="flex items-center gap-2 rounded-lg p-1 hover:bg-muted/50">
                   <button
                     type="button"
                     onClick={() => handleSelectOrg(o.id)}
-                    className={`flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-muted ${
+                    className={`flex min-w-0 flex-1 items-start gap-3 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors ${
                       activeOrgId === o.id ? 'bg-muted' : ''
                     }`}
                   >
@@ -738,6 +738,15 @@ export default function AdminOrgsPage() {
                       ) : null}
                     </span>
                   </button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0 text-xs"
+                    onClick={() => navigate(`/org/${o.id}/menu`)}
+                  >
+                    Menu
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -750,11 +759,18 @@ export default function AdminOrgsPage() {
           </p>
         ) : (
           <form onSubmit={handleSave} className="space-y-8">
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" size="sm" onClick={() => navigate(`/org/${activeOrgId}/menu`)}>
-                Menu &amp; campaigns
-              </Button>
-            </div>
+            {activeOrgId !== 'new' ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate(`/org/${activeOrgId}/menu`)}
+                >
+                  Menu &amp; campaigns
+                </Button>
+              </div>
+            ) : null}
             <section className="space-y-4">
               <h3 className="text-sm font-semibold uppercase text-foreground">Core info</h3>
               <div className="space-y-2">
