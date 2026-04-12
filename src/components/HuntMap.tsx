@@ -17,9 +17,9 @@ const TILE_LAYERS = {
 } as const;
 
 /** Pin glyph size on the map (Leaflet icon box matches this exactly). */
-const PIN_SIZE = 32;
-const CUP_W = 36;
-const CUP_H = 20;
+const PIN_SIZE = 24;
+const CUP_W = 27;
+const CUP_H = 15;
 
 function createSvgIcon(
   src: string,
