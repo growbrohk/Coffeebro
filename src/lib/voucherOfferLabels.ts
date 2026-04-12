@@ -12,3 +12,15 @@ export function voucherOfferLabel(offerType: string): string {
   }
   return offerType;
 }
+
+/** Customer-facing line: labeled offer + menu item (fixed and random vouchers). */
+export function voucherNameFromOfferAndMenu(
+  offerType: string | null | undefined,
+  itemName: string | null | undefined,
+): string | null {
+  const raw = offerType?.trim();
+  if (!raw) return null;
+  const offer = voucherOfferLabel(raw);
+  const name = itemName?.trim() || "Reward";
+  return `${offer} · ${name}`;
+}

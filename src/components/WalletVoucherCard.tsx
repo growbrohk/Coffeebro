@@ -130,6 +130,12 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
             {voucher.offer_type ? (
               <p className="text-muted-foreground">Offer type: {voucher.offer_type}</p>
             ) : null}
+            {voucher.campaign_details ? (
+              <div className="space-y-1 border-t border-border pt-3">
+                <p className="font-semibold text-muted-foreground">Voucher campaign details</p>
+                <p className="leading-relaxed text-foreground">{voucher.campaign_details}</p>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>

@@ -9,6 +9,8 @@ export type CampaignParticipantRow = {
   created_at: string;
   redeemed_at: string | null;
   code: string;
+  offer_type: string | null;
+  item_name: string | null;
 };
 
 export function campaignParticipantsQueryKey(campaignId: string) {

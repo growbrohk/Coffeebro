@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
 
 export interface MyVoucher {
   id: string;
@@ -19,6 +19,8 @@ export interface MyVoucher {
   thumbnail_url?: string | null;
   org_logo_url?: string | null;
   campaign_id?: string;
+  /** Campaign `display_title` for the wallet details dialog. */
+  campaign_details?: string | null;
 }
 
 export function formatVoucherRedemptionPeriod(
@@ -101,10 +103,16 @@ export function useMyVouchers() {
         const camp = Array.isArray(rawCamp) ? rawCamp[0] : rawCamp;
         const rawMenu = cv?.menu_items;
         const menu = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
+        const voucherName =
+          cv?.offer_type != null && String(cv.offer_type).trim() !== ""
+            ? voucherNameFromOfferAndMenu(cv.offer_type, menu?.item_name)
+            : null;
         const title =
+          voucherName ??
           camp?.display_title?.trim() ||
           menu?.item_name?.trim() ||
           (camp?.campaign_type === "hunt" ? "Hunt reward" : "Campaign reward");
+        const campaignDetails = camp?.display_title?.trim() || null;
         const offerType = cv?.offer_type ? voucherOfferLabel(cv.offer_type) : undefined;
         const thumb = camp?.hint_image_url || null;
         const orgsRow = v.orgs as { org_name: string; logo_url?: string | null } | null;
@@ -125,6 +133,7 @@ export function useMyVouchers() {
           event_date: camp?.end_at ?? null,
           thumbnail_url: thumb,
           campaign_id: v.campaign_id as string,
+          campaign_details: campaignDetails,
         };
       });
 

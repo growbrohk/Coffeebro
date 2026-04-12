@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 
 export default function CampaignParticipantsPage() {
   const { orgId, campaignId } = useParams<{ orgId: string; campaignId: string }>();
@@ -83,6 +84,7 @@ export default function CampaignParticipantsPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Code</TableHead>
+                <TableHead>Voucher name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Claimed</TableHead>
                 <TableHead>Redeemed</TableHead>
@@ -93,6 +95,9 @@ export default function CampaignParticipantsPage() {
                 <TableRow key={r.voucher_id}>
                   <TableCell>{r.owner_name || r.owner_id}</TableCell>
                   <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                  <TableCell className="max-w-[12rem] text-xs">
+                    {voucherNameFromOfferAndMenu(r.offer_type, r.item_name) ?? "—"}
+                  </TableCell>
                   <TableCell>{r.status}</TableCell>
                   <TableCell className="text-xs">{new Date(r.created_at).toLocaleString()}</TableCell>
                   <TableCell className="text-xs">

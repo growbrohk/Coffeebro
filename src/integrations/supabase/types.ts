@@ -765,6 +765,8 @@ export type Database = {
         Returns: {
           code: string
           created_at: string
+          item_name: string | null
+          offer_type: string | null
           owner_id: string
           owner_name: string
           redeemed_at: string | null
