@@ -43,6 +43,13 @@ export function publishedCampaignToMapItem(
     return null;
   }
 
+  if (row.end_at != null) {
+    const endMs = new Date(row.end_at).getTime();
+    if (Number.isFinite(endMs) && Date.now() >= endMs) {
+      return null;
+    }
+  }
+
   const cvRaw = row.campaign_vouchers;
   const cvList = Array.isArray(cvRaw) ? cvRaw : cvRaw ? [cvRaw] : [];
   const sortedVouchers = [...cvList].sort(
