@@ -9,7 +9,7 @@ import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCa
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
-import { formatCampaignInstant } from "@/lib/formatCampaignInstant";
+import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -49,39 +49,18 @@ function getRewardsLeadIn(rewardMode: string, rewardPerAction: number): string {
   return "Rewards:";
 }
 
-type AvailabilityInput = {
-  startLabel: string | null;
-  endLabel: string | null;
-  hasVouchers: boolean;
-  poolError: boolean;
-  poolLoading: boolean;
-  poolFetched: boolean;
-  totalRemaining: number;
-};
-
-function getAvailabilityLines(a: AvailabilityInput): string[] {
-  const lines: string[] = [];
-  if (a.startLabel) {
-    lines.push(`Starts ${a.startLabel}.`);
+/** Single line for campaign window (compact dates, arrow when both exist). */
+function getAvailabilityLine(startLabel: string | null, endLabel: string | null): string {
+  if (startLabel && endLabel) {
+    return `Available ${startLabel} → ${endLabel}`;
   }
-  if (a.endLabel) {
-    lines.push(`Ends ${a.endLabel}.`);
-  } else {
-    lines.push("No end date is listed; the host may close the campaign anytime.");
+  if (startLabel) {
+    return `Available from ${startLabel}. No end date is listed; the host may close the campaign anytime.`;
   }
-  if (!a.hasVouchers) {
-    return lines;
+  if (endLabel) {
+    return `Available until ${endLabel}.`;
   }
-  if (a.poolError) {
-    lines.push("We could not check how many vouchers are left.");
-    return lines;
-  }
-  if (a.poolLoading || !a.poolFetched) {
-    lines.push("Checking how many vouchers are left…");
-    return lines;
-  }
-  lines.push(`About ${a.totalRemaining} voucher${a.totalRemaining === 1 ? "" : "s"} left in total.`);
-  return lines;
+  return "No end date is listed; the host may close the campaign anytime.";
 }
 
 function normalizeOrg(row: PublishedCampaignRow) {
@@ -147,14 +126,6 @@ export default function CampaignDetailPage() {
     return m;
   }, [poolQuery.data]);
 
-  const totalRemaining = useMemo(() => {
-    let s = 0;
-    for (const row of poolQuery.data ?? []) {
-      s += row.remaining;
-    }
-    return s;
-  }, [poolQuery.data]);
-
   const onGrab = async () => {
     if (!user || !campaignId) {
       navigate("/profile");
@@ -196,19 +167,11 @@ export default function CampaignDetailPage() {
   const org = normalizeOrg(campaign);
   const title = campaign.display_title?.trim() || "Campaign";
   const sortedVouchers = sortCampaignVouchers(campaign.campaign_vouchers);
-  const startLabel = formatCampaignInstant(campaign.start_at);
-  const endLabel = formatCampaignInstant(campaign.end_at);
+  const startLabel = formatCampaignInstantCompact(campaign.start_at);
+  const endLabel = formatCampaignInstantCompact(campaign.end_at);
   const isHunt = campaign.campaign_type === "hunt";
 
-  const availabilityLines = getAvailabilityLines({
-    startLabel,
-    endLabel,
-    hasVouchers: sortedVouchers.length > 0,
-    poolError: poolQuery.isError,
-    poolLoading: poolQuery.isLoading,
-    poolFetched: poolQuery.isFetched,
-    totalRemaining,
-  });
+  const availabilityLine = getAvailabilityLine(startLabel, endLabel);
 
   return (
     <>
@@ -275,12 +238,8 @@ export default function CampaignDetailPage() {
           </div>
 
           <div>
-            <p className="font-semibold text-foreground">Availability</p>
-            <div className="mt-2 space-y-1.5 text-muted-foreground">
-              {availabilityLines.map((line, i) => (
-                <p key={i}>{line}</p>
-              ))}
-            </div>
+            <p className="font-semibold text-foreground">Campaign period</p>
+            <p className="mt-2 text-muted-foreground">{availabilityLine}</p>
           </div>
 
           {isHunt && (campaign.hint_text || campaign.hint_image_url) ? (
@@ -298,22 +257,26 @@ export default function CampaignDetailPage() {
           ) : null}
         </div>
 
-        <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="text-base font-semibold">Org info</h2>
-          {org?.logo_url ? (
-            <img
-              src={org.logo_url}
-              alt=""
-              className="mt-3 h-14 w-14 rounded-md border border-border object-cover"
-            />
-          ) : null}
-          <p className="mt-3 text-sm font-medium">{org?.org_name ?? "Organizer"}</p>
-          {org?.location ? (
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Address not listed.</p>
-          )}
-        </section>
+        <div className="text-sm leading-relaxed text-foreground">
+          <p className="font-semibold text-foreground">Claim your voucher at:</p>
+          <section className="mt-2 rounded-xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex gap-3">
+              {org?.logo_url ? (
+                <div className="shrink-0 rounded-lg border border-border bg-background p-1">
+                  <img src={org.logo_url} alt="" className="h-14 w-14 rounded-md object-cover" />
+                </div>
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold leading-snug text-foreground">{org?.org_name ?? "Organizer"}</p>
+                {org?.location ? (
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
         </div>
       </div>
 
