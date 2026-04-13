@@ -4,12 +4,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
-import { fulfillmentRuleDisplay, temperatureRuleDisplay } from "@/lib/campaignVoucherRulesDisplay";
+import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstant } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 import type { Tables } from "@/integrations/supabase/types";
@@ -21,16 +20,68 @@ type PoolRow = {
   remaining: number;
 };
 
-function campaignTypeLabel(t: string): string {
-  if (t === "grab") return "Grab";
-  if (t === "hunt") return "Hunt";
-  return t;
+type CampaignVoucherRow = Tables<"campaign_vouchers"> & {
+  menu_items: Tables<"menu_items"> | null;
+};
+
+function getCampaignIntro(campaignType: string): string {
+  if (campaignType === "hunt") {
+    return "This is a hunt campaign — go to the location, check the hints, find the QR code, and scan to unlock a voucher!";
+  }
+  if (campaignType === "grab") {
+    return 'This is a grab campaign — tap “Grab offer” to add the voucher to your wallet without visiting the location first.';
+  }
+  return "This is a campaign on Coffeebro.";
 }
 
-function rewardModeLabel(m: string): string {
-  if (m === "fixed") return "Fixed reward";
-  if (m === "random") return "Random pool";
-  return m;
+/** Line shown before the voucher cards in Rewards. */
+function getRewardsLeadIn(rewardMode: string, rewardPerAction: number): string {
+  if (rewardMode === "fixed") {
+    return "Each successful claim awards:";
+  }
+  if (rewardMode === "random") {
+    const n = Math.max(1, rewardPerAction);
+    if (n <= 1) {
+      return "Each successful claim draws one random prize from:";
+    }
+    return `Each successful claim draws up to ${n} random prizes from:`;
+  }
+  return "Rewards:";
+}
+
+type AvailabilityInput = {
+  startLabel: string | null;
+  endLabel: string | null;
+  hasVouchers: boolean;
+  poolError: boolean;
+  poolLoading: boolean;
+  poolFetched: boolean;
+  totalRemaining: number;
+};
+
+function getAvailabilityLines(a: AvailabilityInput): string[] {
+  const lines: string[] = [];
+  if (a.startLabel) {
+    lines.push(`Starts ${a.startLabel}.`);
+  }
+  if (a.endLabel) {
+    lines.push(`Ends ${a.endLabel}.`);
+  } else {
+    lines.push("No end date is listed; the host may close the campaign anytime.");
+  }
+  if (!a.hasVouchers) {
+    return lines;
+  }
+  if (a.poolError) {
+    lines.push("We could not check how many vouchers are left.");
+    return lines;
+  }
+  if (a.poolLoading || !a.poolFetched) {
+    lines.push("Checking how many vouchers are left…");
+    return lines;
+  }
+  lines.push(`About ${a.totalRemaining} voucher${a.totalRemaining === 1 ? "" : "s"} left in total.`);
+  return lines;
 }
 
 function normalizeOrg(row: PublishedCampaignRow) {
@@ -38,9 +89,7 @@ function normalizeOrg(row: PublishedCampaignRow) {
   return Array.isArray(raw) ? raw[0] ?? null : raw ?? null;
 }
 
-function sortCampaignVouchers(
-  list: PublishedCampaignRow["campaign_vouchers"],
-): Array<Tables<"campaign_vouchers"> & { menu_items: Tables<"menu_items"> | null }> {
+function sortCampaignVouchers(list: PublishedCampaignRow["campaign_vouchers"]): CampaignVoucherRow[] {
   const arr = Array.isArray(list) ? list : list ? [list] : [];
   return [...arr].sort(
     (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
@@ -150,7 +199,16 @@ export default function CampaignDetailPage() {
   const startLabel = formatCampaignInstant(campaign.start_at);
   const endLabel = formatCampaignInstant(campaign.end_at);
   const isHunt = campaign.campaign_type === "hunt";
-  const isRandom = campaign.reward_mode === "random";
+
+  const availabilityLines = getAvailabilityLines({
+    startLabel,
+    endLabel,
+    hasVouchers: sortedVouchers.length > 0,
+    poolError: poolQuery.isError,
+    poolLoading: poolQuery.isLoading,
+    poolFetched: poolQuery.isFetched,
+    totalRemaining,
+  });
 
   return (
     <>
@@ -162,121 +220,83 @@ export default function CampaignDetailPage() {
           <h1 className="text-lg font-bold leading-tight">{title}</h1>
         </div>
 
-        <div className="container max-w-lg space-y-6 px-4 py-6">
-        <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="text-base font-semibold">Campaign info</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{title}</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex flex-wrap gap-x-2 gap-y-1">
-              <dt className="text-muted-foreground">Type</dt>
-              <dd className="font-medium">{campaignTypeLabel(campaign.campaign_type)}</dd>
-            </div>
-            <div className="flex flex-wrap gap-x-2 gap-y-1">
-              <dt className="text-muted-foreground">Reward</dt>
-              <dd className="font-medium">{rewardModeLabel(campaign.reward_mode)}</dd>
-            </div>
-            {isRandom ? (
-              <div className="flex flex-wrap gap-x-2 gap-y-1">
-                <dt className="text-muted-foreground">Prizes per claim</dt>
-                <dd className="font-medium">Up to {campaign.reward_per_action}</dd>
-              </div>
-            ) : null}
-            <Separator className="my-3" />
+        <div className="container max-w-lg space-y-8 px-4 py-6">
+        <div className="space-y-8 text-sm leading-relaxed text-foreground">
+          <div className="space-y-2">
+            <p>{getCampaignIntro(campaign.campaign_type)}</p>
+
             <div>
-              <dt className="text-muted-foreground">Starts</dt>
-              <dd className="font-medium">{startLabel ?? "Not set"}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Ends</dt>
-              <dd className="font-medium">{endLabel ?? "Not set"}</dd>
-            </div>
-            {!startLabel && !endLabel ? (
-              <p className="text-xs text-muted-foreground">
-                Any start or end time the host sets will apply when you claim.
-              </p>
+            <p className="font-semibold text-foreground">Rewards</p>
+            <p className="mt-2 text-muted-foreground">
+              {getRewardsLeadIn(campaign.reward_mode, campaign.reward_per_action)}
+            </p>
+
+            {poolQuery.isError ? (
+              <p className="mt-3 text-sm text-destructive">Could not load prize availability.</p>
             ) : null}
-          </dl>
+
+            {sortedVouchers.length === 0 ? (
+              <p className="mt-3 text-muted-foreground">No voucher details published for this campaign.</p>
+            ) : (
+              <ul className="mt-3 space-y-4">
+                {sortedVouchers.map((cv) => {
+                  const name = voucherNameFromOfferAndMenu(cv.offer_type, cv.menu_items?.item_name);
+                  const pool = poolByCvId.get(cv.id);
+                  const rulesLine = temperatureAndFulfillmentCustomerLine(cv.temperature_rule, cv.fulfillment_rule);
+                  const stockCorner = poolQuery.isLoading ? (
+                    <span className="text-sm text-muted-foreground">Loading…</span>
+                  ) : pool ? (
+                    <span className="text-sm text-muted-foreground">
+                      {pool.remaining} {pool.remaining === 1 ? "voucher" : "vouchers"} left
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  );
+
+                  return (
+                    <li key={cv.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 flex-1 font-medium leading-snug">{name ?? "Reward"}</p>
+                        <div className="shrink-0 text-right">{stockCorner}</div>
+                      </div>
+                      <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        {rulesLine ? <li>{rulesLine}</li> : null}
+                        <li className="text-foreground">
+                          Redemption: valid for {cv.redeem_valid_days} day{cv.redeem_valid_days === 1 ? "" : "s"} after you
+                          receive the voucher
+                        </li>
+                      </ul>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold text-foreground">Availability</p>
+            <div className="mt-2 space-y-1.5 text-muted-foreground">
+              {availabilityLines.map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </div>
+          </div>
 
           {isHunt && (campaign.hint_text || campaign.hint_image_url) ? (
-            <>
-              <Separator className="my-4" />
-              <h3 className="text-sm font-semibold">Hunt clues</h3>
-              {campaign.hint_text ? <p className="mt-2 text-sm leading-relaxed">{campaign.hint_text}</p> : null}
+            <div>
+              <p className="font-semibold text-foreground">Hints</p>
+              {campaign.hint_text ? <p className="mt-2 leading-relaxed">{campaign.hint_text}</p> : null}
               {campaign.hint_image_url ? (
                 <img
                   src={campaign.hint_image_url}
-                  alt="Hunt hint"
+                  alt="Hint image"
                   className="mt-3 w-full max-h-64 rounded-lg border border-border object-cover"
                 />
               ) : null}
-            </>
+            </div>
           ) : null}
-        </section>
-
-        <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-          <h2 className="text-base font-semibold">Voucher info</h2>
-          {isRandom ? (
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Each successful claim awards up to {campaign.reward_per_action} random prize
-              {campaign.reward_per_action === 1 ? "" : "s"} from the pool below (while stock lasts).
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              One voucher per participant for this campaign.
-            </p>
-          )}
-
-          {poolQuery.isError ? (
-            <p className="mt-3 text-sm text-destructive">Could not load prize availability.</p>
-          ) : null}
-
-          {!poolQuery.isError && poolQuery.isFetched && sortedVouchers.length > 0 ? (
-            <p className="mt-3 text-sm font-medium">
-              Total prizes left:{" "}
-              {poolQuery.isLoading ? (
-                <span className="text-muted-foreground">…</span>
-              ) : (
-                <span>{totalRemaining}</span>
-              )}
-            </p>
-          ) : null}
-
-          <ul className="mt-4 space-y-4">
-            {sortedVouchers.map((cv) => {
-              const name = voucherNameFromOfferAndMenu(cv.offer_type, cv.menu_items?.item_name);
-              const pool = poolByCvId.get(cv.id);
-              return (
-                <li key={cv.id} className="rounded-lg border border-border bg-background/60 p-3">
-                  <p className="font-medium leading-snug">{name ?? "Reward"}</p>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>{temperatureRuleDisplay(cv.temperature_rule)}</li>
-                    <li>{fulfillmentRuleDisplay(cv.fulfillment_rule)}</li>
-                    <li className="text-foreground">
-                      Redemption: valid for {cv.redeem_valid_days} day{cv.redeem_valid_days === 1 ? "" : "s"} after you
-                      receive the voucher
-                    </li>
-                    <li className="text-foreground">
-                      Remaining:{" "}
-                      {poolQuery.isLoading ? (
-                        <span className="text-muted-foreground">Loading…</span>
-                      ) : pool ? (
-                        <>
-                          {pool.remaining} of {pool.quantity}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </li>
-                  </ul>
-                </li>
-              );
-            })}
-          </ul>
-
-          {sortedVouchers.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No voucher details published for this campaign.</p>
-          ) : null}
-        </section>
+        </div>
 
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <h2 className="text-base font-semibold">Org info</h2>
