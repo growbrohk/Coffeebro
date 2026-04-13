@@ -180,7 +180,13 @@ export default function HuntMapPage() {
         ) : (
           <HuntMap
             treasures={mapTreasures}
-            onSelectTreasure={(t) => setSelectedTreasure(t)}
+            onSelectTreasure={(t) => {
+              if (t.scanned && t.campaign_id) {
+                navigate(`/campaigns/${t.campaign_id}`);
+                return;
+              }
+              setSelectedTreasure(t);
+            }}
             emptyMessage={
               mapTreasures.length === 0 && (campaignItems.length > 0 || discoveryItems.length > 0)
                 ? "Nothing matches your search or filter."

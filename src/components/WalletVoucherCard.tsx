@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { QrCodeDialog } from '@/components/QrCodeDialog';
+import { VoucherDetailDialog } from '@/components/VoucherDetailDialog';
 import { cn } from '@/lib/utils';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
@@ -101,44 +95,11 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
         </div>
       </div>
 
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-sm rounded-2xl border-0 shadow-soft">
-          <DialogHeader>
-            <DialogTitle className="text-left text-lg font-bold">{voucher.title}</DialogTitle>
-            <DialogDescription className="text-left text-xs text-muted-foreground">
-              {voucher.org_name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 text-xs text-foreground">
-            <p>
-              <span className="font-semibold text-muted-foreground">Code: </span>
-              <span className="font-mono font-semibold">{voucher.code}</span>
-            </p>
-            <p>
-              <span className="font-semibold text-muted-foreground">Redemption period: </span>
-              {redemption}
-            </p>
-            {voucher.location ? (
-              <p>
-                <span className="font-semibold text-muted-foreground">Location: </span>
-                {voucher.location}
-              </p>
-            ) : null}
-            {voucher.description ? (
-              <p className="pt-1 leading-relaxed text-muted-foreground">{voucher.description}</p>
-            ) : null}
-            {voucher.offer_type ? (
-              <p className="text-muted-foreground">Offer type: {voucher.offer_type}</p>
-            ) : null}
-            {voucher.campaign_details ? (
-              <div className="space-y-1 border-t border-border pt-3">
-                <p className="font-semibold text-muted-foreground">Voucher campaign details</p>
-                <p className="leading-relaxed text-foreground">{voucher.campaign_details}</p>
-              </div>
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <VoucherDetailDialog
+        vouchers={[voucher]}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
 
       <QrCodeDialog code={voucher.code} open={qrOpen} onOpenChange={setQrOpen} />
     </>

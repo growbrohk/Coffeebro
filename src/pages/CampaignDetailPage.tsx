@@ -5,8 +5,10 @@ import { ArrowLeft, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VoucherDetailDialog } from "@/components/VoucherDetailDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
+import { useMyVouchers } from "@/hooks/useMyVouchers";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
@@ -128,6 +130,7 @@ export default function CampaignDetailPage() {
   const queryClient = useQueryClient();
   const claim = useClaimCampaign();
   const [hintImageDialogOpen, setHintImageDialogOpen] = useState(false);
+  const [myVoucherDialogOpen, setMyVoucherDialogOpen] = useState(false);
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign_public", campaignId],
@@ -150,6 +153,13 @@ export default function CampaignDetailPage() {
       return data as PublishedCampaignRow | null;
     },
   });
+
+  const { data: myVouchers = [] } = useMyVouchers();
+
+  const myVouchersForCampaign = useMemo(
+    () => myVouchers.filter((v) => v.campaign_id === campaignId),
+    [myVouchers, campaignId],
+  );
 
   const poolQuery = useQuery({
     queryKey: ["campaign_voucher_pool", campaignId],
@@ -180,6 +190,7 @@ export default function CampaignDetailPage() {
 
   useEffect(() => {
     setHintImageDialogOpen(false);
+    setMyVoucherDialogOpen(false);
   }, [campaignId]);
 
   const onGrab = async () => {
@@ -388,12 +399,22 @@ export default function CampaignDetailPage() {
           <Button className="w-full" onClick={() => void onGrab()} disabled={claim.isPending}>
             {claim.isPending ? "Claiming…" : "Grab offer"}
           </Button>
+        ) : isHunt && user && myVouchersForCampaign.length > 0 ? (
+          <Button className="w-full" type="button" onClick={() => setMyVoucherDialogOpen(true)}>
+            My Voucher
+          </Button>
         ) : (
           <Button className="w-full" onClick={() => navigate("/hunts/scan")}>
             Scan hunt QR
           </Button>
         )}
       </div>
+
+      <VoucherDetailDialog
+        vouchers={myVouchersForCampaign}
+        open={myVoucherDialogOpen}
+        onOpenChange={setMyVoucherDialogOpen}
+      />
     </>
   );
 }

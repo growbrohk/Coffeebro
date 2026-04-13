@@ -207,12 +207,10 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
             key={t.id}
             position={[t.lat!, t.lng!]}
             icon={iconForPinKind(t.pinKind, t.scanned)}
-            interactive={!t.scanned}
+            interactive={Boolean(onSelectTreasure)}
             zIndexOffset={t.scanned ? -1000 : 0}
             eventHandlers={
-              t.scanned || !onSelectTreasure
-                ? undefined
-                : { click: () => onSelectTreasure(t) }
+              onSelectTreasure ? { click: () => onSelectTreasure(t) } : undefined
             }
           />
         ))}
