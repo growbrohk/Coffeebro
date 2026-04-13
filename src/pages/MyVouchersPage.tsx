@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +13,15 @@ export default function MyVouchersPage() {
   const { user, loading } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: vouchers = [], isLoading } = useMyVouchers();
+
+  const sortedVouchers = useMemo(() => {
+    return [...vouchers].sort((a, b) => {
+      const aActive = a.status === 'active' ? 0 : 1;
+      const bActive = b.status === 'active' ? 0 : 1;
+      if (aActive !== bActive) return aActive - bActive;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [vouchers]);
 
   const showHostScan = Boolean(user && !roleLoading && canHostEvent);
 
@@ -70,7 +80,7 @@ export default function MyVouchersPage() {
       {header}
 
       <div className="px-4 py-6">
-        {vouchers.length === 0 ? (
+        {sortedVouchers.length === 0 ? (
           <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
             <Ticket className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">No vouchers yet.</p>
@@ -83,7 +93,7 @@ export default function MyVouchersPage() {
           </div>
         ) : (
           <div className="mx-auto flex max-w-sm flex-col gap-3">
-            {vouchers.map((v) => (
+            {sortedVouchers.map((v) => (
               <WalletVoucherCard key={v.id} voucher={v} />
             ))}
           </div>
