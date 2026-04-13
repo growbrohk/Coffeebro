@@ -153,15 +153,16 @@ export default function CampaignDetailPage() {
   const isRandom = campaign.reward_mode === "random";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-4 py-4">
-        <button type="button" onClick={() => navigate(-1)} className="mr-2 p-2" aria-label="Back">
-          <ArrowLeft className="h-6 w-6" />
-        </button>
-        <h1 className="text-lg font-bold leading-tight">{title}</h1>
-      </div>
+    <>
+      <div className="min-h-screen bg-background pb-40">
+        <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-4 py-4">
+          <button type="button" onClick={() => navigate(-1)} className="mr-2 p-2" aria-label="Back">
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <h1 className="text-lg font-bold leading-tight">{title}</h1>
+        </div>
 
-      <div className="container max-w-lg space-y-6 px-4 py-6">
+        <div className="container max-w-lg space-y-6 px-4 py-6">
         <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <h2 className="text-base font-semibold">Campaign info</h2>
           <p className="mt-1 text-sm text-muted-foreground">{title}</p>
@@ -293,17 +294,20 @@ export default function CampaignDetailPage() {
             <p className="mt-2 text-sm text-muted-foreground">Address not listed.</p>
           )}
         </section>
+        </div>
+      </div>
 
+      <div className="fixed bottom-[calc(var(--tab-nav-track-height)+env(safe-area-inset-bottom,0px))] left-1/2 z-[45] w-full max-w-[430px] -translate-x-1/2 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/90 pb-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         {campaign.campaign_type === "grab" ? (
           <Button className="w-full" onClick={() => void onGrab()} disabled={claim.isPending}>
             {claim.isPending ? "Claiming…" : "Grab offer"}
           </Button>
         ) : (
-          <Button className="w-full" variant="secondary" onClick={() => navigate("/hunts/scan")}>
+          <Button className="w-full" onClick={() => navigate("/hunts/scan")}>
             Scan hunt QR
           </Button>
         )}
       </div>
-    </div>
+    </>
   );
 }

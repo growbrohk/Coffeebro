@@ -45,6 +45,9 @@
 
     --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
 
+    /* Fixed TabNavigation icon row (py-3 + 24px icon + label); CTA bars stack with: calc(this + safe-area) */
+    --tab-nav-track-height: 4rem;
+
     --sidebar-background: 40 43% 98%;
     --sidebar-foreground: 14 39% 13%;
     --sidebar-primary: 25 89% 57%;
@@ -208,6 +211,7 @@
   .tab-nav {
     @apply fixed bottom-0 left-0 right-0 z-50 border-t border-border;
     background: hsl(var(--background));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .tab-item {
