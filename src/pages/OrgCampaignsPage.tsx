@@ -56,7 +56,12 @@ export default function OrgCampaignsPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-        <button type="button" onClick={() => navigate(-1)} className="absolute left-0 p-2" aria-label="Back">
+        <button
+          type="button"
+          onClick={() => navigate(`/org/${orgId}/menu`)}
+          className="absolute left-0 p-2"
+          aria-label="Back"
+        >
           <ArrowLeft className="h-6 w-6" />
         </button>
         <h1 className="text-lg font-black uppercase tracking-tight">Campaigns</h1>

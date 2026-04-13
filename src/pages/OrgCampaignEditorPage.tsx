@@ -311,7 +311,7 @@ export default function OrgCampaignEditorPage() {
           onClick={() =>
             returnToCampaignDetail
               ? navigate(returnToCampaignDetail, { replace: true })
-              : navigate(`/org/${orgId}/campaigns`)
+              : navigate(`/org/${orgId}/campaigns`, { replace: true })
           }
           className="absolute left-0 p-2"
           aria-label="Back"
