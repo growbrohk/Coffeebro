@@ -7,12 +7,21 @@ import {
 } from '@/components/ui/dialog';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
+import QRCode from 'react-qr-code';
 
 function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
   const redemption = formatVoucherRedemptionPeriod(voucher.expires_at, voucher.event_date ?? null);
+  const showQr = voucher.status === 'active' && Boolean(voucher.code?.trim());
 
   return (
     <div className="space-y-2 text-xs text-foreground">
+      {showQr ? (
+        <div className="flex justify-center pb-1">
+          <div className="rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-border/40">
+            <QRCode value={voucher.code} size={160} />
+          </div>
+        </div>
+      ) : null}
       <p>
         <span className="font-semibold text-muted-foreground">Code: </span>
         <span className="font-mono font-semibold">{voucher.code}</span>
