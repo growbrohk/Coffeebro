@@ -14,6 +14,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
 import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
+import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
@@ -261,6 +262,8 @@ export default function CampaignDetailPage() {
       Boolean(campaign.hint_image_url) ||
       Boolean(huntQrMapTarget.mapsUrl));
 
+  const staffNavFromDetail = campaignId ? campaignDetailReturnState(campaignId) : undefined;
+
   return (
     <>
       <div className="min-h-screen bg-background pb-40">
@@ -282,7 +285,12 @@ export default function CampaignDetailPage() {
                     variant="outline"
                     size="sm"
                     className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
-                    onClick={() => navigate(`/org/${campaign.org_id}/campaigns/${campaignId}`)}
+                    onClick={() =>
+                      navigate(
+                        `/org/${campaign.org_id}/campaigns/${campaignId}`,
+                        staffNavFromDetail,
+                      )
+                    }
                   >
                     Edit campaign
                   </Button>
@@ -292,7 +300,10 @@ export default function CampaignDetailPage() {
                     size="sm"
                     className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
                     onClick={() =>
-                      navigate(`/org/${campaign.org_id}/campaigns/${campaignId}/participants`)
+                      navigate(
+                        `/org/${campaign.org_id}/campaigns/${campaignId}/participants`,
+                        staffNavFromDetail,
+                      )
                     }
                   >
                     View participants
@@ -302,7 +313,7 @@ export default function CampaignDetailPage() {
                     variant="outline"
                     size="sm"
                     className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
-                    onClick={() => navigate("/scan")}
+                    onClick={() => navigate("/scan", staffNavFromDetail)}
                   >
                     Scan vouchers
                   </Button>

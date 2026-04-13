@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgStaff } from "@/hooks/useOrgStaff";
@@ -16,11 +16,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
+import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 
 export default function CampaignParticipantsPage() {
   const { orgId, campaignId } = useParams<{ orgId: string; campaignId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnToCampaignDetail = readCampaignDetailReturnTo(location.state);
   const { user, loading: authLoading } = useAuth();
   const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
@@ -70,7 +73,11 @@ export default function CampaignParticipantsPage() {
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
         <button
           type="button"
-          onClick={() => navigate(`/org/${orgId}/campaigns/${campaignId}`)}
+          onClick={() =>
+            returnToCampaignDetail
+              ? navigate(returnToCampaignDetail, { replace: true })
+              : navigate(`/org/${orgId}/campaigns/${campaignId}`)
+          }
           className="absolute left-0 p-2"
           aria-label="Back"
         >

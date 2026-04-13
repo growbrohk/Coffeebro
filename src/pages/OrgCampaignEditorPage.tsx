@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -31,6 +31,7 @@ import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefini
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
 import { useToast } from "@/hooks/use-toast";
+import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
@@ -50,6 +51,8 @@ function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
 export default function OrgCampaignEditorPage() {
   const { orgId, campaignId } = useParams<{ orgId: string; campaignId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnToCampaignDetail = readCampaignDetailReturnTo(location.state);
   const isNew = campaignId === "new";
   const { user, loading: authLoading } = useAuth();
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
@@ -305,7 +308,11 @@ export default function OrgCampaignEditorPage() {
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
         <button
           type="button"
-          onClick={() => navigate(`/org/${orgId}/campaigns`)}
+          onClick={() =>
+            returnToCampaignDetail
+              ? navigate(returnToCampaignDetail, { replace: true })
+              : navigate(`/org/${orgId}/campaigns`)
+          }
           className="absolute left-0 p-2"
           aria-label="Back"
         >

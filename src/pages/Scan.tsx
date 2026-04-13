@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { ArrowLeft, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { readCampaignDetailReturnTo } from '@/lib/campaignDetailReturnNav';
 
 type ResultType = "success" | "error" | null;
 type ResultMessage = string | null;
@@ -21,6 +22,8 @@ type RedeemSuccessDetail = {
 
 export default function ScanPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnToCampaignDetail = readCampaignDetailReturnTo(location.state);
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
 
   const [activeTab, setActiveTab] = useState<'qr' | 'manual'>('qr');
@@ -183,7 +186,16 @@ export default function ScanPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-md mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft /></Button>
+          <Button
+            variant="ghost"
+            onClick={() =>
+              returnToCampaignDetail
+                ? navigate(returnToCampaignDetail, { replace: true })
+                : navigate(-1)
+            }
+          >
+            <ArrowLeft />
+          </Button>
           <h1 className="text-xl font-bold uppercase">Scanner</h1>
         </div>
 
