@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +69,50 @@ function normalizeOrg(row: PublishedCampaignRow) {
   return Array.isArray(raw) ? raw[0] ?? null : raw ?? null;
 }
 
+type HuntQrMapTarget = { displayAddress: string | null; mapsUrl: string | null };
+
+/** Treasure / shop coordinates and address for hunt QR location (aligns with map pin logic). */
+function getHuntQrMapTarget(campaign: PublishedCampaignRow, org: ReturnType<typeof normalizeOrg>): HuntQrMapTarget {
+  if (campaign.campaign_type !== "hunt") {
+    return { displayAddress: null, mapsUrl: null };
+  }
+
+  const orgLat = org?.lat ?? null;
+  const orgLng = org?.lng ?? null;
+
+  let lat: number | null = null;
+  let lng: number | null = null;
+  let address: string | null = null;
+
+  if (campaign.treasure_location_type === "shop") {
+    lat = orgLat;
+    lng = orgLng;
+    address = org?.location?.trim() || null;
+  } else {
+    lat = campaign.treasure_lat ?? orgLat;
+    lng = campaign.treasure_lng ?? orgLng;
+    address =
+      campaign.treasure_address?.trim() ||
+      campaign.treasure_area_name?.trim() ||
+      org?.location?.trim() ||
+      null;
+  }
+
+  const mapsUrl =
+    lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+      ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+      : address
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
+        : null;
+
+  let displayAddress = address;
+  if (!displayAddress && lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) {
+    displayAddress = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+
+  return { displayAddress, mapsUrl };
+}
+
 function sortCampaignVouchers(list: PublishedCampaignRow["campaign_vouchers"]): CampaignVoucherRow[] {
   const arr = Array.isArray(list) ? list : list ? [list] : [];
   return [...arr].sort(
@@ -82,6 +127,7 @@ export default function CampaignDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const claim = useClaimCampaign();
+  const [hintImageDialogOpen, setHintImageDialogOpen] = useState(false);
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["campaign_public", campaignId],
@@ -125,6 +171,10 @@ export default function CampaignDetailPage() {
     }
     return m;
   }, [poolQuery.data]);
+
+  useEffect(() => {
+    setHintImageDialogOpen(false);
+  }, [campaignId]);
 
   const onGrab = async () => {
     if (!user || !campaignId) {
@@ -173,6 +223,14 @@ export default function CampaignDetailPage() {
 
   const availabilityLine = getAvailabilityLine(startLabel, endLabel);
 
+  const huntQrMapTarget = useMemo(() => getHuntQrMapTarget(campaign, org), [campaign, org]);
+
+  const showHintsSection =
+    isHunt &&
+    (Boolean(campaign.hint_text?.trim()) ||
+      Boolean(campaign.hint_image_url) ||
+      Boolean(huntQrMapTarget.mapsUrl));
+
   return (
     <>
       <div className="min-h-screen bg-background pb-40">
@@ -184,9 +242,65 @@ export default function CampaignDetailPage() {
         </div>
 
         <div className="container max-w-lg space-y-8 px-4 py-6">
-        <div className="flex flex-col gap-10 text-sm leading-relaxed text-foreground">
+        <div className="flex flex-col gap-8 text-sm leading-relaxed text-foreground">
           <div className="space-y-6">
             <p>{getCampaignIntro(campaign.campaign_type)}</p>
+
+            {showHintsSection ? (
+              <div>
+                <p className="font-semibold text-foreground">Hints</p>
+                <div className="mt-2 flex gap-3 rounded-xl border border-border bg-card p-3 shadow-sm">
+                  {campaign.hint_image_url ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setHintImageDialogOpen(true)}
+                        className="shrink-0 overflow-hidden rounded-lg border border-border ring-offset-background transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        aria-label="View hint photo full size"
+                      >
+                        <img
+                          src={campaign.hint_image_url}
+                          alt=""
+                          className="h-28 w-28 object-cover"
+                        />
+                      </button>
+                      <Dialog open={hintImageDialogOpen} onOpenChange={setHintImageDialogOpen}>
+                        <DialogContent className="box-border max-h-[min(90vh,calc(100dvh-1rem))] w-[min(430px,calc(100vw-1rem))] max-w-[min(430px,calc(100vw-1rem))] overflow-hidden border-0 bg-transparent px-2 pb-2 pt-14 shadow-none sm:max-w-[min(430px,calc(100vw-1rem))] [&>button]:right-[max(0.5rem,env(safe-area-inset-right))] [&>button]:top-[max(0.5rem,env(safe-area-inset-top))] [&>button]:flex [&>button]:size-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:border-0 [&>button]:!bg-orange-500 [&>button]:!text-white [&>button]:p-0 [&>button]:opacity-100 [&>button]:shadow-lg [&>button]:ring-2 [&>button]:ring-white/30 [&>button]:hover:!bg-orange-600 [&>button]:hover:!text-white [&>button]:hover:opacity-100 [&>button]:focus-visible:ring-orange-200 [&>button]:focus-visible:ring-offset-2 [&>button]:focus-visible:ring-offset-black/50 [&>button]:data-[state=open]:!bg-orange-500 [&>button]:data-[state=open]:!text-white [&_svg]:size-[1.125rem] [&_svg]:stroke-[2.5] [&_svg]:!text-white">
+                          <DialogTitle className="sr-only">Hint photo</DialogTitle>
+                          <img
+                            src={campaign.hint_image_url}
+                            alt=""
+                            className="mx-auto max-h-[min(58vh,calc(100vw-4rem))] w-full max-w-full rounded-lg object-contain"
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  ) : null}
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    {campaign.hint_text?.trim() ? (
+                      <p className="leading-relaxed text-foreground">{campaign.hint_text.trim()}</p>
+                    ) : null}
+                    {huntQrMapTarget.displayAddress ? (
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {huntQrMapTarget.displayAddress}
+                      </p>
+                    ) : null}
+                    {huntQrMapTarget.mapsUrl ? (
+                      <a
+                        href={huntQrMapTarget.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Open directions in Google Maps"
+                        className="inline-flex w-fit items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold tracking-wide text-white hover:bg-orange-600"
+                      >
+                        <Navigation className="size-4 shrink-0" aria-hidden />
+                        directions
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div>
             <p className="font-semibold text-foreground">Rewards</p>
@@ -241,20 +355,6 @@ export default function CampaignDetailPage() {
             <p className="font-semibold text-foreground">Campaign period</p>
             <p className="mt-1 text-muted-foreground">{availabilityLine}</p>
           </div>
-
-          {isHunt && (campaign.hint_text || campaign.hint_image_url) ? (
-            <div>
-              <p className="font-semibold text-foreground">Hints</p>
-              {campaign.hint_text ? <p className="mt-2 leading-relaxed">{campaign.hint_text}</p> : null}
-              {campaign.hint_image_url ? (
-                <img
-                  src={campaign.hint_image_url}
-                  alt="Hint image"
-                  className="mt-3 w-full max-h-64 rounded-lg border border-border object-cover"
-                />
-              ) : null}
-            </div>
-          ) : null}
         </div>
 
         <div className="text-sm leading-relaxed text-foreground">
