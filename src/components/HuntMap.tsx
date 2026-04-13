@@ -71,10 +71,16 @@ function iconForPinKind(kind: HuntMapPinKind, scanned: boolean): L.DivIcon {
   return iconCache.hunt.active;
 }
 
+/** Pixel insets so fitBounds clears floating search (top) and tab bar / voucher sheet (bottom). */
+export type HuntMapOverlayPadding = { top: number; bottom: number };
+
+const DEFAULT_MAP_OVERLAY_PADDING: HuntMapOverlayPadding = { top: 140, bottom: 96 };
+
 interface HuntMapProps {
   treasures: CampaignMapItem[];
   onSelectTreasure?: (treasure: CampaignMapItem) => void;
   emptyMessage?: string;
+  mapOverlayPadding?: HuntMapOverlayPadding;
 }
 
 /** Only refit when pin locations / set membership change — not on unrelated re-renders (e.g. closing popup). */
@@ -100,9 +106,18 @@ function treasuresForFitBounds(withCoords: CampaignMapItem[]): CampaignMapItem[]
   return withCoords;
 }
 
-function FitBounds({ treasures }: { treasures: CampaignMapItem[] }) {
+const FIT_H_PADDING = 24;
+
+function FitBounds({
+  treasures,
+  mapOverlayPadding,
+}: {
+  treasures: CampaignMapItem[];
+  mapOverlayPadding: HuntMapOverlayPadding;
+}) {
   const map = useMap();
   const signature = useMemo(() => fitBoundsSignature(treasures), [treasures]);
+  const { top: padTop, bottom: padBottom } = mapOverlayPadding;
 
   useEffect(() => {
     const withCoords = treasures.filter(
@@ -114,23 +129,37 @@ function FitBounds({ treasures }: { treasures: CampaignMapItem[] }) {
     );
     if (withCoords.length === 0) return;
     const forFit = treasuresForFitBounds(withCoords);
+    const fitOptions: L.FitBoundsOptions = {
+      paddingTopLeft: L.point(FIT_H_PADDING, padTop),
+      paddingBottomRight: L.point(FIT_H_PADDING, padBottom),
+      maxZoom: 16,
+    };
     if (forFit.length === 1) {
-      map.setView([forFit[0].lat!, forFit[0].lng!], 15);
+      const lat = forFit[0].lat!;
+      const lng = forFit[0].lng!;
+      const bounds = L.latLngBounds([lat, lng], [lat, lng]).pad(0.008);
+      map.fitBounds(bounds, fitOptions);
       return;
     }
     const bounds = L.latLngBounds(
       forFit.map((t) => [t.lat!, t.lng!] as [number, number])
     );
-    map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry changes
-  }, [map, signature]);
+    map.fitBounds(bounds, fitOptions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry / chrome insets change
+  }, [map, signature, padTop, padBottom]);
   return null;
 }
 
-export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapProps) {
+export function HuntMap({
+  treasures,
+  onSelectTreasure,
+  emptyMessage,
+  mapOverlayPadding,
+}: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
+  const overlayPad = mapOverlayPadding ?? DEFAULT_MAP_OVERLAY_PADDING;
 
   const treasuresWithCoords = useMemo(
     () =>
@@ -201,7 +230,7 @@ export function HuntMap({ treasures, onSelectTreasure, emptyMessage }: HuntMapPr
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
           url={tileUrl}
         />
-        <FitBounds treasures={treasuresWithCoords} />
+        <FitBounds treasures={treasuresWithCoords} mapOverlayPadding={overlayPad} />
         {treasuresWithCoords.map((t) => (
           <Marker
             key={t.id}

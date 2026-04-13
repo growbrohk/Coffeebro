@@ -158,6 +158,20 @@ export default function HuntMapPage() {
     prevSelectedTreasureRef.current = selectedTreasure;
   }, [selectedTreasure]);
 
+  const voucherCarouselOpen =
+    pillar === "hunt_grab" &&
+    !voucherSheetDismissed &&
+    voucherTreasures.length > 0 &&
+    selectedTreasure === null;
+
+  const mapOverlayPadding = useMemo(
+    () => ({
+      top: 140,
+      bottom: voucherCarouselOpen ? 280 : 96,
+    }),
+    [voucherCarouselOpen],
+  );
+
   const mapChrome = (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-background">
       <div className="absolute inset-0 z-0 min-h-0">
@@ -168,6 +182,7 @@ export default function HuntMapPage() {
         ) : (
           <HuntMap
             treasures={mapTreasures}
+            mapOverlayPadding={mapOverlayPadding}
             onSelectTreasure={(t) => {
               if (t.scanned && t.campaign_id) {
                 navigate(`/campaigns/${t.campaign_id}`);
