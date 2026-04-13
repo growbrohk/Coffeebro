@@ -9,8 +9,9 @@ import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
+import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
 
-export default function CheckPage() {
+export default function ExplorePage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,17 +34,10 @@ export default function CheckPage() {
     [discoveryOrgs],
   );
 
-  const filteredCampaigns = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return campaignItems.filter((t) => {
-      if (!q) return true;
-      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [campaignItems, searchQuery]);
+  const huntGrabCarouselItems = useMemo(
+    () => huntMapVoucherCarouselItems(campaignItems, searchQuery),
+    [campaignItems, searchQuery],
+  );
 
   const filteredDiscovery = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -72,7 +66,7 @@ export default function CheckPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-4">
-        <h1 className="text-center text-lg font-black uppercase tracking-tight">Check</h1>
+        <h1 className="text-center text-lg font-black uppercase tracking-tight">Explore</h1>
       </div>
 
       <div className="container max-w-lg space-y-6 px-4 py-6">
@@ -94,11 +88,11 @@ export default function CheckPage() {
           <>
             <section className="space-y-3">
               <h2 className="text-sm font-semibold uppercase text-muted-foreground">Campaigns</h2>
-              {filteredCampaigns.length === 0 ? (
+              {huntGrabCarouselItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching campaigns.</p>
               ) : (
                 <VoucherCarouselRow
-                  items={filteredCampaigns}
+                  items={huntGrabCarouselItems}
                   onCta={(t) => {
                     if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
                   }}

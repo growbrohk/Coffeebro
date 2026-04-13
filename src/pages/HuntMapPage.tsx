@@ -13,6 +13,7 @@ import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
 
 import coffeeShopPin from "@/assets/coffee-shop-pin.svg";
 import huntPinGrab from "@/assets/hunt-pin-grab.svg";
@@ -88,23 +89,10 @@ export default function HuntMapPage() {
     [filteredCampaigns, filteredDiscovery],
   );
 
-  const voucherTreasures = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const matches = (t: CampaignMapItem) => {
-      if (!q) return true;
-      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    };
-    return campaignItems.filter(
-      (t) =>
-        !t.scanned &&
-        (t.pinKind === "grab" || t.pinKind === "hunt") &&
-        matches(t),
-    );
-  }, [campaignItems, searchQuery]);
+  const voucherTreasures = useMemo(
+    () => huntMapVoucherCarouselItems(campaignItems, searchQuery),
+    [campaignItems, searchQuery],
+  );
 
   const loading = campaignsLoading || discoveryLoading || claimedLoading;
 
@@ -129,7 +117,7 @@ export default function HuntMapPage() {
 
   const handleCampaignCta = (t: CampaignMapItem) => {
     if (t.pinKind === "coffee_shop") {
-      navigate("/check");
+      navigate("/explore");
       setSelectedTreasure(null);
       return;
     }
@@ -148,7 +136,7 @@ export default function HuntMapPage() {
       setSelectedTreasure(null);
       return;
     }
-    navigate("/check");
+    navigate("/explore");
     setSelectedTreasure(null);
   };
 
