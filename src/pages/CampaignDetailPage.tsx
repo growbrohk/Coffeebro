@@ -172,6 +172,12 @@ export default function CampaignDetailPage() {
     return m;
   }, [poolQuery.data]);
 
+  const org = campaign != null ? normalizeOrg(campaign) : null;
+  const huntQrMapTarget = useMemo(() => {
+    if (!campaign) return { displayAddress: null, mapsUrl: null } as HuntQrMapTarget;
+    return getHuntQrMapTarget(campaign, org);
+  }, [campaign, org]);
+
   useEffect(() => {
     setHintImageDialogOpen(false);
   }, [campaignId]);
@@ -214,7 +220,6 @@ export default function CampaignDetailPage() {
     );
   }
 
-  const org = normalizeOrg(campaign);
   const title = campaign.display_title?.trim() || "Campaign";
   const sortedVouchers = sortCampaignVouchers(campaign.campaign_vouchers);
   const startLabel = formatCampaignInstantCompact(campaign.start_at);
@@ -222,8 +227,6 @@ export default function CampaignDetailPage() {
   const isHunt = campaign.campaign_type === "hunt";
 
   const availabilityLine = getAvailabilityLine(startLabel, endLabel);
-
-  const huntQrMapTarget = useMemo(() => getHuntQrMapTarget(campaign, org), [campaign, org]);
 
   const showHintsSection =
     isHunt &&
