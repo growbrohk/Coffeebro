@@ -9,8 +9,11 @@ import { VoucherDetailDialog } from "@/components/VoucherDetailDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
 import { useMyVouchers } from "@/hooks/useMyVouchers";
+import { useOrgStaff } from "@/hooks/useOrgStaff";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
+import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
@@ -126,6 +129,8 @@ export default function CampaignDetailPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const claim = useClaimCampaign();
@@ -142,7 +147,7 @@ export default function CampaignDetailPage() {
         .select(
           `
           *,
-          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location ),
+          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id ),
           campaign_vouchers ( *, menu_items (*) )
         `,
         )
@@ -237,6 +242,17 @@ export default function CampaignDetailPage() {
   const endLabel = formatCampaignInstantCompact(campaign.end_at);
   const isHunt = campaign.campaign_type === "hunt";
 
+  const canViewParticipants =
+    !roleLoading &&
+    !staffLoading &&
+    canViewCampaignParticipants({
+      userId: user?.id,
+      isSuperAdmin,
+      campaignOrgId: campaign.org_id,
+      orgOwnerUserId: org?.owner_user_id ?? null,
+      staffAssignments,
+    });
+
   const availabilityLine = getAvailabilityLine(startLabel, endLabel);
 
   const showHintsSection =
@@ -248,16 +264,51 @@ export default function CampaignDetailPage() {
   return (
     <>
       <div className="min-h-screen bg-background pb-40">
-        <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-4 py-4">
-          <button type="button" onClick={() => navigate(-1)} className="mr-2 p-2" aria-label="Back">
+        <div className="sticky top-0 z-10 flex min-w-0 items-center border-b border-border bg-background px-4 py-4">
+          <button type="button" onClick={() => navigate(-1)} className="mr-2 shrink-0 p-2" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-bold leading-tight">{title}</h1>
+          <h1 className="min-w-0 flex-1 text-lg font-bold leading-tight">{title}</h1>
         </div>
 
         <div className="container max-w-lg space-y-8 px-4 py-6">
         <div className="flex flex-col gap-8 text-sm leading-relaxed text-foreground">
           <div className="space-y-6">
+            {canViewParticipants && campaignId ? (
+              <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
+                    onClick={() => navigate(`/org/${campaign.org_id}/campaigns/${campaignId}`)}
+                  >
+                    Edit campaign
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
+                    onClick={() =>
+                      navigate(`/org/${campaign.org_id}/campaigns/${campaignId}/participants`)
+                    }
+                  >
+                    View participants
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-auto min-h-8 whitespace-normal px-1.5 py-2 text-center text-[10px] font-semibold leading-tight sm:text-xs"
+                    onClick={() => navigate("/scan")}
+                  >
+                    Scan vouchers
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             <p>{getCampaignIntro(campaign.campaign_type)}</p>
 
             {showHintsSection ? (

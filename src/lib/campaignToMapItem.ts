@@ -6,7 +6,7 @@ import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
 export type PublishedCampaignRow = Tables<"campaigns"> & {
   orgs: Pick<
     Tables<"orgs">,
-    "id" | "org_name" | "logo_url" | "preview_photo_url" | "lat" | "lng" | "location"
+    "id" | "org_name" | "logo_url" | "preview_photo_url" | "lat" | "lng" | "location" | "owner_user_id"
   > | null;
   campaign_vouchers: Array<
     Tables<"campaign_vouchers"> & {

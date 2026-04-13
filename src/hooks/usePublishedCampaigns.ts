@@ -13,7 +13,7 @@ export function usePublishedCampaigns() {
         .select(
           `
           *,
-          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location ),
+          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id ),
           campaign_vouchers (
             *,
             menu_items (*)

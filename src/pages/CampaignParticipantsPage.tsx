@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrgStaff } from "@/hooks/useOrgStaff";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
 import { useCampaign } from "@/hooks/useOrgCampaigns";
@@ -14,20 +15,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 
 export default function CampaignParticipantsPage() {
   const { orgId, campaignId } = useParams<{ orgId: string; campaignId: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: campaign, isLoading: campLoading } = useCampaign(orgId, campaignId);
   const { data: rows = [], isLoading: rowsLoading, error } = useCampaignParticipants(campaignId);
 
-  const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
+  const canAccess =
+    Boolean(user && orgId) &&
+    canViewCampaignParticipants({
+      userId: user?.id,
+      isSuperAdmin,
+      campaignOrgId: orgId,
+      orgOwnerUserId: org?.owner_user_id ?? null,
+      staffAssignments,
+    });
 
-  if (authLoading || roleLoading || orgLoading || campLoading) {
+  if (authLoading || roleLoading || staffLoading || orgLoading || campLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading…</div>
