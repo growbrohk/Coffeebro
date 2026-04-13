@@ -702,6 +702,15 @@ export type Database = {
           sample_campaign_id: string | null
         }[]
       }
+      get_published_campaign_voucher_pool: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          campaign_voucher_id: string
+          minted_count: number
+          quantity: number
+          remaining: number
+        }[]
+      }
       get_store_conversion_rates: {
         Args: { p_org_ids: string[] }
         Returns: {
