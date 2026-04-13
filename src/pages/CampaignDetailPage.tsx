@@ -184,13 +184,13 @@ export default function CampaignDetailPage() {
         </div>
 
         <div className="container max-w-lg space-y-8 px-4 py-6">
-        <div className="space-y-8 text-sm leading-relaxed text-foreground">
-          <div className="space-y-2">
+        <div className="flex flex-col gap-10 text-sm leading-relaxed text-foreground">
+          <div className="space-y-6">
             <p>{getCampaignIntro(campaign.campaign_type)}</p>
 
             <div>
             <p className="font-semibold text-foreground">Rewards</p>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-1 text-muted-foreground">
               {getRewardsLeadIn(campaign.reward_mode, campaign.reward_per_action)}
             </p>
 
@@ -239,7 +239,7 @@ export default function CampaignDetailPage() {
 
           <div>
             <p className="font-semibold text-foreground">Campaign period</p>
-            <p className="mt-2 text-muted-foreground">{availabilityLine}</p>
+            <p className="mt-1 text-muted-foreground">{availabilityLine}</p>
           </div>
 
           {isHunt && (campaign.hint_text || campaign.hint_image_url) ? (
