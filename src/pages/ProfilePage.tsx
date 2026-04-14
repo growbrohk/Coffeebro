@@ -180,11 +180,9 @@ export default function ProfilePage() {
           <div className={`${profileCardClass} shadow-md`}>
             {quizResultType ? (
               <>
-                <p className="text-sm">
-                  As an {FROG_NAMES[quizResultType].toLowerCase()}, you are a
-                </p>
-                <p className="mt-1 text-2xl font-bold capitalize leading-tight">
-                  {FROG_PROFILE_CARD[quizResultType].archetype}
+                <p className="text-sm">Your vibe:</p>
+                <p className="mt-1 text-lg font-semibold leading-snug">
+                  {FROG_PROFILE_CARD[quizResultType].oneLiner}
                 </p>
                 <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
                   <p className="text-sm text-[#2E1A14]/60">

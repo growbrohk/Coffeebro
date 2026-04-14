@@ -30,15 +30,42 @@ export const LEGACY_FROG_MAP: Record<string, FrogType> = {
   AME: 'HDR',
 };
 
-/** Profile card: short archetype line + illustrative population % (not live analytics). */
+/** Profile card: CoffeeBro frog one-liner + illustrative population % (not live analytics). */
 export const FROG_PROFILE_CARD: Record<FrogType, FrogProfileCard> = {
-  ESP: { archetype: 'idealistic thinker', populationPercent: 15 },
-  LAT: { archetype: 'social connector', populationPercent: 14 },
-  MOC: { archetype: 'feeling-led romantic', populationPercent: 14 },
-  MAT: { archetype: 'mindful observer', populationPercent: 14 },
-  CLD: { archetype: 'independent trailblazer', populationPercent: 14 },
-  DIR: { archetype: 'curious experimenter', populationPercent: 15 },
-  HDR: { archetype: 'ritual brewer', populationPercent: 14 },
+  ESP: {
+    oneLiner:
+      'No bullshit, just get it done — quiet, consistent, and always reliable.',
+    populationPercent: 15,
+  },
+  LAT: {
+    oneLiner: 'Life is better with people — warm, social, and here for the vibes.',
+    populationPercent: 14,
+  },
+  MOC: {
+    oneLiner:
+      'Sweet, soft, and unbothered — just here to feel good and stay happy.',
+    populationPercent: 14,
+  },
+  MAT: {
+    oneLiner:
+      'Looks good, feels good — the vibe, the aesthetic, the main character.',
+    populationPercent: 14,
+  },
+  CLD: {
+    oneLiner:
+      "Quiet, sensitive, and deeper than you think — you won't get it unless you get it.",
+    populationPercent: 14,
+  },
+  DIR: {
+    oneLiner:
+      'Loud, bold, and unpredictable — chaos, confidence, and no filter.',
+    populationPercent: 15,
+  },
+  HDR: {
+    oneLiner:
+      "It's not just coffee, it's the process — focused, intentional, and lowkey intense.",
+    populationPercent: 14,
+  },
 };
 
 // Q1–Q6, answer A/B/C/D → { FrogType: points }

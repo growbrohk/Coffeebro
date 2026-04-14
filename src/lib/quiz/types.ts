@@ -14,7 +14,7 @@ export interface FrogDescription {
 }
 
 export interface FrogProfileCard {
-  archetype: string;
+  oneLiner: string;
   populationPercent: number;
 }
 
