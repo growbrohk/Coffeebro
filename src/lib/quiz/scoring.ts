@@ -5,11 +5,11 @@ export function calculateScores(answers: Record<number, string>): Record<FrogTyp
   const scores: Record<FrogType, number> = {
     ESP: 0,
     LAT: 0,
-    AME: 0,
     MOC: 0,
-    CLD: 0,
     MAT: 0,
+    CLD: 0,
     DIR: 0,
+    HDR: 0,
   };
 
   for (const [qStr, answer] of Object.entries(answers)) {
@@ -41,8 +41,8 @@ export function resolveResultType(
 
   if (tied.length === 1) return tied[0];
 
-  // Tie-break: Q3 → Q4 → Q7
-  const tieBreakQuestions = [3, 4, 7] as const;
+  // Tie-break: Q2 → Q3 → Q6 (barista special, taste diff, why coffee)
+  const tieBreakQuestions = [2, 3, 6] as const;
   let stillTied = [...tied];
 
   for (const q of tieBreakQuestions) {

@@ -24,7 +24,7 @@ export default function QuizResultPage() {
     const bestMatchName = FROG_NAMES[desc.bestMatch];
     const text = `I'm a ${FROG_NAMES[quizResultType]} 🐸\nBest Match: ${bestMatchName} ☕\nWhat are you?\n\nTake the quiz: ${window.location.origin}/q`;
     const shareData: ShareData = {
-      title: '7 Frogs Coffee Quiz',
+      title: 'CoffeeBro Coffee Quiz',
       text,
       url: `${window.location.origin}/q?r=${quizResultType}`,
     };
@@ -58,7 +58,7 @@ export default function QuizResultPage() {
             Discover Your Coffee Frog
           </h1>
           <p className="text-[var(--quiz-fg)]/85">
-            Take the 7 Frogs quiz to find out your cafe personality — and who matches you best.
+            Take the CoffeeBro quiz to find out your cafe personality — and who matches you best.
           </p>
           <Button
             className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"

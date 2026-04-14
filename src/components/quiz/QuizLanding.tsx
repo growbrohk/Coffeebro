@@ -16,7 +16,7 @@ export function QuizLanding({ onStart, isLoading }: QuizLandingProps) {
           Your coffee type is your cafe instinct.
         </p>
         <p className="mb-14 max-w-[22rem] text-base leading-relaxed text-[var(--quiz-fg)]/90 md:mb-16">
-          Answer 7 quick questions to discover your coffee frog - and see who matches you best!
+          Answer 6 quick questions to discover your coffee frog — and see who matches you best!
         </p>
         <QuizCupCta
           variant="startGraphic"

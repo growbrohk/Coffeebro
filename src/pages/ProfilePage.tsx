@@ -166,9 +166,9 @@ export default function ProfilePage() {
                 src={
                   quizResultType
                     ? FROG_AVATAR_PATH[quizResultType]
-                    : FROG_AVATAR_PATH.AME
+                    : FROG_AVATAR_PATH.ESP
                 }
-                alt={quizResultType ? FROG_NAMES[quizResultType] : FROG_NAMES.AME}
+                alt={quizResultType ? FROG_NAMES[quizResultType] : FROG_NAMES.ESP}
                 className="h-40 w-auto max-w-[min(100%,220px)] object-contain"
               />
             </div>

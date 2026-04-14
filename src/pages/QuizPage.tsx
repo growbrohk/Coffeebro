@@ -161,7 +161,7 @@ export default function QuizPage() {
     const bestMatchName = FROG_NAMES[desc.bestMatch];
     const text = `I'm a ${FROG_NAMES[resultType]} 🐸\nBest Match: ${bestMatchName} ☕\nWhat are you?\n\nTake the quiz: ${window.location.origin}/q`;
     const shareData: ShareData = {
-      title: '7 Frogs Coffee Quiz',
+      title: 'CoffeeBro Coffee Quiz',
       text,
       url: `${window.location.origin}/q?r=${resultType}`,
     };
