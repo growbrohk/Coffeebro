@@ -1,5 +1,10 @@
 import type { FrogType } from './types';
-import { FROG_TYPES, FROG_SCORE_SOFTMAX_TEMPERATURE, SCORING_MATRIX } from './constants';
+import {
+  FROG_TYPES,
+  FROG_SCORE_SOFTMAX_TEMPERATURE,
+  SCORING_MATRIX,
+  TIE_BREAK_FROG_PRIORITY,
+} from './constants';
 
 /**
  * Softmax over raw frog totals → percentages 0–100 (sum ≈ 100).
@@ -49,43 +54,38 @@ export function calculateScores(answers: Record<number, string>): Record<FrogTyp
   return scores;
 }
 
-function hashSessionToken(sessionToken: string): number {
-  return (
-    sessionToken.split('').reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) | 0
-  );
+function primaryHitsForFrog(answers: Record<number, string>, frog: FrogType): number {
+  let n = 0;
+  for (let q = 1; q <= 7; q++) {
+    const pts = SCORING_MATRIX[q]?.[answers[q]!]?.[frog];
+    if (pts === 2) n++;
+  }
+  return n;
 }
 
-export function resolveResultType(
-  scores: Record<FrogType, number>,
-  answers: Record<number, string>,
-  sessionToken: string | null
-): FrogType {
+function q7PointsForFrog(answers: Record<number, string>, frog: FrogType): number {
+  return SCORING_MATRIX[7]?.[answers[7]!]?.[frog] ?? 0;
+}
+
+/**
+ * Winner: highest total score.
+ * Tie-break: more primary (+2) hits → higher Q7 points for tied frogs → TIE_BREAK_FROG_PRIORITY.
+ */
+export function resolveResultType(scores: Record<FrogType, number>, answers: Record<number, string>): FrogType {
   const maxScore = Math.max(...Object.values(scores));
-  const tied = FROG_TYPES.filter((t) => scores[t] === maxScore);
+  let tied = FROG_TYPES.filter((t) => scores[t] === maxScore);
+  if (tied.length === 1) return tied[0]!;
 
-  if (tied.length === 1) return tied[0];
+  const maxPrimary = Math.max(...tied.map((t) => primaryHitsForFrog(answers, t)));
+  tied = tied.filter((t) => primaryHitsForFrog(answers, t) === maxPrimary);
+  if (tied.length === 1) return tied[0]!;
 
-  // Tie-break: Q4 → Q5 → Q7 (taste difference, discover café, why love coffee)
-  const tieBreakQuestions = [4, 5, 7] as const;
-  let stillTied = [...tied];
+  const maxQ7 = Math.max(...tied.map((t) => q7PointsForFrog(answers, t)));
+  tied = tied.filter((t) => q7PointsForFrog(answers, t) === maxQ7);
+  if (tied.length === 1) return tied[0]!;
 
-  for (const q of tieBreakQuestions) {
-    const qScores = stillTied.map((t) => {
-      const ans = answers[q];
-      const m = SCORING_MATRIX[q]?.[ans];
-      return { type: t, points: m?.[t] ?? 0 };
-    });
-    const maxTie = Math.max(...qScores.map((x) => x.points));
-    stillTied = qScores.filter((x) => x.points === maxTie).map((x) => x.type);
-    if (stillTied.length === 1) return stillTied[0];
+  for (const t of TIE_BREAK_FROG_PRIORITY) {
+    if (tied.includes(t)) return t;
   }
-
-  // Still tied: use stable tie-break based on session_token
-  if (sessionToken) {
-    const stableIndex =
-      Math.abs(hashSessionToken(sessionToken)) % stillTied.length;
-    return stillTied[stableIndex];
-  }
-
-  return stillTied[0];
+  return tied[0]!;
 }

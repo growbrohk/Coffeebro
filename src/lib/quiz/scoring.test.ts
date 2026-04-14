@@ -8,7 +8,7 @@ function zeroScores(): Record<FrogType, number> {
 }
 
 describe('calculateScores', () => {
-  it('all A answers yields DIR as highest (balanced matrix)', () => {
+  it('all A answers yields ESP as highest', () => {
     const answers: Record<number, string> = {
       1: 'A',
       2: 'A',
@@ -21,7 +21,7 @@ describe('calculateScores', () => {
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
     const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
-    expect(winners).toEqual(['DIR']);
+    expect(winners).toEqual(['ESP']);
   });
 
   it('all B answers yields LAT as highest', () => {
@@ -56,7 +56,7 @@ describe('calculateScores', () => {
     expect(winners).toEqual(['MAT']);
   });
 
-  it('all D answers yields LAT and DIR tied for highest', () => {
+  it('all D answers yields DIR as highest', () => {
     const answers: Record<number, string> = {
       1: 'D',
       2: 'D',
@@ -69,7 +69,7 @@ describe('calculateScores', () => {
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
     const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
-    expect(winners).toEqual(['LAT', 'DIR']);
+    expect(winners).toEqual(['DIR']);
   });
 });
 
@@ -120,53 +120,58 @@ describe('resolveResultType', () => {
       7: 'B',
     };
     const scores = calculateScores(answers);
-    const result = resolveResultType(scores, answers, 'any-session');
+    const result = resolveResultType(scores, answers);
     expect(result).toBe('LAT');
   });
 
-  it('uses Q4 tie-break when two frogs tied', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'A', 5: 'B', 7: 'B' };
-    const result = resolveResultType(scores, answers, 'any-session');
+  it('breaks ties by primary hits (+2 count) when totals are tied', () => {
+    const answers: Record<number, string> = {
+      1: 'A',
+      2: 'A',
+      3: 'A',
+      4: 'A',
+      5: 'A',
+      6: 'A',
+      7: 'A',
+    };
+    const scores = { ...zeroScores(), ESP: 13, HDR: 13 };
+    const result = resolveResultType(scores, answers);
     expect(result).toBe('ESP');
   });
 
-  it('uses Q5 tie-break when Q4 does not resolve', () => {
-    const scores = { ...zeroScores(), CLD: 8, HDR: 8 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'A', 7: 'B' };
-    const result = resolveResultType(scores, answers, 'any-session');
-    expect(result).toBe('CLD');
-  });
-
-  it('uses Q7 tie-break when Q4 and Q5 do not resolve', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'B', 7: 'A' };
-    const result = resolveResultType(scores, answers, 'any-session');
-    expect(result).toBe('HDR');
-  });
-
-  it('uses stable session_token tie-break when Q4/Q5/Q7 do not resolve', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'B', 7: 'B' };
-    const result1 = resolveResultType(scores, answers, 'session-aaa');
-    const result2 = resolveResultType(scores, answers, 'session-aaa');
-    expect(result1).toBe(result2);
-    expect(['ESP', 'HDR']).toContain(result1);
-  });
-
-  it('returns deterministic result for same session_token', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'B', 7: 'B' };
-    const results = Array.from({ length: 10 }, () =>
-      resolveResultType(scores, answers, 'stable-token-123')
+  it('breaks ties by Q7 points when totals and primary hits match', () => {
+    const answers: Record<number, string> = {
+      1: 'A',
+      2: 'C',
+      3: 'D',
+      4: 'D',
+      5: 'B',
+      6: 'B',
+      7: 'A',
+    };
+    const scores = calculateScores(answers);
+    expect(FROG_TYPES.filter((t) => scores[t] === Math.max(...Object.values(scores))).sort()).toEqual(
+      ['ESP', 'LAT', 'MAT'].sort()
     );
-    expect(results.every((r) => r === results[0])).toBe(true);
+    const result = resolveResultType(scores, answers);
+    expect(result).toBe('ESP');
   });
 
-  it('falls back to first tied when session_token is null', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'B', 7: 'B' };
-    const result = resolveResultType(scores, answers, null);
-    expect(['ESP', 'HDR']).toContain(result);
+  it('breaks ties by fixed frog priority when totals, primaries, and Q7 points match', () => {
+    const answers: Record<number, string> = {
+      1: 'B',
+      2: 'A',
+      3: 'C',
+      4: 'A',
+      5: 'C',
+      6: 'A',
+      7: 'D',
+    };
+    const scores = calculateScores(answers);
+    const max = Math.max(...Object.values(scores));
+    const tied = FROG_TYPES.filter((t) => scores[t] === max).sort();
+    expect(tied).toEqual(['ESP', 'HDR']);
+    const result = resolveResultType(scores, answers);
+    expect(result).toBe('ESP');
   });
 });

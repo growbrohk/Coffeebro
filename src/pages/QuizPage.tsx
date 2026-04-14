@@ -129,7 +129,7 @@ export default function QuizPage() {
 
     // Last question: compute, persist, show result
     const computedScores = calculateScores(answers);
-    const computedType = resolveResultType(computedScores, answers, getSessionToken());
+    const computedType = resolveResultType(computedScores, answers);
     setScores(computedScores);
     setResultType(computedType);
 

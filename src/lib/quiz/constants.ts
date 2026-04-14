@@ -2,6 +2,17 @@ import type { FrogType, QuizQuestion, FrogDescription, FrogProfileCard } from '.
 
 export const FROG_TYPES: FrogType[] = ['ESP', 'LAT', 'MOC', 'MAT', 'CLD', 'DIR', 'HDR'];
 
+/** Final tie-break when totals, primary hits, and Q7 points are equal: first listed wins. */
+export const TIE_BREAK_FROG_PRIORITY: readonly FrogType[] = [
+  'LAT',
+  'ESP',
+  'MAT',
+  'HDR',
+  'DIR',
+  'CLD',
+  'MOC',
+];
+
 export const FROG_NAMES: Record<FrogType, string> = {
   ESP: 'Espresso Frog',
   LAT: 'Latte Frog',
@@ -71,121 +82,121 @@ export const FROG_PROFILE_CARD: Record<FrogType, FrogProfileCard> = {
 /** Temperature for softmax over raw frog scores → display percentages. Higher = flatter distribution. */
 export const FROG_SCORE_SOFTMAX_TEMPERATURE = 3;
 
-// Q1–Q7, answer A/B/C/D → { FrogType: points } (balanced 7-question matrix)
+// Q1–Q7: each answer → primary +2, secondary +1
 export const SCORING_MATRIX: Record<number, Record<string, Partial<Record<FrogType, number>>>> = {
   1: {
-    A: { ESP: 2, HDR: 2 },
-    B: { LAT: 4, DIR: 2, MOC: 2 },
-    C: { CLD: 2, MAT: 4 },
-    D: { DIR: 3, MOC: 2 },
+    A: { ESP: 2, HDR: 1 },
+    B: { LAT: 2, MOC: 1 },
+    C: { MAT: 2, CLD: 1 },
+    D: { DIR: 2, LAT: 1 },
   },
   2: {
-    A: { ESP: 4 },
-    B: { LAT: 4 },
-    C: { MOC: 4 },
-    D: { MAT: 4 },
+    A: { HDR: 2, ESP: 1 },
+    B: { LAT: 2, DIR: 1 },
+    C: { MAT: 2, CLD: 1 },
+    D: { DIR: 2, MOC: 1 },
   },
   3: {
-    A: { DIR: 3, MAT: 2 },
-    B: { HDR: 2, CLD: 2 },
-    C: { ESP: 4, MAT: 2, DIR: 1 },
-    D: { LAT: 3, MOC: 3 },
+    A: { ESP: 2, HDR: 1 },
+    B: { LAT: 2, MOC: 1 },
+    C: { HDR: 2, MAT: 1 },
+    D: { CLD: 2, DIR: 1 },
   },
   4: {
-    A: { ESP: 2 },
-    B: { LAT: 3, MOC: 2 },
-    C: { CLD: 2, HDR: 2 },
-    D: { DIR: 3 },
+    A: { ESP: 2, LAT: 1 },
+    B: { LAT: 2, MOC: 1 },
+    C: { CLD: 2, DIR: 1 },
+    D: { MAT: 2, HDR: 1 },
   },
   5: {
-    A: { DIR: 3, CLD: 2 },
-    B: { LAT: 2, MOC: 3 },
-    C: { MAT: 2 },
-    D: { ESP: 2, HDR: 2 },
+    A: { ESP: 2, HDR: 1 },
+    B: { LAT: 2, MOC: 1 },
+    C: { MAT: 2, CLD: 1 },
+    D: { DIR: 2, ESP: 1 },
   },
   6: {
-    A: { MAT: 2, DIR: 3 },
-    B: { ESP: 3, CLD: 2 },
-    C: { DIR: 3, HDR: 2 },
-    D: { CLD: 3, LAT: 3 },
+    A: { ESP: 2, HDR: 1 },
+    B: { LAT: 2, MOC: 1 },
+    C: { MAT: 2, CLD: 1 },
+    D: { DIR: 2, LAT: 1 },
   },
   7: {
-    A: { HDR: 2, CLD: 2 },
-    B: { LAT: 2, MOC: 3 },
-    C: { MAT: 2, DIR: 4 },
-    D: { ESP: 2, HDR: 3 },
+    A: { ESP: 2, HDR: 1 },
+    B: { LAT: 2, DIR: 1 },
+    C: { MAT: 2, CLD: 1 },
+    D: { MOC: 2, LAT: 1 },
   },
 };
 
 export const QUESTIONS: QuizQuestion[] = [
   {
     id: 1,
-    text: 'You really want a coffee, but you got $0 in your pocket',
+    text: 'You wake up and see your day is already a bit messy. What do you do first?',
     options: [
-      { value: 'A', label: 'I go back home and make coffee myself' },
-      { value: 'B', label: '“bro u around?” 👀' },
-      { value: 'C', label: 'I use CoffeeBro “grab” campaign to hunt free coffee' },
-      { value: 'D', label: 'Order first, pay later (run home first lol)' },
+      { value: 'A', label: 'Sort out what matters most first' },
+      { value: 'B', label: 'Message someone and ease into the day' },
+      { value: 'C', label: 'Sit with it for a bit before deciding' },
+      { value: 'D', label: 'Pretend it’s fine and free-style the day' },
     ],
   },
   {
     id: 2,
-    text: 'Your coffee arrives. First reaction?',
+    text: 'Your friend cancels a plan one hour before. You:',
     options: [
-      { value: 'A', label: 'Drink. Why are we wasting time' },
-      { value: 'B', label: '“wait wait cheers first!!”' },
-      { value: 'C', label: '“this looks so comforting omg” 🥹' },
-      { value: 'D', label: 'adjust lighting, take 10 photos' },
+      { value: 'A', label: 'Keep the plan and go alone' },
+      { value: 'B', label: 'Ask someone else out straight away' },
+      { value: 'C', label: 'Turn it into a quiet solo reset' },
+      { value: 'D', label: 'Change the whole vibe and do something random' },
     ],
   },
   {
     id: 3,
-    text: 'The barista recommends today’s special drink',
+    text: 'At a café or restaurant, your seat choice is usually:',
     options: [
-      { value: 'A', label: '“Thx bro, give me one of those shit”' },
-      { value: 'B', label: '“tell me more…” (talk 1 hr)' },
-      { value: 'C', label: '“did i ask?” but secretly observe others' },
-      { value: 'D', label: 'follow friend’s order' },
+      { value: 'A', label: 'Practical spot, easy in and out' },
+      { value: 'B', label: 'Cozy seat where people can gather' },
+      { value: 'C', label: 'Somewhere calm with a bit of space' },
+      { value: 'D', label: 'Window seat / corner seat with a vibe' },
     ],
   },
   {
     id: 4,
-    text: 'Your drink tastes slightly different',
+    text: 'Someone gives you a sudden free afternoon. You’d rather:',
     options: [
-      { value: 'A', label: 'I dun taste, I just drink' },
-      { value: 'B', label: 'laugh it off' },
-      { value: 'C', label: 'analyze the taste deeply' },
-      { value: 'D', label: 'complain / refund mode' },
+      { value: 'A', label: 'Clear something from your to-do list' },
+      { value: 'B', label: 'Meet someone and catch up' },
+      { value: 'C', label: 'Walk around and see where the day goes' },
+      { value: 'D', label: 'Stay in your own world and recharge slowly' },
     ],
   },
   {
     id: 5,
-    text: 'You discover a new café because…',
+    text: 'When trying something new, your instinct is:',
     options: [
-      { value: 'A', label: 'new cafes discover me' },
-      { value: 'B', label: 'friends choose, I follow' },
-      { value: 'C', label: 'ASK THE FOODIES' },
-      { value: 'D', label: 'I stick to one spot' },
+      { value: 'A', label: 'Test if it works and keep it efficient' },
+      { value: 'B', label: 'See if it feels good and easy to enjoy' },
+      { value: 'C', label: 'Explore it properly and understand the vibe' },
+      { value: 'D', label: 'Push it a bit just to see what happens' },
     ],
   },
   {
     id: 6,
-    text: 'A new café pops up nearby — you…',
+    text: 'Your friends would probably say you are:',
     options: [
-      { value: 'A', label: 'post, never go back' },
-      { value: 'B', label: 'try if cheap, stay if good' },
-      { value: 'C', label: '“evil capitalist…” (in your head)' },
-      { value: 'D', label: 'wait → observe → attack with friends' },
+      { value: 'A', label: 'dependable and pretty switched on' },
+      { value: 'B', label: 'easy to be around' },
+      { value: 'C', label: 'thoughtful but a bit hard to read' },
+      { value: 'D', label: 'fun when you’re in the mood, but unpredictable' },
     ],
   },
   {
     id: 7,
-    text: 'Why u love coffee — one word',
+    text: 'You walk into a new place with no plan. What happens next?',
     options: [
-      { value: 'A', label: 'aroma / process' },
-      { value: 'B', label: 'taste / comfort' },
-      { value: 'C', label: 'looks good' },
-      { value: 'D', label: 'routine / fuel' },
+      { value: 'A', label: 'I quickly figure out the layout and best option' },
+      { value: 'B', label: 'I look for people / energy first' },
+      { value: 'C', label: 'I observe first and get a feel for the place' },
+      { value: 'D', label: 'I follow whatever catches my attention' },
     ],
   },
 ];
