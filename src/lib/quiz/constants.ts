@@ -68,126 +68,121 @@ export const FROG_PROFILE_CARD: Record<FrogType, FrogProfileCard> = {
   },
 };
 
-// Q1–Q6, answer A/B/C/D → { FrogType: points }
+// Q1–Q7, answer A/B/C/D → { FrogType: points } (primary +2, secondary +1 per spec)
 export const SCORING_MATRIX: Record<number, Record<string, Partial<Record<FrogType, number>>>> = {
   1: {
-    A: { ESP: 1, HDR: 2 },
-    B: { LAT: 4 },
-    C: { CLD: 2, MAT: 5 },
-    D: { DIR: 1, MOC: 2 },
+    A: { ESP: 2 },
+    B: { LAT: 2 },
+    C: { MOC: 2 },
+    D: { MAT: 2 },
   },
   2: {
-    A: { DIR: 2, MAT: 2 },
-    B: { HDR: 2, CLD: 1 },
-    C: { ESP: 5, MAT: 2, DIR: 1 },
-    D: { LAT: 3, MOC: 4 },
+    A: { ESP: 2 },
+    B: { LAT: 2 },
+    C: { MOC: 2 },
+    D: { CLD: 2, DIR: 1 },
   },
   3: {
     A: { ESP: 2 },
-    B: { LAT: 4, MOC: 2 },
-    C: { CLD: 2, HDR: 2 },
-    D: { DIR: 1 },
+    B: { LAT: 2 },
+    C: { MOC: 2 },
+    D: { MAT: 2 },
   },
   4: {
-    A: { DIR: 3, CLD: 2 },
-    B: { LAT: 1, MOC: 4 },
-    C: { MAT: 1 },
-    D: { ESP: 1, HDR: 2 },
+    A: { ESP: 2 },
+    B: { LAT: 2 },
+    C: { MOC: 2 },
+    D: { DIR: 2, MAT: 1 },
   },
   5: {
-    A: { MAT: 2, DIR: 1 },
-    B: { ESP: 4, CLD: 3 },
-    C: { DIR: 1 },
-    D: { CLD: 3, LAT: 3 },
+    A: { MAT: 2, MOC: 1 },
+    B: { LAT: 2 },
+    C: { CLD: 2, DIR: 1 },
+    D: { ESP: 2 },
   },
   6: {
-    A: { HDR: 2, CLD: 2 },
-    B: { LAT: 2, MOC: 3 },
-    C: { MAT: 2, DIR: 4 },
-    D: { ESP: 2, HDR: 3 },
+    A: { MAT: 2, DIR: 1 },
+    B: { ESP: 2, CLD: 1 },
+    C: { DIR: 2 },
+    D: { CLD: 2, MAT: 1 },
+  },
+  7: {
+    A: { HDR: 2, CLD: 1 },
+    B: { MOC: 2 },
+    C: { MAT: 2, LAT: 1 },
+    D: { ESP: 2 },
   },
 };
 
 export const QUESTIONS: QuizQuestion[] = [
   {
     id: 1,
-    text: 'You really want a coffee, but you got $0 in your pocket.',
+    text: 'You walk into a café. What are you actually doing?',
     options: [
-      { value: 'A', label: 'I go back home and make coffee myself.' },
-      { value: 'B', label: 'I call my bros/sis out and let them pay.' },
-      { value: 'C', label: 'I use CoffeeBro “grab” campaign to hunt free coffee.' },
-      {
-        value: 'D',
-        label:
-          'Find a coffee shop I can order first, pay later (run home first, pay when I have money).',
-      },
+      { value: 'A', label: 'Order the same shit as always. No thinking required' },
+      { value: 'B', label: 'Look for your friends first. Coffee can wait, people cannot' },
+      { value: 'C', label: '“hmmm…” (pretending to read menu but just want something sweet)' },
+      { value: 'D', label: 'Walk in like main character. Checking if vibe fits' },
     ],
   },
   {
     id: 2,
-    text: 'The barista recommends today’s special drink. You most likely:',
+    text: 'You broke af. Like actually $0. What’s your move?',
     options: [
-      {
-        value: 'A',
-        label:
-          'Detail-scan the barista’s tattoos to see if they’re lit; if yes: “Thx bro, give me one of those.”',
-      },
-      { value: 'B', label: 'Tell me more about the drink! Then bother the barista for another hour.' },
-      {
-        value: 'C',
-        label: 'Bro, did I ask you? …Looks around to see if a lot of people are ordering that anyway.',
-      },
-      {
-        value: 'D',
-        label:
-          'Turn to your friend: “Yeah yeah, it’s really good!” (You never tried — you just want to order with them.)',
-      },
+      { value: 'A', label: 'Go home. Make coffee yourself. Stop being dumb' },
+      { value: 'B', label: 'Text someone: “bro u around?” 👀' },
+      { value: 'C', label: 'Still thinking about coffee… maybe dessert instead' },
+      { value: 'D', label: 'Find some weird way to still get coffee' },
     ],
   },
   {
     id: 3,
-    text: 'Your drink tastes slightly different than expected. You…',
+    text: 'Your coffee arrives. First reaction?',
     options: [
-      { value: 'A', label: 'What taste? I don’t taste! I chuck it!' },
-      { value: 'B', label: 'Hahahahaha, it’s different, hahahaha.' },
-      { value: 'C', label: 'Oh wow, it’s different — wait, is it the aftertaste or the…' },
-      { value: 'D', label: 'Waiter! What did you do to my coffee?! Refund! Redo! Recycle…' },
+      { value: 'A', label: 'Drink. Why are we wasting time' },
+      { value: 'B', label: '“wait wait cheers first!!”' },
+      { value: 'C', label: '“this looks so comforting omg” 🥹' },
+      { value: 'D', label: 'adjust lighting, take 10 photos, still not satisfied' },
     ],
   },
   {
     id: 4,
-    text: 'You discover a new café because…',
+    text: 'Barista recommends today’s special drink. You most likely:',
     options: [
-      { value: 'A', label: 'I don’t discover new cafés — new cafés discover me.' },
-      { value: 'B', label: 'Ask my friend — they choose, I follow.' },
-      { value: 'C', label: 'ASK THE FOODIES!!!' },
-      { value: 'D', label: 'I don’t — I just go to THE ONE.' },
+      { value: 'A', label: '“ok sure” (already halfway paying)' },
+      { value: 'B', label: '“eh what are u guys getting?”' },
+      { value: 'C', label: '“sounds nice… i think i’ll like it”' },
+      { value: 'D', label: 'scan barista vibe → “thx bro give me one of those shit”' },
     ],
   },
   {
     id: 5,
-    text: 'A new café pops up nearby — what do you do?',
+    text: 'You discover a new café because…',
     options: [
-      { value: 'A', label: 'Post on social media, never go back.' },
-      { value: 'B', label: 'If the price is good I try; if the taste is good I stay!' },
-      {
-        value: 'C',
-        label: 'New cafés = evil capitalist — let me post some shitty threads! (Just thinking, not posting.)',
-      },
-      {
-        value: 'D',
-        label: 'I wait and observe like a hunter — if they have a CoffeeBro hunt campaign, I attack (with friends).',
-      },
+      { value: 'A', label: 'new cafes discover me' },
+      { value: 'B', label: 'my friends choose, I follow' },
+      { value: 'C', label: 'ASK THE FOODIES!!!' },
+      { value: 'D', label: 'I don’t. I stick to one' },
     ],
   },
   {
     id: 6,
-    text: 'Why do you love coffee — one word?',
+    text: 'A new café pops up nearby — what do you do?',
     options: [
-      { value: 'A', label: 'Bro, it’s the aroma, the process.' },
-      { value: 'B', label: 'The taste, the balance & the comfort.' },
-      { value: 'C', label: 'It just feels good looking at them.' },
-      { value: 'D', label: 'It’s my routine, my fuel, my engine.' },
+      { value: 'A', label: 'post once, never go back' },
+      { value: 'B', label: 'if price good I try, if taste good I stay' },
+      { value: 'C', label: 'complain online first' },
+      { value: 'D', label: 'observe first, then decide' },
+    ],
+  },
+  {
+    id: 7,
+    text: 'You’re about to get your coffee — what matters most?',
+    options: [
+      { value: 'A', label: 'it’s about the process, not the drink' },
+      { value: 'B', label: 'i want comfort. something sweet' },
+      { value: 'C', label: 'need to take pic first' },
+      { value: 'D', label: 'just give me something that works' },
     ],
   },
 ];

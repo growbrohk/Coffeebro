@@ -41,8 +41,8 @@ export function resolveResultType(
 
   if (tied.length === 1) return tied[0];
 
-  // Tie-break: Q2 → Q3 → Q6 (barista special, taste diff, why coffee)
-  const tieBreakQuestions = [2, 3, 6] as const;
+  // Tie-break: Q4 → Q5 → Q7 (barista special, discover café, what matters most)
+  const tieBreakQuestions = [4, 5, 7] as const;
   let stillTied = [...tied];
 
   for (const q of tieBreakQuestions) {
