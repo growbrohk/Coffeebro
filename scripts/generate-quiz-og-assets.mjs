@@ -1,6 +1,6 @@
 /**
  * Writes public/og-quiz/<slug>.png (1200×630) and public/q/share/<slug>.html (OG meta + redirect).
- * Set SITE_ORIGIN for absolute og:image / og:url (default: https://coffeebro.com).
+ * Set SITE_ORIGIN for absolute og:image / og:url (default: https://coffee-bro.com).
  * Run: node scripts/generate-quiz-og-assets.mjs
  */
 import sharp from 'sharp';
@@ -11,7 +11,9 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://coffeebro.com').replace(/\/$/, '');
+const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://coffee-bro.com').replace(/\/$/, '');
+const OG_IMAGE_W = 1200;
+const OG_IMAGE_H = 630;
 
 /** Must stay aligned with src/lib/quiz/constants.ts (FROG_SHARE_SLUG + captureBackgroundColor + FROG_NAMES + narratives for OG). */
 const FROGS = [
@@ -104,8 +106,8 @@ async function main() {
   mkdirSync(ogDir, { recursive: true });
   mkdirSync(shareDir, { recursive: true });
 
-  const ogW = 1200;
-  const ogH = 630;
+  const ogW = OG_IMAGE_W;
+  const ogH = OG_IMAGE_H;
 
   for (const f of FROGS) {
     const svgPath = join(root, 'public/quiz-frogs', f.svg);
@@ -146,6 +148,11 @@ async function main() {
   <meta property="og:title" content="${escapeHtml(ogTitle)}" />
   <meta property="og:description" content="${escapeHtml(f.description)}" />
   <meta property="og:image" content="${escapeHtml(imageUrl)}" />
+  <meta property="og:image:secure_url" content="${escapeHtml(imageUrl)}" />
+  <meta property="og:image:width" content="${OG_IMAGE_W}" />
+  <meta property="og:image:height" content="${OG_IMAGE_H}" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="${escapeHtml(ogTitle)}" />
   <meta property="og:url" content="${escapeHtml(pageUrl)}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
