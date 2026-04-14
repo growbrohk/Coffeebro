@@ -31,4 +31,5 @@ describe('share helpers', () => {
     const slugs = Object.values(FROG_SHARE_SLUG);
     expect(new Set(slugs).size).toBe(slugs.length);
   });
+
 });

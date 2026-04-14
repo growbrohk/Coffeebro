@@ -1,9 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
-import { QuizFrogShareCard } from '@/components/quiz/QuizFrogShareCard';
 import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
 import { shareQuizResult } from '@/lib/quiz/share';
 import type { FrogType } from '@/lib/quiz/types';
@@ -23,7 +22,6 @@ export function QuizResultFull({
 }: QuizResultFullProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const shareCardRef = useRef<HTMLDivElement>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];
@@ -36,14 +34,9 @@ export function QuizResultFull({
   const handleShare = useCallback(async () => {
     setShareBusy(true);
     try {
-      await shareQuizResult(shareCardRef.current, resultType, {
+      await shareQuizResult(resultType, {
         onShared: () => toast({ title: 'Shared!' }),
         onCopiedText: () => toast({ title: 'Link copied' }),
-        onDownloaded: () =>
-          toast({
-            title: 'Link copied',
-            description: 'Your frog card image was saved to your downloads.',
-          }),
         onError: (message) => toast({ title: message, variant: 'destructive' }),
       });
     } finally {
@@ -53,13 +46,6 @@ export function QuizResultFull({
 
   return (
     <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div
-        className="pointer-events-none fixed left-[-10000px] top-0 opacity-0"
-        aria-hidden
-      >
-        <QuizFrogShareCard ref={shareCardRef} resultType={resultType} />
-      </div>
-
       <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
@@ -123,7 +109,7 @@ export function QuizResultFull({
               className="w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
               onClick={handleShare}
             >
-              {shareBusy ? 'Preparing…' : 'Share My Coffee Frog'}
+              {shareBusy ? 'Sharing…' : 'Share My Coffee Frog'}
             </Button>
           )}
         </div>
