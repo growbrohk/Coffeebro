@@ -1,9 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
-import { QuizFrogShareSquareCard } from '@/components/quiz/QuizFrogShareSquareCard';
 import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
 import { shareQuizResult } from '@/lib/quiz/share';
 import type { FrogType } from '@/lib/quiz/types';
@@ -23,7 +22,6 @@ export function QuizResultFull({
 }: QuizResultFullProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const shareCardRef = useRef<HTMLDivElement>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];
@@ -36,20 +34,11 @@ export function QuizResultFull({
   const handleShare = useCallback(async () => {
     setShareBusy(true);
     try {
-      await shareQuizResult(
-        resultType,
-        {
-          onShared: () => toast({ title: 'Shared!' }),
-          onCopiedText: () => toast({ title: 'Link copied' }),
-          onDownloaded: () =>
-            toast({
-              title: 'Link copied',
-              description: 'Your frog card image was saved to your downloads.',
-            }),
-          onError: (message) => toast({ title: message, variant: 'destructive' }),
-        },
-        shareCardRef.current,
-      );
+      await shareQuizResult(resultType, {
+        onShared: () => toast({ title: 'Shared!' }),
+        onCopiedText: () => toast({ title: 'Link copied' }),
+        onError: (message) => toast({ title: message, variant: 'destructive' }),
+      });
     } finally {
       setShareBusy(false);
     }
@@ -57,13 +46,6 @@ export function QuizResultFull({
 
   return (
     <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
-      <div
-        className="pointer-events-none fixed left-[-10000px] top-0 opacity-0"
-        aria-hidden
-      >
-        <QuizFrogShareSquareCard ref={shareCardRef} resultType={resultType} />
-      </div>
-
       <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
