@@ -7,7 +7,7 @@ import { QuizQuestions } from '@/components/quiz/QuizQuestions';
 import { QuizResultBlurred } from '@/components/quiz/QuizResultBlurred';
 import { QuizResultFull } from '@/components/quiz/QuizResultFull';
 import { QUESTIONS, FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
-import { calculateScores, resolveResultType } from '@/lib/quiz/scoring';
+import { calculateScores, frogScorePercentages, resolveResultType } from '@/lib/quiz/scoring';
 import { useQuizSession, getSessionToken } from '@/hooks/useQuizSession';
 import type { FrogType } from '@/lib/quiz/types';
 
@@ -47,6 +47,7 @@ export default function QuizPage() {
       }
       if (res.user_id && user?.id && res.user_id === user.id) {
         setResultType(res.result_type);
+        setScores(res.scores ?? null);
         setStep('full');
       } else if (res.user_id) {
         setError('Already claimed by another account');
@@ -54,12 +55,14 @@ export default function QuizPage() {
         const { ok, error: claimErr } = await claimResult();
         if (ok) {
           setResultType(res.result_type);
+          setScores(res.scores ?? null);
           setStep('full');
         } else {
           setError(claimErr ?? 'Failed to claim');
         }
       } else {
         setResultType(res.result_type);
+        setScores(res.scores ?? null);
         setStep('blurred');
       }
       setIsLoading(false);
@@ -80,6 +83,7 @@ export default function QuizPage() {
       setHasCheckedSession(true);
       if (!res) return;
       setResultType(res.result_type);
+      setScores(res.scores ?? null);
       if (res.user_id && user?.id && res.user_id === user.id) {
         setStep('full');
       } else {
@@ -97,6 +101,7 @@ export default function QuizPage() {
       setStep('questions');
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setScores(null);
     } else {
       setError(err ?? 'Failed to start');
     }
@@ -232,8 +237,13 @@ export default function QuizPage() {
   }
 
   if (step === 'full' && resultType) {
+    const scorePercentages = scores ? frogScorePercentages(scores) : null;
     return (
-      <QuizResultFull resultType={resultType} onShare={handleShare} />
+      <QuizResultFull
+        resultType={resultType}
+        scorePercentages={scorePercentages}
+        onShare={handleShare}
+      />
     );
   }
 

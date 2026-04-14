@@ -5,12 +5,16 @@ import { useUserQuizResult } from '@/hooks/useUserQuizResult';
 import { QuizResultFull } from '@/components/quiz/QuizResultFull';
 import { Button } from '@/components/ui/button';
 import { FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
+import { frogScorePercentages } from '@/lib/quiz/scoring';
 import type { FrogType } from '@/lib/quiz/types';
 
 export default function QuizResultPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { data: quizResultType, isLoading: resultLoading } = useUserQuizResult(user?.id);
+  const { data: quizRow, isLoading: resultLoading } = useUserQuizResult(user?.id);
+  const quizResultType = quizRow?.resultType ?? null;
+  const scorePercentages =
+    quizRow?.scores != null ? frogScorePercentages(quizRow.scores) : null;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,6 +76,10 @@ export default function QuizResultPage() {
   }
 
   return (
-    <QuizResultFull resultType={quizResultType as FrogType} onShare={handleShare} />
+    <QuizResultFull
+      resultType={quizResultType as FrogType}
+      scorePercentages={scorePercentages}
+      onShare={handleShare}
+    />
   );
 }

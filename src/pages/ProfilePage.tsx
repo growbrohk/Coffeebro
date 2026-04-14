@@ -79,7 +79,8 @@ export default function ProfilePage() {
     () => isSuperAdmin || assignmentsCanManageOffers(staffAssignments),
     [isSuperAdmin, staffAssignments],
   );
-  const { data: quizResultType } = useUserQuizResult(user?.id);
+  const { data: quizRow } = useUserQuizResult(user?.id);
+  const quizResultType = quizRow?.resultType ?? null;
   const { data: lifetimeTotal = 0, isLoading: lifetimeLoading } = useLifetimeCoffeeCount();
   const { data: profileStats, isLoading: profileStatsLoading } = useCoffeeProfileStats();
   const { data: vouchers = [], isLoading: vouchersLoading } = useMyVouchers();

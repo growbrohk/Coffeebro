@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateScores, resolveResultType } from './scoring';
+import { calculateScores, frogScorePercentages, resolveResultType } from './scoring';
 import { FROG_TYPES } from './constants';
 import type { FrogType } from './types';
 
@@ -8,7 +8,7 @@ function zeroScores(): Record<FrogType, number> {
 }
 
 describe('calculateScores', () => {
-  it('all A answers yields ESP as highest', () => {
+  it('all A answers yields DIR as highest (balanced matrix)', () => {
     const answers: Record<number, string> = {
       1: 'A',
       2: 'A',
@@ -20,10 +20,8 @@ describe('calculateScores', () => {
     };
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
-    const winner = (Object.entries(scores) as [FrogType, number][]).find(
-      ([, v]) => v === maxScore
-    )?.[0];
-    expect(winner).toBe('ESP');
+    const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
+    expect(winners).toEqual(['DIR']);
   });
 
   it('all B answers yields LAT as highest', () => {
@@ -38,13 +36,11 @@ describe('calculateScores', () => {
     };
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
-    const winner = (Object.entries(scores) as [FrogType, number][]).find(
-      ([, v]) => v === maxScore
-    )?.[0];
-    expect(winner).toBe('LAT');
+    const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
+    expect(winners).toEqual(['LAT']);
   });
 
-  it('all C answers yields MOC as highest', () => {
+  it('all C answers yields MAT as highest', () => {
     const answers: Record<number, string> = {
       1: 'C',
       2: 'C',
@@ -56,13 +52,11 @@ describe('calculateScores', () => {
     };
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
-    const winner = (Object.entries(scores) as [FrogType, number][]).find(
-      ([, v]) => v === maxScore
-    )?.[0];
-    expect(winner).toBe('MOC');
+    const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
+    expect(winners).toEqual(['MAT']);
   });
 
-  it('all D answers yields MAT as highest', () => {
+  it('all D answers yields LAT and DIR tied for highest', () => {
     const answers: Record<number, string> = {
       1: 'D',
       2: 'D',
@@ -74,10 +68,43 @@ describe('calculateScores', () => {
     };
     const scores = calculateScores(answers);
     const maxScore = Math.max(...Object.values(scores));
-    const winner = (Object.entries(scores) as [FrogType, number][]).find(
-      ([, v]) => v === maxScore
-    )?.[0];
-    expect(winner).toBe('MAT');
+    const winners = FROG_TYPES.filter((t) => scores[t] === maxScore);
+    expect(winners).toEqual(['LAT', 'DIR']);
+  });
+});
+
+describe('frogScorePercentages', () => {
+  it('sums to 100 for a full quiz path', () => {
+    const answers: Record<number, string> = {
+      1: 'A',
+      2: 'B',
+      3: 'C',
+      4: 'D',
+      5: 'A',
+      6: 'B',
+      7: 'C',
+    };
+    const scores = calculateScores(answers);
+    const p = frogScorePercentages(scores);
+    const sum = FROG_TYPES.reduce((acc, t) => acc + p[t], 0);
+    expect(sum).toBeCloseTo(100, 5);
+  });
+
+  it('is uniform when all raw scores are zero', () => {
+    const p = frogScorePercentages(zeroScores());
+    const u = 100 / FROG_TYPES.length;
+    FROG_TYPES.forEach((t) => {
+      expect(p[t]).toBeCloseTo(u, 5);
+    });
+  });
+
+  it('is uniform when all raw scores are equal', () => {
+    const s = Object.fromEntries(FROG_TYPES.map((t) => [t, 12])) as Record<FrogType, number>;
+    const p = frogScorePercentages(s);
+    const u = 100 / FROG_TYPES.length;
+    FROG_TYPES.forEach((t) => {
+      expect(p[t]).toBeCloseTo(u, 5);
+    });
   });
 });
 
@@ -105,10 +132,10 @@ describe('resolveResultType', () => {
   });
 
   it('uses Q5 tie-break when Q4 does not resolve', () => {
-    const scores = { ...zeroScores(), ESP: 5, HDR: 5 };
-    const answers: Record<number, string> = { 4: 'B', 5: 'D', 7: 'B' };
+    const scores = { ...zeroScores(), CLD: 8, HDR: 8 };
+    const answers: Record<number, string> = { 4: 'B', 5: 'A', 7: 'B' };
     const result = resolveResultType(scores, answers, 'any-session');
-    expect(result).toBe('ESP');
+    expect(result).toBe('CLD');
   });
 
   it('uses Q7 tie-break when Q4 and Q5 do not resolve', () => {

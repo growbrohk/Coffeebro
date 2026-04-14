@@ -1,19 +1,25 @@
 import { Button } from '@/components/ui/button';
 import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
-import { FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
+import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
 import type { FrogType } from '@/lib/quiz/types';
 import { useNavigate } from 'react-router-dom';
 
 interface QuizResultFullProps {
   resultType: FrogType;
+  /** Softmax mix from raw scores; omit when scores unavailable (e.g. legacy row). */
+  scorePercentages?: Record<FrogType, number> | null;
   onShare?: () => void;
 }
 
-export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
+export function QuizResultFull({ resultType, scorePercentages, onShare }: QuizResultFullProps) {
   const navigate = useNavigate();
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];
   const wildcardName = FROG_NAMES[desc.wildcard];
+  const mixOrder =
+    scorePercentages != null
+      ? [...FROG_TYPES].sort((a, b) => scorePercentages[b]! - scorePercentages[a]!)
+      : [];
 
   return (
     <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
@@ -36,6 +42,30 @@ export function QuizResultFull({ resultType, onShare }: QuizResultFullProps) {
               <span className="font-semibold">Wildcard:</span> {wildcardName}
             </p>
           </div>
+          {scorePercentages != null && mixOrder.length > 0 ? (
+            <div className="mt-4 space-y-2.5 border-t border-white/20 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--quiz-fg)]/80">
+                Your mix
+              </p>
+              {mixOrder.map((t) => {
+                const pct = scorePercentages[t] ?? 0;
+                return (
+                  <div key={t}>
+                    <div className="flex justify-between gap-2 text-xs text-[var(--quiz-fg)]/95">
+                      <span className="min-w-0 truncate">{FROG_NAMES[t]}</span>
+                      <span className="shrink-0 tabular-nums">{pct.toFixed(1)}%</span>
+                    </div>
+                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/15">
+                      <div
+                        className="h-full rounded-full bg-[var(--quiz-fg)]/55"
+                        style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-3">

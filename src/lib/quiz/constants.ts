@@ -68,91 +68,94 @@ export const FROG_PROFILE_CARD: Record<FrogType, FrogProfileCard> = {
   },
 };
 
-// Q1–Q7, answer A/B/C/D → { FrogType: points } (primary +2, secondary +1 per spec)
+/** Temperature for softmax over raw frog scores → display percentages. Higher = flatter distribution. */
+export const FROG_SCORE_SOFTMAX_TEMPERATURE = 3;
+
+// Q1–Q7, answer A/B/C/D → { FrogType: points } (balanced 7-question matrix)
 export const SCORING_MATRIX: Record<number, Record<string, Partial<Record<FrogType, number>>>> = {
   1: {
-    A: { ESP: 2 },
-    B: { LAT: 2 },
-    C: { MOC: 2 },
-    D: { MAT: 2 },
+    A: { ESP: 2, HDR: 2 },
+    B: { LAT: 4, DIR: 2, MOC: 2 },
+    C: { CLD: 2, MAT: 4 },
+    D: { DIR: 3, MOC: 2 },
   },
   2: {
-    A: { ESP: 2 },
-    B: { LAT: 2 },
-    C: { MOC: 2 },
-    D: { CLD: 2, DIR: 1 },
+    A: { ESP: 4 },
+    B: { LAT: 4 },
+    C: { MOC: 4 },
+    D: { MAT: 4 },
   },
   3: {
-    A: { ESP: 2 },
-    B: { LAT: 2 },
-    C: { MOC: 2 },
-    D: { MAT: 2 },
+    A: { DIR: 3, MAT: 2 },
+    B: { HDR: 2, CLD: 2 },
+    C: { ESP: 4, MAT: 2, DIR: 1 },
+    D: { LAT: 3, MOC: 3 },
   },
   4: {
     A: { ESP: 2 },
-    B: { LAT: 2 },
-    C: { MOC: 2 },
-    D: { DIR: 2, MAT: 1 },
+    B: { LAT: 3, MOC: 2 },
+    C: { CLD: 2, HDR: 2 },
+    D: { DIR: 3 },
   },
   5: {
-    A: { MAT: 2, MOC: 1 },
-    B: { LAT: 2 },
-    C: { CLD: 2, DIR: 1 },
-    D: { ESP: 2 },
+    A: { DIR: 3, CLD: 2 },
+    B: { LAT: 2, MOC: 3 },
+    C: { MAT: 2 },
+    D: { ESP: 2, HDR: 2 },
   },
   6: {
-    A: { MAT: 2, DIR: 1 },
-    B: { ESP: 2, CLD: 1 },
-    C: { DIR: 2 },
-    D: { CLD: 2, MAT: 1 },
+    A: { MAT: 2, DIR: 3 },
+    B: { ESP: 3, CLD: 2 },
+    C: { DIR: 3, HDR: 2 },
+    D: { CLD: 3, LAT: 3 },
   },
   7: {
-    A: { HDR: 2, CLD: 1 },
-    B: { MOC: 2 },
-    C: { MAT: 2, LAT: 1 },
-    D: { ESP: 2 },
+    A: { HDR: 2, CLD: 2 },
+    B: { LAT: 2, MOC: 3 },
+    C: { MAT: 2, DIR: 4 },
+    D: { ESP: 2, HDR: 3 },
   },
 };
 
 export const QUESTIONS: QuizQuestion[] = [
   {
     id: 1,
-    text: 'You walk into a café. What are you actually doing?',
+    text: 'You really want a coffee, but you got $0 in your pocket',
     options: [
-      { value: 'A', label: 'Order the same shit as always. No thinking required' },
-      { value: 'B', label: 'Look for your friends first. Coffee can wait, people cannot' },
-      { value: 'C', label: '“hmmm…” (pretending to read menu but just want something sweet)' },
-      { value: 'D', label: 'Walk in like main character. Checking if vibe fits' },
+      { value: 'A', label: 'I go back home and make coffee myself' },
+      { value: 'B', label: '“bro u around?” 👀' },
+      { value: 'C', label: 'I use CoffeeBro “grab” campaign to hunt free coffee' },
+      { value: 'D', label: 'Order first, pay later (run home first lol)' },
     ],
   },
   {
     id: 2,
-    text: 'You broke af. Like actually $0. What’s your move?',
-    options: [
-      { value: 'A', label: 'Go home. Make coffee yourself. Stop being dumb' },
-      { value: 'B', label: 'Text someone: “bro u around?” 👀' },
-      { value: 'C', label: 'Still thinking about coffee… maybe dessert instead' },
-      { value: 'D', label: 'Find some weird way to still get coffee' },
-    ],
-  },
-  {
-    id: 3,
     text: 'Your coffee arrives. First reaction?',
     options: [
       { value: 'A', label: 'Drink. Why are we wasting time' },
       { value: 'B', label: '“wait wait cheers first!!”' },
       { value: 'C', label: '“this looks so comforting omg” 🥹' },
-      { value: 'D', label: 'adjust lighting, take 10 photos, still not satisfied' },
+      { value: 'D', label: 'adjust lighting, take 10 photos' },
+    ],
+  },
+  {
+    id: 3,
+    text: 'The barista recommends today’s special drink',
+    options: [
+      { value: 'A', label: '“Thx bro, give me one of those shit”' },
+      { value: 'B', label: '“tell me more…” (talk 1 hr)' },
+      { value: 'C', label: '“did i ask?” but secretly observe others' },
+      { value: 'D', label: 'follow friend’s order' },
     ],
   },
   {
     id: 4,
-    text: 'Barista recommends today’s special drink. You most likely:',
+    text: 'Your drink tastes slightly different',
     options: [
-      { value: 'A', label: '“ok sure” (already halfway paying)' },
-      { value: 'B', label: '“eh what are u guys getting?”' },
-      { value: 'C', label: '“sounds nice… i think i’ll like it”' },
-      { value: 'D', label: 'scan barista vibe → “thx bro give me one of those shit”' },
+      { value: 'A', label: 'I dun taste, I just drink' },
+      { value: 'B', label: 'laugh it off' },
+      { value: 'C', label: 'analyze the taste deeply' },
+      { value: 'D', label: 'complain / refund mode' },
     ],
   },
   {
@@ -160,29 +163,29 @@ export const QUESTIONS: QuizQuestion[] = [
     text: 'You discover a new café because…',
     options: [
       { value: 'A', label: 'new cafes discover me' },
-      { value: 'B', label: 'my friends choose, I follow' },
-      { value: 'C', label: 'ASK THE FOODIES!!!' },
-      { value: 'D', label: 'I don’t. I stick to one' },
+      { value: 'B', label: 'friends choose, I follow' },
+      { value: 'C', label: 'ASK THE FOODIES' },
+      { value: 'D', label: 'I stick to one spot' },
     ],
   },
   {
     id: 6,
-    text: 'A new café pops up nearby — what do you do?',
+    text: 'A new café pops up nearby — you…',
     options: [
-      { value: 'A', label: 'post once, never go back' },
-      { value: 'B', label: 'if price good I try, if taste good I stay' },
-      { value: 'C', label: 'complain online first' },
-      { value: 'D', label: 'observe first, then decide' },
+      { value: 'A', label: 'post, never go back' },
+      { value: 'B', label: 'try if cheap, stay if good' },
+      { value: 'C', label: '“evil capitalist…” (in your head)' },
+      { value: 'D', label: 'wait → observe → attack with friends' },
     ],
   },
   {
     id: 7,
-    text: 'You’re about to get your coffee — what matters most?',
+    text: 'Why u love coffee — one word',
     options: [
-      { value: 'A', label: 'it’s about the process, not the drink' },
-      { value: 'B', label: 'i want comfort. something sweet' },
-      { value: 'C', label: 'need to take pic first' },
-      { value: 'D', label: 'just give me something that works' },
+      { value: 'A', label: 'aroma / process' },
+      { value: 'B', label: 'taste / comfort' },
+      { value: 'C', label: 'looks good' },
+      { value: 'D', label: 'routine / fuel' },
     ],
   },
 ];

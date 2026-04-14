@@ -1,5 +1,29 @@
 import type { FrogType } from './types';
-import { FROG_TYPES, SCORING_MATRIX } from './constants';
+import { FROG_TYPES, FROG_SCORE_SOFTMAX_TEMPERATURE, SCORING_MATRIX } from './constants';
+
+/**
+ * Softmax over raw frog totals → percentages 0–100 (sum ≈ 100).
+ * Uses FROG_SCORE_SOFTMAX_TEMPERATURE; all-zero scores → uniform 100/7 each.
+ */
+export function frogScorePercentages(scores: Record<FrogType, number>): Record<FrogType, number> {
+  const T = FROG_SCORE_SOFTMAX_TEMPERATURE;
+  const raw = FROG_TYPES.map((t) => scores[t]);
+  const sum = raw.reduce((a, b) => a + b, 0);
+  if (sum === 0) {
+    const u = 100 / FROG_TYPES.length;
+    return Object.fromEntries(FROG_TYPES.map((t) => [t, u])) as Record<FrogType, number>;
+  }
+  const exps = raw.map((s) => Math.exp(s / T));
+  const expSum = exps.reduce((a, b) => a + b, 0);
+  const pct = FROG_TYPES.map((_, i) => (exps[i]! / expSum) * 100);
+  const out = Object.fromEntries(FROG_TYPES.map((t, i) => [t, pct[i]!])) as Record<FrogType, number>;
+  const total = pct.reduce((a, b) => a + b, 0);
+  const drift = 100 - total;
+  if (Math.abs(drift) > 1e-9) {
+    out[FROG_TYPES[FROG_TYPES.length - 1]!] += drift;
+  }
+  return out;
+}
 
 export function calculateScores(answers: Record<number, string>): Record<FrogType, number> {
   const scores: Record<FrogType, number> = {
@@ -41,7 +65,7 @@ export function resolveResultType(
 
   if (tied.length === 1) return tied[0];
 
-  // Tie-break: Q4 → Q5 → Q7 (barista special, discover café, what matters most)
+  // Tie-break: Q4 → Q5 → Q7 (taste difference, discover café, why love coffee)
   const tieBreakQuestions = [4, 5, 7] as const;
   let stillTied = [...tied];
 
