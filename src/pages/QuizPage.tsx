@@ -6,7 +6,7 @@ import { QuizLanding } from '@/components/quiz/QuizLanding';
 import { QuizQuestions } from '@/components/quiz/QuizQuestions';
 import { QuizResultBlurred } from '@/components/quiz/QuizResultBlurred';
 import { QuizResultFull } from '@/components/quiz/QuizResultFull';
-import { QUESTIONS, FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
+import { QUESTIONS, FROG_NAMES, FROG_TYPES } from '@/lib/quiz/constants';
 import { calculateScores, frogScorePercentages, resolveResultType } from '@/lib/quiz/scoring';
 import { useQuizSession, getSessionToken } from '@/hooks/useQuizSession';
 import type { FrogType } from '@/lib/quiz/types';
@@ -20,6 +20,9 @@ export default function QuizPage() {
   const navigate = useNavigate();
   const storeId = searchParams.get('s') ?? DEFAULT_STORE;
   const claimParam = searchParams.get('claim');
+  const rParam = searchParams.get('r');
+  const linkedFrogType: FrogType | null =
+    rParam && (FROG_TYPES as readonly string[]).includes(rParam) ? (rParam as FrogType) : null;
 
   const { user, loading: authLoading } = useAuth();
   const { startQuiz, completeQuiz, claimResult, fetchResultBySession } = useQuizSession();
@@ -160,25 +163,6 @@ export default function QuizPage() {
     navigate(`/profile?msg=quiz${token ? `&claim=${token}` : ''}`);
   }, [navigate]);
 
-  const handleShare = useCallback(() => {
-    if (!resultType) return;
-    const desc = FROG_DESCRIPTIONS[resultType];
-    const bestMatchName = FROG_NAMES[desc.bestMatch];
-    const text = `I'm a ${FROG_NAMES[resultType]} 🐸\nBest Match: ${bestMatchName} ☕\nWhat are you?\n\nTake the quiz: ${window.location.origin}/q`;
-    const shareData: ShareData = {
-      title: 'CoffeeBro Coffee Quiz',
-      text,
-      url: `${window.location.origin}/q?r=${resultType}`,
-    };
-    if (navigator.share) {
-      navigator.share(shareData).catch(() => {
-        navigator.clipboard?.writeText(text);
-      });
-    } else {
-      navigator.clipboard?.writeText(text);
-    }
-  }, [resultType]);
-
   if (error) {
     return (
       <div className="quiz-flow flex min-h-dvh flex-col items-center justify-center px-6">
@@ -211,7 +195,13 @@ export default function QuizPage() {
         </div>
       );
     }
-    return <QuizLanding onStart={handleStart} isLoading={isLoading} />;
+    return (
+      <QuizLanding
+        onStart={handleStart}
+        isLoading={isLoading}
+        linkedFrogName={linkedFrogType ? FROG_NAMES[linkedFrogType] : null}
+      />
+    );
   }
 
   if (step === 'questions') {
@@ -239,11 +229,7 @@ export default function QuizPage() {
   if (step === 'full' && resultType) {
     const scorePercentages = scores ? frogScorePercentages(scores) : null;
     return (
-      <QuizResultFull
-        resultType={resultType}
-        scorePercentages={scorePercentages}
-        onShare={handleShare}
-      />
+      <QuizResultFull resultType={resultType} scorePercentages={scorePercentages} />
     );
   }
 

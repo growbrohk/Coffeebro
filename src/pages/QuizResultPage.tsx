@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserQuizResult } from '@/hooks/useUserQuizResult';
 import { QuizResultFull } from '@/components/quiz/QuizResultFull';
 import { Button } from '@/components/ui/button';
-import { FROG_NAMES, FROG_DESCRIPTIONS } from '@/lib/quiz/constants';
 import { frogScorePercentages } from '@/lib/quiz/scoring';
 import type { FrogType } from '@/lib/quiz/types';
 
@@ -21,25 +20,6 @@ export default function QuizResultPage() {
       navigate('/profile?msg=quiz');
     }
   }, [authLoading, user, navigate]);
-
-  const handleShare = () => {
-    if (!quizResultType) return;
-    const desc = FROG_DESCRIPTIONS[quizResultType];
-    const bestMatchName = FROG_NAMES[desc.bestMatch];
-    const text = `I'm a ${FROG_NAMES[quizResultType]} 🐸\nBest Match: ${bestMatchName} ☕\nWhat are you?\n\nTake the quiz: ${window.location.origin}/q`;
-    const shareData: ShareData = {
-      title: 'CoffeeBro Coffee Quiz',
-      text,
-      url: `${window.location.origin}/q?r=${quizResultType}`,
-    };
-    if (navigator.share) {
-      navigator.share(shareData).catch(() => {
-        navigator.clipboard?.writeText(text);
-      });
-    } else {
-      navigator.clipboard?.writeText(text);
-    }
-  };
 
   if (authLoading || (user && resultLoading)) {
     return (
@@ -79,7 +59,6 @@ export default function QuizResultPage() {
     <QuizResultFull
       resultType={quizResultType as FrogType}
       scorePercentages={scorePercentages}
-      onShare={handleShare}
     />
   );
 }

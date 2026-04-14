@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "656311e6a318facb84a0de32494cfd47"
+    "revision": "2c4cb2dcb798c65a5a416194ddf949c1"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -111,6 +111,9 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "quiz-frogs/latte.svg",
     "revision": "ecadc4f3c194f855417366656acded78"
   }, {
+    "url": "quiz-frogs/hand-drip.svg",
+    "revision": "f5675116de27083afc9e3aa33e96ba9b"
+  }, {
     "url": "quiz-frogs/espresso.svg",
     "revision": "99506ae00138bb9b6efce18b8ea8189f"
   }, {
@@ -125,6 +128,48 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
   }, {
     "url": "quiz-frogs/americano-bw.svg",
     "revision": "7793f1c81225d58c29f303eb0635bad1"
+  }, {
+    "url": "q/share/mocha.html",
+    "revision": "708877b32a8378f5d846527f76f1d28c"
+  }, {
+    "url": "q/share/matcha.html",
+    "revision": "24cb2d53fc3a7db6b42e3a74d1c2e689"
+  }, {
+    "url": "q/share/latte.html",
+    "revision": "79122b75c9257f892a689383e1803f9a"
+  }, {
+    "url": "q/share/hand-drip.html",
+    "revision": "4df8c152b979d9ff21c4896749d94242"
+  }, {
+    "url": "q/share/espresso.html",
+    "revision": "88c5d1c458df94243cc733f7832cb1e1"
+  }, {
+    "url": "q/share/dirty.html",
+    "revision": "73284dd646e71b65dda27b885de6bff4"
+  }, {
+    "url": "q/share/cold-brew.html",
+    "revision": "4fd0891333c2097debadf1b8fa9f5ed2"
+  }, {
+    "url": "og-quiz/mocha.png",
+    "revision": "a1afe1d5fccfad87b21cee63d45b29e9"
+  }, {
+    "url": "og-quiz/matcha.png",
+    "revision": "c2e5b516d8bb0490b3cee8056603d3e0"
+  }, {
+    "url": "og-quiz/latte.png",
+    "revision": "670b33a4ab2186ea48c95d1a4fab53a9"
+  }, {
+    "url": "og-quiz/hand-drip.png",
+    "revision": "7b40e2d6e21729c0629960cfa1e1c022"
+  }, {
+    "url": "og-quiz/espresso.png",
+    "revision": "e836e495ff763e140ce55acb1a4e8816"
+  }, {
+    "url": "og-quiz/dirty.png",
+    "revision": "8b79b0049512df4bfa086216e6dab6d8"
+  }, {
+    "url": "og-quiz/cold-brew.png",
+    "revision": "f82254d51347ee00c127be622011a84c"
   }, {
     "url": "icons/icon-maskable-512.png",
     "revision": "b52fa36f76f5fa573e63e70421155a73"
@@ -147,10 +192,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-xbRpVQBR.js",
+    "url": "assets/index-CIJ5b4ji.js",
     "revision": null
   }, {
-    "url": "assets/index-D-CT0cTC.css",
+    "url": "assets/index-B8iFAqro.css",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",

@@ -33,6 +33,56 @@ export const FROG_AVATAR_PATH: Record<FrogType, string> = {
   HDR: '/quiz-frogs/hand-drip.svg',
 };
 
+/** URL path segment for `/q/share/<slug>.html` and `/og-quiz/<slug>.png`. */
+export const FROG_SHARE_SLUG: Record<FrogType, string> = {
+  ESP: 'espresso',
+  LAT: 'latte',
+  MOC: 'mocha',
+  MAT: 'matcha',
+  CLD: 'cold-brew',
+  DIR: 'dirty',
+  HDR: 'hand-drip',
+};
+
+/** In-app share card background (CSS) + flat color for html-to-image letterboxing. */
+export const FROG_SHARE_CARD_THEME: Record<
+  FrogType,
+  { background: string; captureBackgroundColor: string }
+> = {
+  ESP: {
+    background: 'linear-gradient(165deg, #1a0f0a 0%, #3d2a1f 55%, #2a1810 100%)',
+    captureBackgroundColor: '#2a1810',
+  },
+  LAT: {
+    background: 'linear-gradient(165deg, #5c3d2e 0%, #8b5a3c 45%, #6b4423 100%)',
+    captureBackgroundColor: '#6b4423',
+  },
+  MOC: {
+    background: 'linear-gradient(165deg, #3d2818 0%, #5c3d28 50%, #4a3020 100%)',
+    captureBackgroundColor: '#4a3020',
+  },
+  MAT: {
+    background: 'linear-gradient(165deg, #0f2e22 0%, #1e4d3a 45%, #163529 100%)',
+    captureBackgroundColor: '#163529',
+  },
+  CLD: {
+    background: 'linear-gradient(165deg, #1c2838 0%, #2c4a6e 50%, #243447 100%)',
+    captureBackgroundColor: '#243447',
+  },
+  DIR: {
+    background: 'linear-gradient(165deg, #3d1520 0%, #6b1e2e 40%, #4a1424 100%)',
+    captureBackgroundColor: '#4a1424',
+  },
+  HDR: {
+    background: 'linear-gradient(165deg, #2d2618 0%, #4a3d28 50%, #3a3220 100%)',
+    captureBackgroundColor: '#3a3220',
+  },
+};
+
+/** Pixel size of `QuizFrogShareCard` (export at 2× via html-to-image). */
+export const QUIZ_SHARE_CARD_WIDTH = 540;
+export const QUIZ_SHARE_CARD_HEIGHT = 960;
+
 // Legacy mapping for old DB rows (OAT, DRP from previous 11-question quiz; AME from pre-HDR quiz).
 // Apply when reading result_type from DB for display.
 export const LEGACY_FROG_MAP: Record<string, FrogType> = {

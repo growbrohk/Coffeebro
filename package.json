@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate:brand": "node scripts/generate-brand-assets.mjs"
+    "generate:brand": "node scripts/generate-brand-assets.mjs",
+    "generate:quiz-og": "node scripts/generate-quiz-og-assets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

@@ -1,18 +1,30 @@
-import { Button } from '@/components/ui/button';
-import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
-import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
-import type { FrogType } from '@/lib/quiz/types';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
+import { QuizFrogShareCard } from '@/components/quiz/QuizFrogShareCard';
+import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
+import { shareQuizResult } from '@/lib/quiz/share';
+import type { FrogType } from '@/lib/quiz/types';
 
 interface QuizResultFullProps {
   resultType: FrogType;
   /** Softmax mix from raw scores; omit when scores unavailable (e.g. legacy row). */
   scorePercentages?: Record<FrogType, number> | null;
-  onShare?: () => void;
+  /** When false, hides “Share My Coffee Frog”. */
+  shareEnabled?: boolean;
 }
 
-export function QuizResultFull({ resultType, scorePercentages, onShare }: QuizResultFullProps) {
+export function QuizResultFull({
+  resultType,
+  scorePercentages,
+  shareEnabled = true,
+}: QuizResultFullProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const [shareBusy, setShareBusy] = useState(false);
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];
   const wildcardName = FROG_NAMES[desc.wildcard];
@@ -21,8 +33,33 @@ export function QuizResultFull({ resultType, scorePercentages, onShare }: QuizRe
       ? [...FROG_TYPES].sort((a, b) => scorePercentages[b]! - scorePercentages[a]!)
       : [];
 
+  const handleShare = useCallback(async () => {
+    setShareBusy(true);
+    try {
+      await shareQuizResult(shareCardRef.current, resultType, {
+        onShared: () => toast({ title: 'Shared!' }),
+        onCopiedText: () => toast({ title: 'Link copied' }),
+        onDownloaded: () =>
+          toast({
+            title: 'Link copied',
+            description: 'Your frog card image was saved to your downloads.',
+          }),
+        onError: (message) => toast({ title: message, variant: 'destructive' }),
+      });
+    } finally {
+      setShareBusy(false);
+    }
+  }, [resultType, toast]);
+
   return (
     <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div
+        className="pointer-events-none fixed left-[-10000px] top-0 opacity-0"
+        aria-hidden
+      >
+        <QuizFrogShareCard ref={shareCardRef} resultType={resultType} />
+      </div>
+
       <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
           <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
@@ -79,13 +116,14 @@ export function QuizResultFull({ resultType, scorePercentages, onShare }: QuizRe
             Start Logging My Coffee
           </Button>
 
-          {onShare && (
+          {shareEnabled && (
             <Button
               variant="outline"
+              disabled={shareBusy}
               className="w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
-              onClick={onShare}
+              onClick={handleShare}
             >
-              Share My Coffee Frog
+              {shareBusy ? 'Preparing…' : 'Share My Coffee Frog'}
             </Button>
           )}
         </div>
