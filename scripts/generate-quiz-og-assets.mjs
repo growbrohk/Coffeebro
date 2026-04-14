@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
-const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://coffee-bro.com').replace(/\/$/, '');
+const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://www.coffee-bro.com').replace(/\/$/, '');
 const OG_IMAGE_W = 1200;
 const OG_IMAGE_H = 630;
 /** Matches .quiz-flow in src/index.css */
