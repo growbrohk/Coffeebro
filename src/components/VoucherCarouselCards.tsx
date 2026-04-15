@@ -2,6 +2,7 @@ import { ImageIcon } from 'lucide-react';
 import { formatHuntRedemptionPeriod } from '@/lib/formatHuntRedemption';
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import huntPinStar from '@/assets/hunt-pin-star.svg';
@@ -11,6 +12,19 @@ function isGrabCampaignCard(t: CampaignMapItem): boolean {
   if (t.campaign_type === "grab") return true;
   if (t.campaign_type === "hunt") return false;
   return t.pinKind === "grab" || t.offerType === "buy1get1free";
+}
+
+/** Short promo line on the campaign image (matches map / design). */
+function campaignImageBadgeText(t: CampaignMapItem): string {
+  const ot = t.offerType?.trim().toLowerCase() ?? '';
+  if (ot === 'buy1get1free' || ot.includes('buy1get')) return 'buy 1 get 1 free';
+  if (ot === '$17coffee' || ot.includes('$17')) return '$17 drink';
+  if (ot === 'free') return 'free';
+  if (t.offerType?.trim()) {
+    const s = t.offerType.trim();
+    return s.length > 26 ? `${s.slice(0, 24)}…` : s;
+  }
+  return t.offerTitle?.trim() || 'Offer';
 }
 
 export function voucherCarouselTitle(items: CampaignMapItem[]): string {
@@ -30,6 +44,19 @@ interface VoucherCarouselCardProps {
   onCardPress?: (treasure: CampaignMapItem) => void;
   showRedemptionPeriod?: boolean;
   variant?: VoucherCarouselVariant;
+}
+
+function VoucherTicketDivider({ bodyClass }: { bodyClass: string }) {
+  return (
+    <div
+      className={cn('relative h-3 flex-shrink-0 overflow-visible', bodyClass)}
+      aria-hidden
+    >
+      <div className="pointer-events-none absolute left-0 top-1/2 z-[1] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background ring-1 ring-border/50" />
+      <div className="pointer-events-none absolute right-0 top-1/2 z-[1] h-2.5 w-2.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-background ring-1 ring-border/50" />
+      <div className="absolute left-4 right-4 top-1/2 border-t border-dashed border-border" />
+    </div>
+  );
 }
 
 export function VoucherCarouselCard({
@@ -56,12 +83,18 @@ export function VoucherCarouselCard({
   const ctaLabel = isGrab ? 'grab now' : isCoffeeShop ? 'open' : 'hunt now';
   const cafeTitle = orgLine;
   const cafeLocation = locationLine;
+  const badgeText = campaignImageBadgeText(treasure);
+
+  const campaignBodyClass = 'bg-muted/40';
 
   return (
     <div
       className={cn(
         cardWidthClass,
-        'flex flex-col overflow-hidden rounded-t-3xl rounded-b-2xl bg-card shadow-soft',
+        'flex flex-col',
+        variant === 'voucher'
+          ? 'overflow-visible rounded-t-3xl rounded-b-2xl bg-muted/40 shadow-soft'
+          : 'overflow-hidden rounded-2xl border border-border/40 bg-muted/25 shadow-none',
         onCardPress && 'tap-card cursor-pointer'
       )}
       role={onCardPress ? 'button' : undefined}
@@ -75,7 +108,12 @@ export function VoucherCarouselCard({
         }
       }}
     >
-      <div className="hunt-map-voucher-preview-clue">
+      <div
+        className={cn(
+          'hunt-map-voucher-preview-clue relative overflow-hidden',
+          variant === 'cafe' ? 'rounded-t-2xl' : 'rounded-t-3xl'
+        )}
+      >
         {clue ? (
           <img src={clue} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -83,81 +121,84 @@ export function VoucherCarouselCard({
             <ImageIcon className="h-6 w-6 text-muted-foreground/35" strokeWidth={1.25} />
           </div>
         )}
+        {variant === 'voucher' ? (
+          <div className="absolute right-2 top-2 max-w-[min(92%,12rem)]">
+            <p
+              className="truncate rounded-full bg-foreground px-2 py-0.5 text-center text-[10px] font-semibold leading-tight text-background shadow-sm"
+              title={badgeText}
+            >
+              {badgeText}
+            </p>
+          </div>
+        ) : null}
       </div>
+
       {variant === 'cafe' ? (
-        <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-2">
           <div
-            className="flex min-w-0 text-sm font-bold leading-snug text-foreground"
+            className="min-w-0 text-sm font-bold leading-snug text-foreground"
             title={cafeTitle}
           >
-            <span className="min-w-0 line-clamp-2">{cafeTitle}</span>
+            <span className="line-clamp-2">{cafeTitle}</span>
           </div>
           {cafeLocation ? (
             <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
               {cafeLocation}
             </p>
           ) : null}
-          <div className="my-1 border-t border-dashed border-border" />
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCta(treasure);
-              }}
-              className="tap-press inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-90"
-            >
-              view
-            </button>
-          </div>
         </div>
       ) : (
-        <div className="flex min-h-[7.2rem] min-w-0 flex-1 flex-col justify-between gap-1 px-3 pb-2 pt-2">
-          <div
-            className="flex min-w-0 items-center gap-1 text-sm font-bold leading-snug text-foreground"
-            title={nameQuotaTitle}
-          >
-            <span className="min-w-0 truncate">{offerName}</span>
-            {treasure.quantityLimit != null ? (
-              <span className="shrink-0 text-[11px] font-semibold tabular-nums text-foreground/80">
-                · {treasure.quantityLimit}
-              </span>
-            ) : null}
-          </div>
-          {showRedemptionPeriod && timeLine ? (
-            <p className="text-[11px] text-muted-foreground">Available: {timeLine}</p>
-          ) : null}
-          <p className="min-w-0 truncate text-xs font-medium text-foreground" title={orgLine}>
-            {orgLine}
-          </p>
-          {locationLine ? (
-            <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
-          ) : null}
-          <div className="my-1 border-t border-dashed border-border" />
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCta(treasure);
-              }}
-              className="tap-press inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-90"
+        <div className={cn('flex min-w-0 flex-1 flex-col rounded-b-2xl bg-muted/40')}>
+          <VoucherTicketDivider bodyClass={campaignBodyClass} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-2">
+            <div
+              className="flex min-w-0 items-baseline gap-1 text-sm font-bold leading-snug text-foreground"
+              title={nameQuotaTitle}
             >
-              {isGrab ? (
-                <img
-                  src={huntPinGrab}
-                  alt=""
-                  className="h-3.5 w-3.5 object-contain brightness-0 invert"
-                />
-              ) : (
-                <img
-                  src={huntPinStar}
-                  alt=""
-                  className="h-3.5 w-3.5 object-contain brightness-0 invert"
-                />
-              )}
-              {ctaLabel}
-            </button>
+              <span className="min-w-0 truncate">{offerName}</span>
+              {treasure.quantityLimit != null ? (
+                <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
+                  · {treasure.quantityLimit}
+                </span>
+              ) : null}
+            </div>
+            {showRedemptionPeriod && timeLine ? (
+              <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
+                Available: {timeLine}
+              </p>
+            ) : null}
+            <p className="min-w-0 text-sm font-bold leading-snug text-foreground line-clamp-2" title={orgLine}>
+              {orgLine}
+            </p>
+            {locationLine ? (
+              <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
+            ) : null}
+            <div className="flex justify-center pt-1">
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 gap-1.5 rounded-full px-4 text-xs font-semibold [&_img]:h-3.5 [&_img]:w-3.5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCta(treasure);
+                }}
+              >
+                {isGrab ? (
+                  <img
+                    src={huntPinGrab}
+                    alt=""
+                    className="object-contain brightness-0 invert"
+                  />
+                ) : (
+                  <img
+                    src={huntPinStar}
+                    alt=""
+                    className="object-contain brightness-0 invert"
+                  />
+                )}
+                {ctaLabel}
+              </Button>
+            </div>
           </div>
         </div>
       )}

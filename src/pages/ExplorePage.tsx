@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { useDiscoveryOrgs } from "@/hooks/useDiscoveryOrgs";
 import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
 import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
@@ -13,7 +12,6 @@ import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
 
 export default function ExplorePage() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: campaigns = [], isLoading: campaignsLoading } = usePublishedCampaigns();
@@ -48,36 +46,23 @@ export default function ExplorePage() {
     });
   }, [discoveryItems, searchQuery]);
 
-  const voucherTreasures = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    const matches = (t: CampaignMapItem) => {
-      if (!q) return true;
-      const hay = [t.name, t.address, t.offerTitle, t.orgName, t.campaignTitle]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    };
-    return campaignItems.filter((t) => !t.scanned && matches(t));
-  }, [campaignItems, searchQuery]);
-
-  const loading = authLoading || campaignsLoading || discoveryOrgsLoading;
+  const loading = campaignsLoading || discoveryOrgsLoading;
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-4">
-        <h1 className="font-heading text-center text-2xl font-bold tracking-normal">Explore</h1>
-      </div>
+      <div className="container max-w-lg px-4 pb-6 pt-6">
+        <h1 className="mb-4 font-heading text-2xl font-bold leading-tight tracking-normal text-foreground">
+          Ready to hunt some hidden gem?
+        </h1>
 
-      <div className="container max-w-lg space-y-6 px-4 py-6">
-        <div className="relative flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-2">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="relative mb-6 flex items-center gap-2 rounded-full border border-border/60 bg-muted/50 px-3 py-2.5">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search cafés and campaigns…"
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            placeholder="Search where you wanna explore today..."
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             autoComplete="off"
           />
         </div>
@@ -85,9 +70,11 @@ export default function ExplorePage() {
         {loading ? (
           <p className="text-center text-sm text-muted-foreground">Loading…</p>
         ) : (
-          <>
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Campaigns</h2>
+          <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold leading-snug tracking-normal text-foreground">
+                Current campaign
+              </h2>
               {huntGrabCarouselItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching campaigns.</p>
               ) : (
@@ -102,8 +89,10 @@ export default function ExplorePage() {
               )}
             </section>
 
-            <section className="space-y-3">
-              <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Cafés</h2>
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold leading-snug tracking-normal text-foreground">
+                Recommended Cafes
+              </h2>
               {filteredDiscovery.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching cafés.</p>
               ) : (
@@ -116,27 +105,7 @@ export default function ExplorePage() {
                 />
               )}
             </section>
-
-            {user && voucherTreasures.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">For you</h2>
-                <VoucherCarouselRow
-                  items={voucherTreasures}
-                  onCta={(t) => {
-                    if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
-                  }}
-                  showRedemptionPeriod
-                  className="pl-0 pr-0"
-                />
-              </section>
-            ) : null}
-
-            <p className="text-center text-sm text-muted-foreground">
-              <Link to="/hunts" className="underline">
-                Open map
-              </Link>
-            </p>
-          </>
+          </div>
         )}
       </div>
     </div>
