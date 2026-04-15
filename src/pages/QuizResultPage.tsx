@@ -38,7 +38,7 @@ export default function QuizResultPage() {
       <div className="quiz-flow flex min-h-dvh flex-col items-center justify-center p-6">
         <div className="mx-auto w-full max-w-md space-y-6 text-center">
           <p className="text-4xl">🐸</p>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
+          <h1 className="font-heading text-2xl font-bold tracking-normal text-[var(--quiz-fg)]">
             Discover Your Coffee Frog
           </h1>
           <p className="text-[var(--quiz-fg)]/85">

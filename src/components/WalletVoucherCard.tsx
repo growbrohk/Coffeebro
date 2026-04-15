@@ -29,7 +29,7 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
     <>
       <div
         className={cn(
-          'flex gap-3 rounded-2xl bg-card p-4 shadow-soft transition-all duration-200 ease-out',
+          'tap-card flex gap-3 rounded-2xl bg-card p-4 shadow-soft transition-[transform,box-shadow] duration-200 ease-out',
           !isActive && 'opacity-50'
         )}
       >
@@ -60,7 +60,7 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
           <p className="text-xs text-muted-foreground">Redemption period: {redemption}</p>
         </div>
 
-        <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-3">
+        <div className="flex shrink-0 flex-col justify-center gap-1.5 border-l border-dashed border-border pl-3">
           {isActive ? (
             <>
               <Button

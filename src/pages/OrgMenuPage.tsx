@@ -130,7 +130,7 @@ export default function OrgMenuPage() {
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">Menu</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-normal">Menu</h1>
       </div>
 
       <div className="container max-w-3xl space-y-4 px-4 py-6">

@@ -367,7 +367,7 @@ export default function CampaignDetailPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Open directions in Google Maps"
-                        className="inline-flex w-fit items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold tracking-wide text-white hover:bg-orange-600"
+                        className="inline-flex w-fit items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold tracking-normal text-white hover:bg-orange-600"
                       >
                         <Navigation className="size-4 shrink-0" aria-hidden />
                         directions

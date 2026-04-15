@@ -61,8 +61,8 @@ export function VoucherCarouselCard({
     <div
       className={cn(
         cardWidthClass,
-        'flex flex-col overflow-hidden rounded-t-3xl rounded-b-2xl bg-card shadow-md',
-        onCardPress && 'cursor-pointer'
+        'flex flex-col overflow-hidden rounded-t-3xl rounded-b-2xl bg-card shadow-soft',
+        onCardPress && 'tap-card cursor-pointer'
       )}
       role={onCardPress ? 'button' : undefined}
       tabIndex={onCardPress ? 0 : undefined}
@@ -105,7 +105,7 @@ export function VoucherCarouselCard({
                 e.stopPropagation();
                 onCta(treasure);
               }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold lowercase text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+              className="tap-press inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-90"
             >
               view
             </button>
@@ -127,7 +127,9 @@ export function VoucherCarouselCard({
           {showRedemptionPeriod && timeLine ? (
             <p className="text-[11px] text-muted-foreground">Available: {timeLine}</p>
           ) : null}
-          <p className="text-xs font-medium text-foreground">{orgLine}</p>
+          <p className="min-w-0 truncate text-xs font-medium text-foreground" title={orgLine}>
+            {orgLine}
+          </p>
           {locationLine ? (
             <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
           ) : null}
@@ -139,7 +141,7 @@ export function VoucherCarouselCard({
                 e.stopPropagation();
                 onCta(treasure);
               }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold lowercase text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+              className="tap-press inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-90"
             >
               {isGrab ? (
                 <img

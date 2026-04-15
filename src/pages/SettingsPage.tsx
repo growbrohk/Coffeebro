@@ -44,13 +44,13 @@ export default function SettingsPage() {
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">Settings</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-normal">Settings</h1>
       </div>
 
       <div className="container max-w-lg space-y-6 px-4 py-6">
         {conversionRates.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase text-muted-foreground">Quiz conversion</h2>
+            <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Quiz conversion</h2>
             {conversionRates.map((cr) => {
               const org = orgs.find((o) => o.id === cr.store_id);
               return (

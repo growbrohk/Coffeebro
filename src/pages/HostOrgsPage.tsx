@@ -47,7 +47,7 @@ export default function HostOrgsPage() {
           <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-black uppercase tracking-tight">Organizations</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Organizations</h1>
         </div>
         <div className="container max-w-lg px-4 py-8">
           <p className="text-center text-muted-foreground">This page is only for café staff accounts.</p>
@@ -65,7 +65,7 @@ export default function HostOrgsPage() {
         <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">
+        <h1 className="font-heading text-2xl font-bold tracking-normal">
           {isSuperAdmin ? 'Organizations' : 'My organizations'}
         </h1>
       </div>

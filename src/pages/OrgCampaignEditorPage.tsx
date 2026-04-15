@@ -318,7 +318,7 @@ export default function OrgCampaignEditorPage() {
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">{isNew ? "New campaign" : "Edit campaign"}</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-normal">{isNew ? "New campaign" : "Edit campaign"}</h1>
       </div>
 
       <div className="container max-w-2xl space-y-10 px-4 py-6">

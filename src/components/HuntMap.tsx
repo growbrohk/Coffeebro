@@ -201,7 +201,7 @@ export function HuntMap({
             <div>
               <p className={`font-medium ${t.scanned ? 'text-muted-foreground' : ''}`}>
                 {t.scanned && (
-                  <span className="mr-2 text-[10px] font-medium uppercase text-muted-foreground">
+                  <span className="mr-2 text-xs font-medium tracking-normal text-muted-foreground">
                     Claimed
                   </span>
                 )}

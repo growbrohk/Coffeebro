@@ -67,7 +67,7 @@ export default function LeaderboardPage() {
           <div className="flex items-center justify-between">
             <div className="w-10" /> {/* Spacer for alignment */}
             <div className="text-center flex-1">
-              <h1 className="text-2xl font-black uppercase tracking-tight">
+              <h1 className="font-heading text-2xl font-bold tracking-normal">
                 Leaderboard
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -114,7 +114,7 @@ export default function LeaderboardPage() {
         ) : leaderboard && leaderboard.length > 0 ? (
           <div className="space-y-2">
             {/* Header */}
-            <div className="grid grid-cols-12 gap-2 py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="grid grid-cols-12 gap-3 py-2 text-sm font-semibold tracking-normal text-muted-foreground">
               <div className="col-span-2 text-center">#</div>
               <div className="col-span-7">Runner</div>
               <div className="col-span-3 text-right">Days</div>

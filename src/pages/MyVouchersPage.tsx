@@ -38,7 +38,7 @@ export default function MyVouchersPage() {
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <h1 className="min-w-0 truncate text-center text-lg font-bold lowercase tracking-tight text-foreground">
+        <h1 className="font-heading min-w-0 truncate text-center text-2xl font-bold tracking-normal text-foreground">
           my wallet
         </h1>
         <div className="flex shrink-0 justify-end">

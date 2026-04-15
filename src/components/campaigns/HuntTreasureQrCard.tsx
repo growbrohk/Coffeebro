@@ -147,7 +147,7 @@ export function HuntTreasureQrCard({
         <div className={cn("flex flex-col items-center", compact ? "gap-1.5" : "gap-3")}>
           <p
             className={cn(
-              "text-center font-black lowercase tracking-tight text-foreground",
+              "font-heading text-center text-2xl font-bold tracking-normal text-foreground",
               compact ? "text-2xl leading-none" : "text-3xl sm:text-4xl",
             )}
           >

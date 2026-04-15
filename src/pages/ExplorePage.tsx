@@ -66,7 +66,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-4">
-        <h1 className="text-center text-lg font-black uppercase tracking-tight">Explore</h1>
+        <h1 className="font-heading text-center text-2xl font-bold tracking-normal">Explore</h1>
       </div>
 
       <div className="container max-w-lg space-y-6 px-4 py-6">
@@ -87,7 +87,7 @@ export default function ExplorePage() {
         ) : (
           <>
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase text-muted-foreground">Campaigns</h2>
+              <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Campaigns</h2>
               {huntGrabCarouselItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching campaigns.</p>
               ) : (
@@ -103,7 +103,7 @@ export default function ExplorePage() {
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase text-muted-foreground">Cafés</h2>
+              <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Cafés</h2>
               {filteredDiscovery.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching cafés.</p>
               ) : (
@@ -119,7 +119,7 @@ export default function ExplorePage() {
 
             {user && voucherTreasures.length > 0 ? (
               <section className="space-y-3">
-                <h2 className="text-sm font-semibold uppercase text-muted-foreground">For you</h2>
+                <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">For you</h2>
                 <VoucherCarouselRow
                   items={voucherTreasures}
                   onCta={(t) => {

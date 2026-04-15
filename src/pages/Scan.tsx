@@ -196,7 +196,7 @@ export default function ScanPage() {
           >
             <ArrowLeft />
           </Button>
-          <h1 className="text-xl font-bold uppercase">Scanner</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Scanner</h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>

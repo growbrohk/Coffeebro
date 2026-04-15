@@ -14,7 +14,7 @@ export function TabNavigation() {
 
   return (
     <nav className="tab-nav">
-      <div className="mx-auto flex w-full max-w-[430px] items-stretch">
+      <div className="tab-nav-inner items-stretch">
         {tabs.map((tab) => {
           const isActive = tab.pathMatch === 'prefix'
             ? location.pathname.startsWith(tab.path)
@@ -25,10 +25,10 @@ export function TabNavigation() {
             <Link
               key={tab.path}
               to={tab.path}
-              className={`flex-1 tab-item ${isActive ? 'tab-item-active' : ''}`}
+              className={`tab-item ${isActive ? 'tab-item-active' : ''}`}
             >
-              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-xs font-medium mt-1">{tab.label}</span>
+              <Icon size={24} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+              <span className="tab-item-label">{tab.label}</span>
             </Link>
           );
         })}

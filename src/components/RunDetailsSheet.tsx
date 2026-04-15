@@ -78,7 +78,7 @@ export function RunDetailsSheet({ open, onOpenChange, onSave, isPending }: RunDe
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <SheetHeader className="text-left mb-6">
-          <SheetTitle className="text-xl font-black uppercase tracking-tight">
+          <SheetTitle className="text-xl font-bold tracking-normal">
             Nice Run! 🏃
           </SheetTitle>
           <SheetDescription className="text-muted-foreground">

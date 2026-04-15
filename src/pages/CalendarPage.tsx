@@ -123,7 +123,7 @@ export default function CalendarPage() {
               <p className="text-sm lowercase text-muted-foreground">
                 in {MONTHS_LOWER[month]}, you drank
               </p>
-              <p className="text-3xl font-bold tracking-tight text-foreground">
+              <p className="text-3xl font-bold tracking-normal text-foreground">
                 {viewMonthCoffeeTotal} coffee
               </p>
             </div>
@@ -132,7 +132,7 @@ export default function CalendarPage() {
               disabled={logCoffee.addCoffeePending}
             />
           </div>
-          <div className="mt-3 flex items-center gap-2 text-sm text-foreground">
+          <div className="mt-3 flex items-center gap-3 text-sm text-foreground">
             <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-5 w-5 shrink-0" />
             <span>You have {streak} coffee streaks!</span>
           </div>
@@ -147,7 +147,7 @@ export default function CalendarPage() {
             <button
               type="button"
               onClick={goToToday}
-              className="text-xl font-bold uppercase tracking-tight"
+              className="font-heading text-2xl font-bold tracking-normal"
             >
               {MONTHS[month]} {year}
             </button>
@@ -172,7 +172,7 @@ export default function CalendarPage() {
             {weeks.map((week, wi) => (
               <div
                 key={wi}
-                className="grid grid-cols-7 gap-0.5 overflow-visible calendar-tracking-week-row"
+                className="grid grid-cols-7 gap-1 overflow-visible calendar-tracking-week-row"
               >
                 {week.map((day, di) =>
                   day == null ? (

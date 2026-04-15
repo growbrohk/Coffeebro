@@ -48,15 +48,15 @@ export function RedeemCodeCard({
           <p className="text-xs text-muted-foreground">{title}</p>
           <span
             className={cn(
-              'px-2 py-0.5 text-xs font-semibold uppercase rounded',
+              'rounded px-3 py-1 text-xs font-semibold capitalize tracking-normal',
               statusBadgeClass
             )}
           >
             {status}
           </span>
         </div>
-        <div className="flex items-center justify-center gap-2">
-          <span className="font-mono font-bold text-2xl tracking-widest">
+        <div className="flex items-center justify-center gap-3">
+          <span className="font-mono text-2xl font-bold tracking-normal">
             {code}
           </span>
           <Button

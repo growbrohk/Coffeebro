@@ -156,7 +156,7 @@ export default function HuntScanPage() {
           <Button variant="ghost" onClick={() => navigate("/hunts")}>
             <ArrowLeft />
           </Button>
-          <h1 className="text-xl font-bold uppercase">Scan hunt</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Scan hunt</h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "qr" | "manual")}>

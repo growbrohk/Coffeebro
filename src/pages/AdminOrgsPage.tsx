@@ -323,11 +323,11 @@ export default function AdminOrgsPage() {
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="sticky top-0 z-10 border-b border-border bg-background px-4 py-4">
-          <h1 className="text-center text-2xl font-black uppercase tracking-tight">Organizations</h1>
+          <h1 className="font-heading text-center text-2xl font-bold tracking-normal">Organizations</h1>
         </div>
         <div className="container px-4 py-8">
           <div className="mx-auto max-w-sm bg-foreground p-6 text-center text-background">
-            <p className="mb-4 font-bold uppercase">Sign in to continue.</p>
+            <p className="mb-4 font-bold tracking-normal">Sign in to continue.</p>
             <Button type="button" variant="outline" className="btn-run" onClick={() => navigate('/profile')}>
               Go to profile
             </Button>
@@ -344,7 +344,7 @@ export default function AdminOrgsPage() {
           <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-black uppercase tracking-tight">Organizations</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Organizations</h1>
         </div>
         <div className="container px-4 py-8">
           <p className="text-center text-muted-foreground">You do not have access to this page.</p>
@@ -694,13 +694,13 @@ export default function AdminOrgsPage() {
         <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">Organizations</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-normal">Organizations</h1>
       </div>
 
       <div className="container max-w-lg space-y-6 px-4 py-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold uppercase text-muted-foreground">All organizations</h2>
+            <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">All organizations</h2>
             <Button type="button" size="sm" onClick={handleNewOrg}>
               New organization
             </Button>
@@ -772,7 +772,7 @@ export default function AdminOrgsPage() {
               </div>
             ) : null}
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase text-foreground">Core info</h3>
+              <h3 className="text-sm font-semibold tracking-normal text-foreground">Core info</h3>
               <div className="space-y-2">
                 <Label htmlFor="org_name">Name</Label>
                 <Input
@@ -992,7 +992,7 @@ export default function AdminOrgsPage() {
             </section>
 
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase text-foreground">Discovery</h3>
+              <h3 className="text-sm font-semibold tracking-normal text-foreground">Discovery</h3>
               <div className="space-y-2">
                 <Label>Opening hours</Label>
                 <OpeningHoursEditor
@@ -1011,7 +1011,7 @@ export default function AdminOrgsPage() {
                 />
               </div>
               <div className="rounded-lg border border-border bg-muted/40 p-3">
-                <p className="text-xs font-medium uppercase text-muted-foreground">Open in Maps</p>
+                <p className="text-xs font-medium tracking-normal text-muted-foreground">Open in Maps</p>
                 {previewMapsUrl ? (
                   <a
                     href={previewMapsUrl}
@@ -1105,7 +1105,7 @@ export default function AdminOrgsPage() {
             </section>
 
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase text-foreground">Org host</h3>
+              <h3 className="text-sm font-semibold tracking-normal text-foreground">Org host</h3>
               <div className="space-y-2">
                 <Label htmlFor="host-search">Search user by username</Label>
                 <Input
@@ -1149,7 +1149,7 @@ export default function AdminOrgsPage() {
 
             {activeOrgIdForStaff ? (
               <section className="space-y-4">
-                <h3 className="text-sm font-semibold uppercase text-foreground">Staff (this organization)</h3>
+                <h3 className="text-sm font-semibold tracking-normal text-foreground">Staff (this organization)</h3>
                 <p className="text-xs text-muted-foreground">
                   Primary owner is set above. Add Host, Manager, or Barista roles for other accounts. Removing all
                   assignments for a user restores their global role to regular user.

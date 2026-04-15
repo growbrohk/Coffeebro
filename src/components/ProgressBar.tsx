@@ -15,7 +15,7 @@ export function ProgressBar({ monthCount, placement = 'top' }: ProgressBarProps)
       )}
     >
       <div className="flex items-center justify-center">
-        <span className="text-lg font-bold uppercase tracking-wide">
+        <span className="text-lg font-bold tracking-normal">
           {monthCount} {monthCount === 1 ? 'coffee' : 'coffees'} this month
         </span>
       </div>

@@ -160,7 +160,7 @@ export default function ProfilePage() {
           </button>
 
           <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight">{profile.username}</h1>
+            <h1 className="font-heading text-3xl font-bold tracking-normal">{profile.username}</h1>
             <p className="mt-1 text-sm font-medium text-primary-foreground/90">{frogSubtitle}</p>
             <div className="mt-2 flex justify-center">
               <img
@@ -267,7 +267,7 @@ export default function ProfilePage() {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-6 border-t border-[#2E1A14]/12 pt-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#2E1A14]/55">
+                <p className="text-xs font-semibold tracking-normal text-[#2E1A14]/55">
                   Top cafes
                 </p>
                 <ol className="mt-2 space-y-1.5">
@@ -275,7 +275,7 @@ export default function ProfilePage() {
                 </ol>
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#2E1A14]/55">
+                <p className="text-xs font-semibold tracking-normal text-[#2E1A14]/55">
                   Top coffee
                 </p>
                 <ol className="mt-2 space-y-1.5">
@@ -305,7 +305,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 border-b border-border bg-background py-4 px-4">
-        <h1 className="text-center text-2xl font-black uppercase tracking-tight">
+        <h1 className="font-heading text-center text-2xl font-bold tracking-normal">
           {isSignUp ? 'Sign Up' : 'Login'}
         </h1>
       </div>
@@ -313,14 +313,14 @@ export default function ProfilePage() {
       <div className="container px-4 py-8">
         {authMessage && (
           <div className="mx-auto mb-6 max-w-sm bg-foreground p-4 text-center text-background">
-            <p className="font-bold uppercase">{authMessage}</p>
+            <p className="font-bold tracking-normal">{authMessage}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mx-auto max-w-sm space-y-4">
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-semibold uppercase">
+              <Label htmlFor="username" className="text-sm font-semibold tracking-normal">
                 Username
               </Label>
               <Input
@@ -336,7 +336,7 @@ export default function ProfilePage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold uppercase">
+            <Label htmlFor="email" className="text-sm font-semibold tracking-normal">
               Email
             </Label>
             <Input
@@ -351,7 +351,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-semibold uppercase">
+            <Label htmlFor="password" className="text-sm font-semibold tracking-normal">
               Password
             </Label>
             <Input

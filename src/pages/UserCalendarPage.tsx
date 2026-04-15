@@ -98,7 +98,7 @@ export default function UserCalendarPage() {
           >
             <ChevronLeft size={24} />
           </Button>
-          <h1 className="text-lg font-black uppercase tracking-tight text-center flex-1">
+          <h1 className="font-heading flex-1 text-center text-2xl font-bold tracking-normal">
             {profile.username}'s Calendar
           </h1>
           <div className="w-10" /> {/* Spacer for alignment */}
@@ -114,7 +114,7 @@ export default function UserCalendarPage() {
           
           <button 
             onClick={goToToday}
-            className="text-xl font-bold uppercase tracking-tight"
+            className="font-heading text-2xl font-bold tracking-normal"
           >
             {MONTHS[month]} {year}
           </button>
@@ -164,7 +164,7 @@ export default function UserCalendarPage() {
                 {coffeeCount > 0 ? (
                   <span className="relative">
                     {day}
-                    <span className={`absolute -top-1 -right-1 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ${
+                    <span className={`absolute -top-1 -right-1 text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center ${
                       coffeeCount >= 3 ? 'bg-foreground text-background' : 'bg-muted text-foreground'
                     }`}>
                       {coffeeCount}

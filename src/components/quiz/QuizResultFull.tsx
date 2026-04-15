@@ -48,7 +48,7 @@ export function QuizResultFull({
     <div className="quiz-flow min-h-dvh px-6 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto max-w-md space-y-6">
         <div className="text-center">
-          <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-[var(--quiz-fg)]">
+          <h1 className="font-heading mb-2 text-2xl font-bold tracking-normal text-[var(--quiz-fg)]">
             Your Coffee Frog
           </h1>
           <QuizFrogAvatar resultType={resultType} />
@@ -67,7 +67,7 @@ export function QuizResultFull({
           </div>
           {scorePercentages != null && mixOrder.length > 0 ? (
             <div className="mt-4 space-y-2.5 border-t border-white/20 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--quiz-fg)]/80">
+              <p className="text-xs font-semibold tracking-normal text-[var(--quiz-fg)]/80">
                 Your mix
               </p>
               {mixOrder.map((t) => {

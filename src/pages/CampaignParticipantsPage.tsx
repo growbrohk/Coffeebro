@@ -174,7 +174,7 @@ export default function CampaignParticipantsPage() {
           >
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-black uppercase tracking-tight">Participants</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Participants</h1>
         </div>
         <div className="border-t border-border px-4 pb-3 pt-2">
           <div className="relative flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-2">

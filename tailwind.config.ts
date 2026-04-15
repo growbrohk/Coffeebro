@@ -19,7 +19,18 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Space Grotesk", "system-ui", "sans-serif"],
+        sans: ['"Red Hat Display"', "system-ui", "sans-serif"],
+        heading: ['"Space Grotesk"', "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        xs: ["12px", { lineHeight: "14px" }],
+        sm: ["14px", { lineHeight: "16px" }],
+        base: ["16px", { lineHeight: "18px" }],
+        lg: ["20px", { lineHeight: "22px" }],
+        xl: ["24px", { lineHeight: "26px" }],
+        "2xl": ["30px", { lineHeight: "32px" }],
+        "3xl": ["36px", { lineHeight: "38px" }],
+        "4xl": ["48px", { lineHeight: "50px" }],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -81,9 +92,12 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         xl: "16px",
         "2xl": "20px",
+        sheetTop: "var(--radius-sheet-top)",
       },
       boxShadow: {
         soft: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        "soft-pressed": "0 2px 8px rgba(0, 0, 0, 0.04)",
+        "soft-lift": "0 6px 16px rgba(0, 0, 0, 0.08)",
       },
       keyframes: {
         "accordion-down": {

@@ -513,7 +513,7 @@ export default function HostOrgEditPage() {
           <button type="button" onClick={() => navigate('/host/orgs')} className="absolute left-0 p-2" aria-label="Back">
             <ArrowLeft className="h-6 w-6" />
           </button>
-          <h1 className="text-lg font-black uppercase tracking-tight">Organization</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-normal">Organization</h1>
         </div>
         <div className="container max-w-lg px-4 py-8">
           <p className="text-center text-muted-foreground">
@@ -532,7 +532,7 @@ export default function HostOrgEditPage() {
         <button type="button" onClick={() => navigate('/host/orgs')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
         </button>
-        <h1 className="text-lg font-black uppercase tracking-tight">Edit organization</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-normal">Edit organization</h1>
       </div>
 
       <div className="container max-w-lg px-4 pt-4">
@@ -551,7 +551,7 @@ export default function HostOrgEditPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase text-foreground">Core info</h3>
+            <h3 className="text-sm font-semibold tracking-normal text-foreground">Core info</h3>
             <div className="space-y-2">
               <Label htmlFor="org_name">Name</Label>
               <Input
@@ -748,7 +748,7 @@ export default function HostOrgEditPage() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase text-foreground">Discovery</h3>
+            <h3 className="text-sm font-semibold tracking-normal text-foreground">Discovery</h3>
             <div className="space-y-2">
               <Label>Opening hours</Label>
               <OpeningHoursEditor
@@ -768,7 +768,7 @@ export default function HostOrgEditPage() {
               />
             </div>
             <div className="rounded-lg border border-border bg-muted/40 p-3">
-              <p className="text-xs font-medium uppercase text-muted-foreground">Open in Maps</p>
+              <p className="text-xs font-medium tracking-normal text-muted-foreground">Open in Maps</p>
               {previewMapsUrl ? (
                 <a
                   href={previewMapsUrl}
@@ -858,7 +858,7 @@ export default function HostOrgEditPage() {
 
           {showStaffSection ? (
             <section className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase text-foreground">Staff</h3>
+              <h3 className="text-sm font-semibold tracking-normal text-foreground">Staff</h3>
               <p className="text-xs text-muted-foreground">
                 Add Host, Manager, or Barista roles for other accounts. The primary owner cannot be removed or
                 reassigned here; use the admin console to change primary ownership.

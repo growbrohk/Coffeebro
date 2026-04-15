@@ -44,7 +44,7 @@ function PillButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md transition-transform hover:opacity-90 active:scale-[0.98]"
+      className="tap-press inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-md hover:opacity-90"
     >
       {icon}
       {children}
@@ -102,11 +102,11 @@ export function TreasurePopupCard({
             <div className="flex gap-3">
               <OrgLogoThumb url={treasure.orgLogoUrl} />
               <div className="min-w-0 flex-1">
-                <h3 className="text-base font-bold text-foreground">
+                <h3 className="line-clamp-2 text-base font-bold text-foreground">
                   {treasure.orgName?.trim() || treasure.name}
                 </h3>
                 {treasure.address && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{treasure.address}</p>
                 )}
               </div>
             </div>
@@ -132,27 +132,27 @@ export function TreasurePopupCard({
         <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
           {imageBlock(clue ?? null)}
           <div className="px-3 pb-2 pt-2">
-            <div className="flex gap-2.5">
+            <div className="flex gap-3">
               <OrgLogoThumb url={treasure.orgLogoUrl} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start gap-1.5">
-                  <img src={huntPinGrab} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
-                  <p className="text-sm font-bold leading-snug text-primary">{title}</p>
+                  <img src={huntPinGrab} alt="" className="mt-1 h-5 w-5 shrink-0 object-contain" />
+                  <p className="line-clamp-2 text-sm font-bold leading-snug text-primary">{title}</p>
                 </div>
-                <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
+                <h3 className="mt-1 line-clamp-2 text-base font-bold text-foreground">{treasure.name}</h3>
                 {treasure.address && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{treasure.address}</p>
                 )}
                 {redemption && (
-                  <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
+                  <p className="mt-1 text-xs text-foreground">Redemption period: {redemption}</p>
                 )}
                 {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
               </div>
-              <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-2.5">
+              <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-3">
                 <button
                   type="button"
                   onClick={onDirections}
-                  className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
+                  className="tap-press rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground"
                 >
                   map
                 </button>
@@ -183,27 +183,27 @@ export function TreasurePopupCard({
       <div className="mx-auto max-w-[430px] overflow-hidden rounded-t-3xl bg-card shadow-xl">
         {imageBlock(clue ?? null)}
         <div className="px-3 pb-2 pt-2">
-          <div className="flex gap-2.5">
+          <div className="flex gap-3">
             <OrgLogoThumb url={treasure.orgLogoUrl} />
             <div className="min-w-0 flex-1">
               <div className="flex items-start gap-1.5">
-                <img src={huntPinStar} alt="" className="mt-0.5 h-5 w-5 shrink-0 object-contain" />
-                <p className="text-sm font-bold italic leading-snug text-primary">{huntTitle}</p>
+                <img src={huntPinStar} alt="" className="mt-1 h-5 w-5 shrink-0 object-contain" />
+                <p className="line-clamp-2 text-sm font-bold italic leading-snug text-primary">{huntTitle}</p>
               </div>
-              <h3 className="mt-1 text-base font-bold text-foreground">{treasure.name}</h3>
+              <h3 className="mt-1 line-clamp-2 text-base font-bold text-foreground">{treasure.name}</h3>
               {treasure.address && (
-                <p className="mt-0.5 text-xs text-muted-foreground">{treasure.address}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{treasure.address}</p>
               )}
               {redemption && (
-                <p className="mt-1 text-[11px] text-foreground">redemption period: {redemption}</p>
+                <p className="mt-1 text-xs text-foreground">Redemption period: {redemption}</p>
               )}
               {distanceRow && <div className="mt-0.5">{distanceRow}</div>}
             </div>
-            <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-2.5">
+            <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-dashed border-border pl-3">
               <button
                 type="button"
                 onClick={onDetails}
-                className="rounded-full border border-primary/80 px-3 py-1.5 text-xs font-semibold capitalize text-primary transition-colors hover:bg-primary/10"
+                className="tap-press rounded-full border border-primary/80 px-3 py-1.5 text-xs font-semibold capitalize text-primary transition-colors hover:bg-primary/10"
               >
                 details
               </button>
