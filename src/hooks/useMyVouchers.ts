@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { orgDirectionsUrl } from "@/lib/orgDirectionsUrl";
 
 export interface MyVoucher {
   id: string;
@@ -22,6 +23,8 @@ export interface MyVoucher {
   org_id?: string;
   /** Campaign `display_title` for the wallet details dialog. */
   campaign_details?: string | null;
+  /** Google Maps directions URL for the redeeming org, when derivable. */
+  redeem_directions_url?: string | null;
 }
 
 export function formatVoucherRedemptionPeriod(
@@ -71,7 +74,7 @@ export function useMyVouchers() {
           expires_at,
           campaign_id,
           org_id,
-          orgs ( org_name, logo_url ),
+          orgs ( org_name, logo_url, lat, lng, location, google_maps_url ),
           campaign_vouchers (
             offer_type,
             menu_items ( item_name ),
@@ -117,7 +120,24 @@ export function useMyVouchers() {
         const campaignDetails = camp?.display_title?.trim() || null;
         const offerType = cv?.offer_type ? voucherOfferLabel(cv.offer_type) : undefined;
         const thumb = camp?.hint_image_url || null;
-        const orgsRow = v.orgs as { org_name: string; logo_url?: string | null } | null;
+        const orgsRow = v.orgs as {
+          org_name: string;
+          logo_url?: string | null;
+          lat: number | null;
+          lng: number | null;
+          location: string | null;
+          google_maps_url: string | null;
+        } | null;
+
+        const locationTrimmed = orgsRow?.location?.trim() || null;
+        const redeemDirectionsUrl = orgsRow
+          ? orgDirectionsUrl({
+              lat: orgsRow.lat ?? null,
+              lng: orgsRow.lng ?? null,
+              location: orgsRow.location ?? null,
+              google_maps_url: orgsRow.google_maps_url ?? null,
+            })
+          : null;
 
         return {
           id: v.id as string,
@@ -132,11 +152,12 @@ export function useMyVouchers() {
           org_logo_url: orgsRow?.logo_url ?? null,
           offer_type: offerType,
           description: camp?.hint_text ?? null,
-          location: null,
+          location: locationTrimmed,
           event_date: camp?.end_at ?? null,
           thumbnail_url: thumb,
           campaign_id: v.campaign_id as string,
           campaign_details: campaignDetails,
+          redeem_directions_url: redeemDirectionsUrl,
         };
       });
 

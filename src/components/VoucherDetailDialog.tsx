@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Navigation } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
 import QRCode from 'react-qr-code';
@@ -31,10 +33,10 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
         <span className="font-semibold text-muted-foreground">Redemption period: </span>
         {redemption}
       </p>
-      {voucher.location ? (
+      {voucher.campaign_details?.trim() ? (
         <p>
-          <span className="font-semibold text-muted-foreground">Location: </span>
-          {voucher.location}
+          <span className="font-semibold text-muted-foreground">Voucher campaign details: </span>
+          <span className="text-foreground">{voucher.campaign_details.trim()}</span>
         </p>
       ) : null}
       {voucher.description ? (
@@ -43,12 +45,35 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
       {voucher.offer_type ? (
         <p className="text-muted-foreground">Offer type: {voucher.offer_type}</p>
       ) : null}
-      {voucher.campaign_details ? (
-        <div className="space-y-1 border-t border-border pt-3">
-          <p className="font-semibold text-muted-foreground">Voucher campaign details</p>
-          <p className="leading-relaxed text-foreground">{voucher.campaign_details}</p>
-        </div>
+    </div>
+  );
+}
+
+function VoucherRedeemFooter({ voucher }: { voucher: MyVoucher }) {
+  const url = voucher.redeem_directions_url ?? null;
+  const address = voucher.location?.trim() ?? '';
+  if (!address && !url) return null;
+
+  return (
+    <div className="mt-4 space-y-2 border-t border-border pt-4">
+      <p className="text-xs font-semibold text-muted-foreground">Redeem address & directions</p>
+      {address ? (
+        <p className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{address}</p>
       ) : null}
+      <Button
+        type="button"
+        className="h-10 w-full rounded-full bg-[#F27A24] text-white hover:bg-[#e06d1c]"
+        disabled={!url}
+        aria-label="Open directions in Google Maps"
+        onClick={() => {
+          if (!url) return;
+          const win = window.open(url, '_blank', 'noopener,noreferrer');
+          if (!win) window.location.href = url;
+        }}
+      >
+        <Navigation className="mr-2 size-4 shrink-0" aria-hidden />
+        directions
+      </Button>
     </div>
   );
 }
@@ -82,6 +107,7 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
               </DialogDescription>
             </DialogHeader>
             <VoucherDetailFields voucher={first} />
+            <VoucherRedeemFooter voucher={first} />
           </>
         ) : (
           <>
@@ -113,6 +139,7 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
                     </p>
                   ) : null}
                   <VoucherDetailFields voucher={voucher} />
+                  <VoucherRedeemFooter voucher={voucher} />
                 </div>
               ))}
             </div>
