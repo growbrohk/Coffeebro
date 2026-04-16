@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 import { CampaignBasicsSection } from "@/components/campaigns/sections/CampaignBasicsSection";
 import {
   CampaignScheduleSection,
@@ -33,6 +35,20 @@ import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
 import { useToast } from "@/hooks/use-toast";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+
+const MAX_HINT_IMAGE_SIZE = 5 * 1024 * 1024;
+const HINT_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+async function uploadCampaignHintImageToStorage(orgId: string, file: File): Promise<string> {
+  const path = `campaign-hint/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+  const { error } = await supabase.storage.from("treasure-images").upload(path, file, {
+    cacheControl: "3600",
+    upsert: true,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("treasure-images").getPublicUrl(path);
+  return data.publicUrl;
+}
 
 function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
   return (c.campaign_vouchers ?? []).map((cv, i) => ({
@@ -79,6 +95,9 @@ export default function OrgCampaignEditorPage() {
   const [status, setStatus] = useState<"draft" | "published" | "ended">("draft");
   const [hintText, setHintText] = useState("");
   const [hintImageUrl, setHintImageUrl] = useState("");
+  const [hintImageMode, setHintImageMode] = useState<"link" | "upload">("link");
+  const [hintImageUploading, setHintImageUploading] = useState(false);
+  const hintImageFileRef = useRef<HTMLInputElement>(null);
   const [vouchers, setVouchers] = useState<VoucherDraft[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -138,6 +157,40 @@ export default function OrgCampaignEditorPage() {
     });
     return displayTitle.trim() || autoTitle;
   }, [displayTitle, campaignType, rewardMode, previewVouchers]);
+
+  const handleHintImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !orgId) return;
+    if (!HINT_IMAGE_MIME.includes(file.type)) {
+      toast({ title: "Invalid file type", description: "Use JPEG, PNG, WebP, or GIF.", variant: "destructive" });
+      return;
+    }
+    if (file.size > MAX_HINT_IMAGE_SIZE) {
+      toast({ title: "File too large", description: "Max size is 5 MB.", variant: "destructive" });
+      return;
+    }
+    setHintImageUploading(true);
+    try {
+      const url = await uploadCampaignHintImageToStorage(orgId, file);
+      setHintImageUrl(url);
+      setHintImageMode("link");
+      toast({ title: "Photo uploaded" });
+    } catch (err: unknown) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Could not upload photo.",
+        variant: "destructive",
+      });
+    } finally {
+      setHintImageUploading(false);
+    }
+  };
+
+  const clearHintImage = () => {
+    setHintImageUrl("");
+    if (hintImageFileRef.current) hintImageFileRef.current.value = "";
+  };
 
   const handleSave = async () => {
     if (!orgId) return;
@@ -406,14 +459,72 @@ export default function OrgCampaignEditorPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="hintimg">Hint image URL</Label>
-              <Input
-                id="hintimg"
-                value={hintImageUrl}
-                onChange={(e) => setHintImageUrl(e.target.value)}
-                disabled={saveCampaign.isPending}
-                placeholder="https://…"
-              />
+              <Label>Hint image</Label>
+              <Tabs
+                value={hintImageMode}
+                onValueChange={(v) => setHintImageMode(v as "link" | "upload")}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger
+                    type="button"
+                    value="link"
+                    disabled={saveCampaign.isPending || hintImageUploading}
+                  >
+                    Image URL
+                  </TabsTrigger>
+                  <TabsTrigger
+                    type="button"
+                    value="upload"
+                    disabled={saveCampaign.isPending || hintImageUploading}
+                  >
+                    Upload
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="link" className="mt-3 space-y-2">
+                  <Input
+                    id="hintimg"
+                    value={hintImageUrl}
+                    onChange={(e) => setHintImageUrl(e.target.value)}
+                    disabled={saveCampaign.isPending}
+                    placeholder="https://…"
+                    type="url"
+                  />
+                </TabsContent>
+                <TabsContent value="upload" className="mt-3 space-y-2">
+                  <input
+                    ref={hintImageFileRef}
+                    type="file"
+                    accept={HINT_IMAGE_MIME.join(",")}
+                    className="hidden"
+                    onChange={handleHintImageFile}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={saveCampaign.isPending || hintImageUploading}
+                    onClick={() => hintImageFileRef.current?.click()}
+                  >
+                    {hintImageUploading ? "Uploading…" : "Choose photo"}
+                  </Button>
+                </TabsContent>
+              </Tabs>
+              {hintImageUrl.trim() ? (
+                <div className="relative overflow-hidden rounded-lg border border-border">
+                  <img src={hintImageUrl.trim()} alt="" className="aspect-video w-full object-cover" />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute right-2 top-2 gap-1 shadow-sm"
+                    disabled={saveCampaign.isPending || hintImageUploading}
+                    onClick={clearHintImage}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Remove
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </section>
         ) : null}
