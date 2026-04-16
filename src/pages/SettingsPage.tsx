@@ -124,7 +124,7 @@ export default function SettingsPage() {
               qrSize={168}
               compact
               className="border-0 bg-transparent p-0 shadow-none"
-              campaignTitle="CoffeeBro · marketing site"
+              campaignTitle="make every coffee an advantage"
               orgName="CoffeeBro"
               copySuccessDescription="CoffeeBro site QR card image copied to clipboard."
             />
