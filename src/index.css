@@ -221,8 +221,7 @@
   }
 
   .tab-nav {
-    @apply fixed bottom-0 left-0 right-0 z-50 border-t border-border;
-    background: hsl(var(--background));
+    @apply fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-white;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 

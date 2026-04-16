@@ -21,12 +21,10 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-const MONTHS_LOWER = [
-  'january', 'february', 'march', 'april', 'may', 'june',
-  'july', 'august', 'september', 'october', 'november', 'december',
-];
-
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/** 9-column grid: spacer | 7 days | spacer — matches `week` row layout */
+const WEEK_GRID = 'grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))_2.25rem] gap-x-1 gap-y-0';
 
 type DailyCoffeeRow = Database['public']['Tables']['daily_coffees']['Row'];
 
@@ -53,6 +51,13 @@ function drinkLabel(row: DailyCoffeeRow): string {
     return row.coffee_type_other?.trim() || 'Coffee';
   }
   return row.coffee_type?.trim() || 'Coffee';
+}
+
+/** Third row of the grid when there are ≥3 weeks; otherwise last row. */
+function showMonthChevronsOnWeek(weekIndex: number, weekCount: number): boolean {
+  if (weekCount <= 0) return false;
+  if (weekCount > 2) return weekIndex === 2;
+  return weekIndex === weekCount - 1;
 }
 
 export default function CalendarPage() {
@@ -108,146 +113,194 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-calendar-cream">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="container px-4 py-6">
-        <div className="mb-5 rounded-xl bg-muted px-4 py-5">
+    <div className="min-h-screen bg-calendar-cream pb-24">
+      <div className="container px-4 pt-6">
+        {/* Header — #F9F6F1 (page bg) */}
+        <div className="mb-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm lowercase text-muted-foreground">
-                in {MONTHS_LOWER[month]}, you drank
-              </p>
-              <p className="text-3xl font-bold tracking-normal text-foreground">
-                {viewMonthCoffeeTotal} coffee
+              <p className="text-foreground">
+                <span className="text-4xl font-bold tabular-nums tracking-normal">
+                  {viewMonthCoffeeTotal}
+                </span>
+                <span className="text-2xl font-bold"> coffee</span>
               </p>
             </div>
             <LogCoffeeNavButton
+              label="log a coffee"
               onClick={logCoffee.startLogCoffee}
               disabled={logCoffee.addCoffeePending}
             />
           </div>
-          <div className="mt-3 flex items-center gap-3 text-sm text-foreground">
-            <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-5 w-5 shrink-0" />
-            <span>You have {streak} coffee streaks!</span>
+          <p className="mt-3 text-sm text-muted-foreground">
+            You have {streak} coffee streaks!
+          </p>
+        </div>
+
+        {/* Calendar + legend — #FFFFFF */}
+        <div className="-mx-4 bg-white px-4 pb-5 pt-1">
+          <div className="min-w-0">
+          {/* Month label — mb-3, compact like reference */}
+          <button
+            type="button"
+            onClick={goToToday}
+            className="mb-3 block w-full text-left font-heading text-lg font-bold tracking-normal text-foreground"
+          >
+            {MONTHS[month]}
+          </button>
+
+          {/* Weekday row + calendar grid — mb-4 to legend */}
+          <div className="mb-4">
+            <div className={`${WEEK_GRID} mb-1.5`}>
+              <div className="min-h-0 w-9 shrink-0" aria-hidden />
+              {DAYS.map((day, i) => (
+                <div
+                  key={i}
+                  className="py-1 text-center text-xs font-bold uppercase tracking-wide text-primary"
+                >
+                  {day}
+                </div>
+              ))}
+              <div className="min-h-0 w-9 shrink-0" aria-hidden />
+            </div>
+
+            <div className="space-y-0">
+              {weeks.map((week, wi) => {
+                const showChevrons = showMonthChevronsOnWeek(wi, weeks.length);
+                return (
+                  <div
+                    key={wi}
+                    className={`${WEEK_GRID} overflow-visible calendar-tracking-week-row items-stretch`}
+                  >
+                    {showChevrons ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0 self-center text-foreground"
+                        onClick={goToPrevMonth}
+                        aria-label="Previous month"
+                      >
+                        <ChevronLeft size={22} strokeWidth={2} />
+                      </Button>
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 self-center" aria-hidden />
+                    )}
+                    {week.map((day, di) =>
+                      day == null ? (
+                        <div key={`e-${wi}-${di}`} className="aspect-square w-full min-h-0" />
+                      ) : (
+                        <CalendarDayCell
+                          key={day}
+                          day={day}
+                          coffeeCount={coffeeDayCounts[localYMD(new Date(year, month, day))] || 0}
+                          isToday={isCurrentMonth && today.getDate() === day}
+                          isSelected={selectedDay === day}
+                          onSelectDay={() => setSelectedDay(day)}
+                        />
+                      )
+                    )}
+                    {showChevrons ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0 self-center text-foreground"
+                        onClick={goToNextMonth}
+                        aria-label="Next month"
+                      >
+                        <ChevronRight size={22} strokeWidth={2} />
+                      </Button>
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 self-center" aria-hidden />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Legend — mt-5 to log list (outside card) */}
+          <div className="flex flex-nowrap items-center justify-center gap-2.5 text-xs text-muted-foreground">
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-5 w-5 shrink-0 opacity-90" />
+              <span>1 coffee</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-5 w-5 shrink-0 opacity-90" />
+              <span>2 coffee</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-5 w-5 shrink-0 opacity-90" />
+              <span>3+ coffee</span>
+            </div>
+          </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card px-3 pb-4 pt-3">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="icon" onClick={goToPrevMonth}>
-              <ChevronLeft size={24} />
-            </Button>
-
-            <button
-              type="button"
-              onClick={goToToday}
-              className="font-heading text-2xl font-bold tracking-normal"
-            >
-              {MONTHS[month]} {year}
-            </button>
-
-            <Button variant="ghost" size="icon" onClick={goToNextMonth}>
-              <ChevronRight size={24} />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-7 mb-1.5">
-            {DAYS.map((day, i) => (
-              <div
-                key={i}
-                className="py-1 text-center text-sm font-bold text-primary"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-0">
-            {weeks.map((week, wi) => (
-              <div
-                key={wi}
-                className="grid grid-cols-7 gap-1 overflow-visible calendar-tracking-week-row"
-              >
-                {week.map((day, di) =>
-                  day == null ? (
-                    <div key={`e-${wi}-${di}`} className="aspect-square w-full min-h-0" />
-                  ) : (
-                    <CalendarDayCell
-                      key={day}
-                      day={day}
-                      coffeeCount={coffeeDayCounts[localYMD(new Date(year, month, day))] || 0}
-                      isToday={isCurrentMonth && today.getDate() === day}
-                      isSelected={selectedDay === day}
-                      onSelectDay={() => setSelectedDay(day)}
-                    />
-                  )
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-nowrap items-center justify-center gap-2.5 text-xs">
-            <div className="flex shrink-0 items-center gap-1">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-6 w-6" />
-              <span className="text-foreground">1 coffee</span>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_2} className="h-6 w-6" />
-              <span className="text-foreground">2 coffee</span>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="h-6 w-6" />
-              <span className="text-foreground">3+ coffee</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-xl bg-muted px-4 py-2">
+        {/* Log list — #F9F6F1 (page bg) */}
+        <div className="mt-5 min-w-0">
           {coffeesForSelectedDay.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               No coffees logged this day.
             </p>
           ) : (
-            coffeesForSelectedDay.map((entry) => {
-              const t = new Date(entry.created_at).toLocaleTimeString(undefined, {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              });
-              const noteText = entry.note?.trim();
-              const diaryFallback = entry.diary?.trim();
-              return (
-                <div
-                  key={entry.id}
-                  className="flex gap-3 border-b border-border/60 py-4 last:border-b-0"
-                >
-                  <CoffeeCupIcon fill={COFFEE_CUP_FILL_3} className="mt-0.5 h-8 w-8 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-xs text-muted-foreground">{t}</p>
-                    <p className="font-bold text-foreground">{drinkLabel(entry)}</p>
-                    {entry.place?.trim() ? (
-                      <p className="text-sm capitalize text-foreground">{entry.place.trim()}</p>
-                    ) : null}
-                    {noteText ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{noteText}</p>
-                    ) : diaryFallback ? (
-                      <p className="mt-1 text-sm text-muted-foreground">{diaryFallback}</p>
-                    ) : null}
-                    {entry.beans?.trim() ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Beans: {entry.beans.trim()}
+            <div className="flex flex-col divide-y divide-border/60">
+              {coffeesForSelectedDay.map((entry) => {
+                const t = new Date(entry.created_at).toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                });
+                const noteText = entry.note?.trim();
+                const diaryFallback = entry.diary?.trim();
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <CoffeeCupIcon
+                      fill={COFFEE_CUP_FILL_3}
+                      className="mt-0.5 h-8 w-8 shrink-0"
+                    />
+                    <p className="shrink-0 pt-0.5 text-sm font-normal tabular-nums leading-tight text-foreground">
+                      {t}
+                    </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-base font-bold leading-snug text-foreground">
+                        {drinkLabel(entry)}
                       </p>
-                    ) : null}
+                      {entry.place?.trim() ? (
+                        <p className="mt-0.5 truncate text-sm font-normal leading-snug text-muted-foreground">
+                          {entry.place.trim()}
+                        </p>
+                      ) : null}
+                      {noteText ? (
+                        <p className="mt-1 text-sm font-normal leading-snug text-muted-foreground">
+                          {noteText}
+                        </p>
+                      ) : diaryFallback ? (
+                        <p className="mt-1 text-sm font-normal leading-snug text-muted-foreground">
+                          {diaryFallback}
+                        </p>
+                      ) : null}
+                      {entry.beans?.trim() ? (
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          Beans: {entry.beans.trim()}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

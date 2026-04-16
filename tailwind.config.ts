@@ -83,6 +83,8 @@ export default {
           accent: "#B16850",
           muted: "#F6F2EB",
         },
+        /** Calendar screen reference (header + log bands) */
+        "calendar-cream": "#F9F6F1",
         dark: "#2E1A14",
         bg: "#FFFCF7",
       },
