@@ -95,21 +95,29 @@ export function QuizResultFull({
           <p className="text-center text-sm font-medium text-[var(--quiz-fg)]">
             Track your brews, evolve your frog, and share to find your coffee soulmate.
           </p>
-          <Button
-            className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
-            onClick={() => navigate('/')}
-          >
-            Start Logging My Coffee
-          </Button>
-
-          {shareEnabled && (
+          {shareEnabled ? (
+            <>
+              <Button
+                disabled={shareBusy}
+                className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
+                onClick={handleShare}
+              >
+                {shareBusy ? 'Sharing…' : 'Share My Coffee Frog'}
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
+                onClick={() => navigate('/')}
+              >
+                Start Logging My Coffee
+              </Button>
+            </>
+          ) : (
             <Button
-              variant="outline"
-              disabled={shareBusy}
-              className="w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
-              onClick={handleShare}
+              className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
+              onClick={() => navigate('/')}
             >
-              {shareBusy ? 'Sharing…' : 'Share My Coffee Frog'}
+              Start Logging My Coffee
             </Button>
           )}
         </div>
