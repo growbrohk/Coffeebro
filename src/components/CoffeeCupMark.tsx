@@ -49,7 +49,7 @@ export function CoffeeCupMark({ coffeeCount, className }: CoffeeCupMarkProps) {
     <CoffeeCupIcon
       fill={fillForCoffeeCount(coffeeCount)}
       className={cn(
-        'pointer-events-none absolute left-1/2 top-1/2 h-[72px] w-[72px] max-w-[96%] -translate-x-1/2 -translate-y-1/2 opacity-[0.98]',
+        'pointer-events-none absolute left-1/2 top-1/2 h-[92px] w-[92px] max-w-[98%] -translate-x-1/2 -translate-y-1/2 opacity-[0.98]',
         className
       )}
     />

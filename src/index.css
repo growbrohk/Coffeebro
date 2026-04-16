@@ -297,6 +297,10 @@
     @apply w-8 h-8 shrink-0 flex items-center justify-center text-sm font-medium rounded-full;
   }
 
+  .calendar-day-cell.calendar-tracking .calendar-day-number {
+    @apply h-9 w-9 text-base;
+  }
+
   /* Non-tracking today ring (tracking cells use .calendar-tracking + CoffeeCupMark) */
   .calendar-day-cell.calendar-day-today:not(.calendar-tracking) .calendar-day-number {
     @apply ring-2 ring-primary/70 ring-offset-2 ring-offset-background;
