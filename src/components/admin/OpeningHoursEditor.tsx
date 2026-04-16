@@ -31,15 +31,22 @@ export function OpeningHoursEditor({ value, onChange, disabled = false }: Props)
             key={key}
             className="flex flex-col gap-2 border-b border-border/60 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3"
           >
-            <div className="flex w-full min-w-[7rem] items-center gap-2 sm:w-36">
+            <div className="flex w-full min-w-[7rem] items-center gap-2 sm:w-40">
               <Checkbox
-                id={`closed-${key}`}
-                checked={row.closed}
+                id={`day-open-${key}`}
+                checked={!row.closed}
                 disabled={disabled}
-                onCheckedChange={(c) => patchDay(key, { closed: c === true })}
+                onCheckedChange={(c) =>
+                  patchDay(key, { closed: c !== true })
+                }
+                aria-label={`Open on ${OPENING_DAY_LABELS[key]}`}
               />
-              <Label htmlFor={`closed-${key}`} className="text-sm font-medium leading-none">
-                {OPENING_DAY_LABELS[key]}
+              <Label
+                htmlFor={`day-open-${key}`}
+                className="flex flex-col gap-0.5 leading-tight sm:flex-row sm:items-baseline sm:gap-1.5"
+              >
+                <span className="text-muted-foreground text-xs font-normal">Open</span>
+                <span className="text-sm font-medium">{OPENING_DAY_LABELS[key]}</span>
               </Label>
             </div>
             <div className="flex flex-1 flex-wrap items-center gap-2">
