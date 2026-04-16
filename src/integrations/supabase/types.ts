@@ -220,6 +220,7 @@ export type Database = {
           mtr_station: string | null
           logo_url: string | null
           preview_photo_url: string | null
+          description: string | null
         }
         Insert: {
           created_at?: string
@@ -238,6 +239,7 @@ export type Database = {
           mtr_station?: string | null
           logo_url?: string | null
           preview_photo_url?: string | null
+          description?: string | null
         }
         Update: {
           created_at?: string
@@ -256,6 +258,7 @@ export type Database = {
           mtr_station?: string | null
           logo_url?: string | null
           preview_photo_url?: string | null
+          description?: string | null
         }
         Relationships: []
       }
@@ -700,6 +703,24 @@ export type Database = {
           sample_hunt_id: string | null
           sample_treasure_id: string | null
           sample_campaign_id: string | null
+        }[]
+      }
+      get_public_org_by_id: {
+        Args: { p_org_id: string }
+        Returns: {
+          id: string
+          org_name: string
+          location: string | null
+          lat: number | null
+          lng: number | null
+          preview_photo_url: string | null
+          logo_url: string | null
+          opening_hours: Json | null
+          google_maps_url: string | null
+          district: string | null
+          mtr_station: string | null
+          hk_area: string | null
+          description: string | null
         }[]
       }
       get_published_campaign_voucher_pool: {

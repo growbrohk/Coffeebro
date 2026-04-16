@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -73,6 +74,7 @@ function mapsPreviewUrl(
 type Draft = {
   org_name: string;
   location: string;
+  description: string;
   latStr: string;
   lngStr: string;
   instagram_handle: string;
@@ -90,6 +92,7 @@ function emptyDraft(): Draft {
   return {
     org_name: '',
     location: '',
+    description: '',
     latStr: '',
     lngStr: '',
     instagram_handle: '',
@@ -108,6 +111,7 @@ function draftFromOrg(org: Org): Draft {
   return {
     org_name: org.org_name ?? '',
     location: org.location ?? '',
+    description: org.description ?? '',
     latStr: org.lat != null ? String(org.lat) : '',
     lngStr: org.lng != null ? String(org.lng) : '',
     instagram_handle: org.instagram_handle ?? '',
@@ -368,6 +372,7 @@ export default function HostOrgEditPage() {
     const row = {
       org_name: name,
       location: draft.location.trim() || null,
+      description: draft.description.trim() || null,
       lat,
       lng,
       instagram_handle: draft.instagram_handle.trim() || null,
@@ -571,6 +576,18 @@ export default function HostOrgEditPage() {
                 onChange={(e) => patchDraft({ location: e.target.value })}
                 disabled={disabled}
                 className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org_description">Description (public profile)</Label>
+              <Textarea
+                id="org_description"
+                value={draft.description}
+                onChange={(e) => patchDraft({ description: e.target.value })}
+                placeholder="Shown on the public organization page for guests."
+                rows={4}
+                disabled={disabled}
+                className="min-h-[100px] resize-y"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">

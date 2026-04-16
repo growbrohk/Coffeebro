@@ -111,7 +111,14 @@ export function TreasurePopupCard({
               </div>
             </div>
             {distanceRow}
-            <div className="mt-2 flex justify-end">
+            <div className="mt-2 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={onDetails}
+                className="tap-press rounded-full border border-primary/80 px-4 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+              >
+                View café
+              </button>
               <PillButton onClick={onDirections} icon={<Navigation className="h-3.5 w-3.5 text-primary-foreground" />}>
                 directions
               </PillButton>

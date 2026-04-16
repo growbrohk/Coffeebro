@@ -117,6 +117,11 @@ export default function HuntMapPage() {
 
   const handleCampaignCta = (t: CampaignMapItem) => {
     if (t.pinKind === "coffee_shop") {
+      if (t.org_id) {
+        navigate(`/orgs/${t.org_id}`);
+        setSelectedTreasure(null);
+        return;
+      }
       navigate("/explore");
       setSelectedTreasure(null);
       return;
@@ -131,6 +136,11 @@ export default function HuntMapPage() {
 
   const handleDetailsClick = () => {
     if (!selectedTreasure) return;
+    if (selectedTreasure.pinKind === "coffee_shop" && selectedTreasure.org_id) {
+      navigate(`/orgs/${selectedTreasure.org_id}`);
+      setSelectedTreasure(null);
+      return;
+    }
     if (selectedTreasure.campaign_id) {
       navigate(`/campaigns/${selectedTreasure.campaign_id}`);
       setSelectedTreasure(null);

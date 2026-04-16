@@ -19,6 +19,7 @@ export interface MyVoucher {
   thumbnail_url?: string | null;
   org_logo_url?: string | null;
   campaign_id?: string;
+  org_id?: string;
   /** Campaign `display_title` for the wallet details dialog. */
   campaign_details?: string | null;
 }
@@ -69,6 +70,7 @@ export function useMyVouchers() {
           redeemed_at,
           expires_at,
           campaign_id,
+          org_id,
           orgs ( org_name, logo_url ),
           campaign_vouchers (
             offer_type,
@@ -125,6 +127,7 @@ export function useMyVouchers() {
           redeemed_at: (v.redeemed_at as string | null) ?? null,
           expires_at: (v.expires_at as string | null) ?? null,
           title,
+          org_id: v.org_id as string,
           org_name: orgsRow?.org_name,
           org_logo_url: orgsRow?.logo_url ?? null,
           offer_type: offerType,

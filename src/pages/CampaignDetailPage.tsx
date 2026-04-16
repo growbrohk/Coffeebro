@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -436,21 +436,43 @@ export default function CampaignDetailPage() {
         <div className="text-sm leading-relaxed text-foreground">
           <p className="font-semibold text-foreground">Claim your voucher at:</p>
           <section className="mt-2 rounded-xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex gap-3">
-              {org?.logo_url ? (
-                <div className="shrink-0 rounded-lg border border-border bg-background p-1">
-                  <img src={org.logo_url} alt="" className="h-14 w-14 rounded-md object-cover" />
+            {org?.id ? (
+              <Link
+                to={`/orgs/${org.id}`}
+                className="flex gap-3 rounded-lg outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label={`View ${org.org_name ?? "organization"} profile`}
+              >
+                {org.logo_url ? (
+                  <div className="shrink-0 rounded-lg border border-border bg-background p-1">
+                    <img src={org.logo_url} alt="" className="h-14 w-14 rounded-md object-cover" />
+                  </div>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold leading-snug text-foreground">{org.org_name ?? "Organizer"}</p>
+                  {org.location ? (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
+                  )}
                 </div>
-              ) : null}
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold leading-snug text-foreground">{org?.org_name ?? "Organizer"}</p>
-                {org?.location ? (
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
-                )}
+              </Link>
+            ) : (
+              <div className="flex gap-3">
+                {org?.logo_url ? (
+                  <div className="shrink-0 rounded-lg border border-border bg-background p-1">
+                    <img src={org.logo_url} alt="" className="h-14 w-14 rounded-md object-cover" />
+                  </div>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold leading-snug text-foreground">{org?.org_name ?? "Organizer"}</p>
+                  {org?.location ? (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </section>
         </div>
         </div>

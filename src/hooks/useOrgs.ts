@@ -20,6 +20,7 @@ export interface Org {
   mtr_station?: string | null;
   logo_url?: string | null;
   preview_photo_url?: string | null;
+  description?: string | null;
 }
 
 export function useOrgs() {

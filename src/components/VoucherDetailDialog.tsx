@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -70,8 +71,14 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
           <>
             <DialogHeader>
               <DialogTitle className="text-left text-lg font-bold">{first.title}</DialogTitle>
-              <DialogDescription className="text-left text-xs text-muted-foreground">
-                {first.org_name}
+              <DialogDescription asChild className="text-left text-xs text-muted-foreground">
+                {first.org_id ? (
+                  <Link to={`/orgs/${first.org_id}`} className="text-muted-foreground underline-offset-4 hover:underline">
+                    {first.org_name}
+                  </Link>
+                ) : (
+                  <span>{first.org_name}</span>
+                )}
               </DialogDescription>
             </DialogHeader>
             <VoucherDetailFields voucher={first} />
@@ -92,7 +99,18 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
                 >
                   <p className="text-left text-lg font-bold leading-snug text-foreground">{voucher.title}</p>
                   {voucher.org_name ? (
-                    <p className="text-left text-xs text-muted-foreground">{voucher.org_name}</p>
+                    <p className="text-left text-xs text-muted-foreground">
+                      {voucher.org_id ? (
+                        <Link
+                          to={`/orgs/${voucher.org_id}`}
+                          className="text-muted-foreground underline-offset-4 hover:underline"
+                        >
+                          {voucher.org_name}
+                        </Link>
+                      ) : (
+                        voucher.org_name
+                      )}
+                    </p>
                   ) : null}
                   <VoucherDetailFields voucher={voucher} />
                 </div>
