@@ -27,6 +27,19 @@ export function getSharePageUrl(origin: string, resultType: FrogType): string {
   return `${origin.replace(/\/$/, '')}/q/share/${slug}.html`;
 }
 
+const DEFAULT_QUIZ_STORE = 'default';
+
+/** Canonical URL to start the Coffee Quiz (`/q`), for QR invites and links. */
+export function getQuizInviteUrl(options?: { storeId?: string; origin?: string }): string {
+  const origin = (options?.origin ?? getShareOrigin()).replace(/\/$/, '');
+  const base = `${origin}/q`;
+  const s = options?.storeId;
+  if (s && s !== DEFAULT_QUIZ_STORE) {
+    return `${base}?s=${encodeURIComponent(s)}`;
+  }
+  return base;
+}
+
 export function buildShareText(resultType: FrogType, origin: string): string {
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];

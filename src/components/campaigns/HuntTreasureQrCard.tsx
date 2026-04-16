@@ -20,6 +20,8 @@ export type HuntTreasureQrCardProps = {
   orgName?: string;
   /** Tighter layout for dialogs / small viewports (smaller QR and type). */
   compact?: boolean;
+  /** Toast description when “Copy image” succeeds (default: treasure copy). */
+  copySuccessDescription?: string;
 };
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -54,6 +56,7 @@ export function HuntTreasureQrCard({
   campaignTitle,
   orgName,
   compact = false,
+  copySuccessDescription = "Treasure QR card image copied to clipboard.",
 }: HuntTreasureQrCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -116,7 +119,7 @@ export function HuntTreasureQrCard({
         return;
       }
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast({ title: "Copied", description: "Treasure QR card image copied to clipboard." });
+      toast({ title: "Copied", description: copySuccessDescription });
     } catch {
       toast({
         title: "Copy failed",
@@ -124,7 +127,7 @@ export function HuntTreasureQrCard({
         variant: "destructive",
       });
     }
-  }, [getCardEl, toast]);
+  }, [copySuccessDescription, getCardEl, toast]);
 
   const showCampaignLine = Boolean(campaignTitle?.trim());
   const showOrgLine = Boolean(orgName?.trim());

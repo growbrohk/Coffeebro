@@ -229,7 +229,11 @@ export default function QuizPage() {
   if (step === 'full' && resultType) {
     const scorePercentages = scores ? frogScorePercentages(scores) : null;
     return (
-      <QuizResultFull resultType={resultType} scorePercentages={scorePercentages} />
+      <QuizResultFull
+        resultType={resultType}
+        scorePercentages={scorePercentages}
+        quizStoreId={storeId}
+      />
     );
   }
 

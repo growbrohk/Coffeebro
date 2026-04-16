@@ -1,10 +1,19 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QrCode } from 'lucide-react';
+import { HuntTreasureQrCard } from '@/components/campaigns/HuntTreasureQrCard';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { QuizFrogAvatar } from '@/components/quiz/QuizFrogAvatar';
 import { FROG_NAMES, FROG_DESCRIPTIONS, FROG_TYPES } from '@/lib/quiz/constants';
-import { shareQuizResult } from '@/lib/quiz/share';
+import { getQuizInviteUrl, shareQuizResult } from '@/lib/quiz/share';
 import type { FrogType } from '@/lib/quiz/types';
 
 interface QuizResultFullProps {
@@ -13,16 +22,25 @@ interface QuizResultFullProps {
   scorePercentages?: Record<FrogType, number> | null;
   /** When false, hides “Share My Coffee Frog”. */
   shareEnabled?: boolean;
+  /** Quiz session store (`?s=`), forwarded into invite QR link when not default. */
+  quizStoreId?: string;
 }
 
 export function QuizResultFull({
   resultType,
   scorePercentages,
   shareEnabled = true,
+  quizStoreId,
 }: QuizResultFullProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [shareBusy, setShareBusy] = useState(false);
+  const [inviteQrOpen, setInviteQrOpen] = useState(false);
+  const inviteQuizUrl = useMemo(
+    () => getQuizInviteUrl({ storeId: quizStoreId }),
+    [quizStoreId],
+  );
+  const inviteQrReady = Boolean(inviteQuizUrl.trim());
   const desc = FROG_DESCRIPTIONS[resultType];
   const bestMatchName = FROG_NAMES[desc.bestMatch];
   const wildcardName = FROG_NAMES[desc.wildcard];
@@ -105,6 +123,15 @@ export function QuizResultFull({
                 {shareBusy ? 'Sharing…' : 'Share My Coffee Frog'}
               </Button>
               <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-full border-white/80 bg-transparent font-semibold text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
+                onClick={() => setInviteQrOpen(true)}
+              >
+                <QrCode className="h-4 w-4 shrink-0" aria-hidden />
+                Invite quiz QR
+              </Button>
+              <Button
                 variant="outline"
                 className="h-12 w-full border-white/80 bg-transparent text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
                 onClick={() => navigate('/')}
@@ -113,15 +140,49 @@ export function QuizResultFull({
               </Button>
             </>
           ) : (
-            <Button
-              className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
-              onClick={() => navigate('/')}
-            >
-              Start Logging My Coffee
-            </Button>
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-full border-white/80 bg-transparent font-semibold text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
+                onClick={() => setInviteQrOpen(true)}
+              >
+                <QrCode className="h-4 w-4 shrink-0" aria-hidden />
+                Invite quiz QR
+              </Button>
+              <Button
+                className="h-12 w-full border-0 bg-[var(--quiz-fg)] font-semibold text-[var(--quiz-bg)] hover:bg-white/90"
+                onClick={() => navigate('/')}
+              >
+                Start Logging My Coffee
+              </Button>
+            </>
           )}
         </div>
       </div>
+
+      <Dialog open={inviteQrOpen} onOpenChange={setInviteQrOpen}>
+        <DialogContent className="max-h-[min(90dvh,720px)] max-w-[min(100vw-1.5rem,20rem)] gap-2 overflow-y-auto rounded-2xl p-4 sm:max-w-[22rem]">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-base">Quiz invite QR</DialogTitle>
+            <DialogDescription className="text-xs leading-snug">
+              Print or share so friends can take the CoffeeBro quiz in the app.
+            </DialogDescription>
+          </DialogHeader>
+          {inviteQrReady ? (
+            <HuntTreasureQrCard
+              qrPayload={inviteQuizUrl.trim()}
+              campaignId="quiz-invite"
+              qrSize={168}
+              compact
+              className="border-0 bg-transparent p-0 shadow-none"
+              campaignTitle="Quiz · invite · personality"
+              orgName="CoffeeBro"
+              copySuccessDescription="Quiz invite QR card image copied to clipboard."
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

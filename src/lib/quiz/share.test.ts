@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { FROG_SHARE_SLUG } from '@/lib/quiz/constants';
-import { buildShareText, frogTypeFromShareSlug, getSharePageUrl } from '@/lib/quiz/share';
+import {
+  buildShareText,
+  frogTypeFromShareSlug,
+  getQuizInviteUrl,
+  getSharePageUrl,
+} from '@/lib/quiz/share';
 
 describe('share helpers', () => {
   it('getSharePageUrl uses slug path', () => {
@@ -30,6 +35,22 @@ describe('share helpers', () => {
   it('FROG_SHARE_SLUG has one entry per frog type', () => {
     const slugs = Object.values(FROG_SHARE_SLUG);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it('getQuizInviteUrl points to /q', () => {
+    expect(getQuizInviteUrl({ origin: 'https://example.com' })).toBe('https://example.com/q');
+  });
+
+  it('getQuizInviteUrl adds store when not default', () => {
+    expect(getQuizInviteUrl({ origin: 'https://example.com', storeId: 'flagship' })).toBe(
+      'https://example.com/q?s=flagship',
+    );
+  });
+
+  it('getQuizInviteUrl omits store for default', () => {
+    expect(getQuizInviteUrl({ origin: 'https://example.com', storeId: 'default' })).toBe(
+      'https://example.com/q',
+    );
   });
 
 });
