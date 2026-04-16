@@ -176,8 +176,8 @@ export function QuizResultFull({
               qrSize={168}
               compact
               className="border-0 bg-transparent p-0 shadow-none"
-              campaignTitle="Quiz · invite · personality"
-              orgName="CoffeeBro"
+              campaignTitle="which coffee frog are you?!"
+              orgName="coffee frog personality quiz"
               copySuccessDescription="Quiz invite QR card image copied to clipboard."
             />
           ) : null}

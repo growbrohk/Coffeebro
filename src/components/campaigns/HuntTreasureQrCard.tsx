@@ -195,8 +195,8 @@ export function HuntTreasureQrCard({
               {showOrgLine ? (
                 <p
                   className={cn(
-                    "w-full text-pretty font-bold leading-tight text-foreground",
-                    compact ? "text-[13px] leading-snug" : "text-lg leading-snug",
+                    "w-full text-pretty font-bold text-foreground",
+                    compact ? "text-[13px] leading-[1.15]" : "text-lg leading-snug",
                   )}
                 >
                   {orgName!.trim()}
