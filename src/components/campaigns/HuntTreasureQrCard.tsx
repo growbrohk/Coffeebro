@@ -156,7 +156,7 @@ export function HuntTreasureQrCard({
           {showCampaignLine ? (
             <p
               className={cn(
-                "max-w-full px-0.5 text-center font-normal leading-snug text-foreground/90",
+                "w-full max-w-full whitespace-nowrap px-0.5 text-center font-normal leading-snug text-foreground/90",
                 compact ? "text-[11px] leading-tight" : "text-sm",
               )}
             >
