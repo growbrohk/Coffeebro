@@ -171,7 +171,12 @@ export function HuntTreasureQrCard({
           >
             <QRCode value={qrPayload} size={qrSize} />
           </div>
-          <div className={cn("flex w-full flex-row items-end justify-center pl-0.5", compact ? "mt-1 gap-2" : "mt-2 gap-3 pl-1")}>
+          <div
+            className={cn(
+              "flex w-full flex-row items-center justify-center",
+              compact ? "mt-0 gap-2" : "mt-1 gap-3",
+            )}
+          >
             <img
               src="/quiz-frogs/americano-bw.svg"
               alt=""
@@ -183,12 +188,12 @@ export function HuntTreasureQrCard({
               )}
               draggable={false}
             />
-            <div className={cn("flex min-w-0 flex-1 flex-col items-center text-center", compact ? "gap-0.5 pb-0" : "gap-1 pb-0.5")}>
+            <div className={cn("flex min-w-0 flex-1 flex-col items-center justify-center text-center", compact ? "gap-1 pb-0" : "gap-1.5 pb-0.5")}>
               {showOrgLine ? (
                 <p
                   className={cn(
-                    "w-full text-pretty font-semibold leading-tight text-foreground",
-                    compact ? "text-xs" : "text-base",
+                    "w-full text-pretty font-bold leading-tight text-foreground",
+                    compact ? "text-[13px] leading-snug" : "text-lg leading-snug",
                   )}
                 >
                   {orgName!.trim()}
@@ -196,8 +201,8 @@ export function HuntTreasureQrCard({
               ) : null}
               <p
                 className={cn(
-                  "w-full max-w-full break-all font-mono leading-snug text-muted-foreground",
-                  compact ? "text-[8px] leading-tight" : "text-[10px] sm:text-xs",
+                  "w-full max-w-full break-all font-mono font-bold leading-snug text-foreground/90",
+                  compact ? "text-[9px] leading-tight" : "text-xs sm:text-sm",
                 )}
               >
                 {qrPayload}
