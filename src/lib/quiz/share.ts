@@ -29,6 +29,14 @@ export function getSharePageUrl(origin: string, resultType: FrogType): string {
 
 const DEFAULT_QUIZ_STORE = 'default';
 
+/**
+ * Canonical marketing site URL for QR codes (homepage).
+ * Uses production host so dev builds still encode the public site, matching `VITE_PUBLIC_SITE_URL` in prod.
+ */
+export function getCoffeebroMarketingSiteUrl(): string {
+  return 'https://www.coffee-bro.com';
+}
+
 /** Canonical URL to start the Coffee Quiz (`/q`), for QR invites and links. */
 export function getQuizInviteUrl(options?: { storeId?: string; origin?: string }): string {
   const origin = (options?.origin ?? getShareOrigin()).replace(/\/$/, '');
