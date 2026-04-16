@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { MapPin } from "lucide-react";
+import { TreasureMapPickerDialog } from "@/components/campaigns/TreasureMapPickerDialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -32,6 +36,7 @@ export function TreasureLocationSection({
   disabled,
 }: Props) {
   const isGrab = campaignType === "grab";
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
 
   return (
     <section className="space-y-4">
@@ -57,47 +62,72 @@ export function TreasureLocationSection({
             </label>
           </RadioGroup>
           {treasureLocationType === "custom" && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="tlat">Latitude</Label>
-                <Input
-                  id="tlat"
-                  value={treasureLat}
-                  onChange={(e) => onTreasureLat(e.target.value)}
-                  disabled={disabled}
-                  placeholder="22.3"
-                />
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 sm:w-auto"
+                disabled={disabled}
+                onClick={() => setMapPickerOpen(true)}
+              >
+                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                Pick on map
+              </Button>
+              <TreasureMapPickerDialog
+                open={mapPickerOpen}
+                onOpenChange={setMapPickerOpen}
+                initialLat={treasureLat}
+                initialLng={treasureLng}
+                disabled={disabled}
+                onApply={({ lat, lng, address, areaName }) => {
+                  onTreasureLat(lat);
+                  onTreasureLng(lng);
+                  onTreasureAddress(address);
+                  onTreasureAreaName(areaName);
+                }}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="tlat">Latitude</Label>
+                  <Input
+                    id="tlat"
+                    value={treasureLat}
+                    onChange={(e) => onTreasureLat(e.target.value)}
+                    disabled={disabled}
+                    placeholder="22.3"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="tlng">Longitude</Label>
+                  <Input
+                    id="tlng"
+                    value={treasureLng}
+                    onChange={(e) => onTreasureLng(e.target.value)}
+                    disabled={disabled}
+                    placeholder="114.17"
+                  />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="taddr">Address</Label>
+                  <Input
+                    id="taddr"
+                    value={treasureAddress}
+                    onChange={(e) => onTreasureAddress(e.target.value)}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="tarea">Area name</Label>
+                  <Input
+                    id="tarea"
+                    value={treasureAreaName}
+                    onChange={(e) => onTreasureAreaName(e.target.value)}
+                    disabled={disabled}
+                    placeholder="e.g. Central"
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tlng">Longitude</Label>
-                <Input
-                  id="tlng"
-                  value={treasureLng}
-                  onChange={(e) => onTreasureLng(e.target.value)}
-                  disabled={disabled}
-                  placeholder="114.17"
-                />
-              </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="taddr">Address</Label>
-                <Input
-                  id="taddr"
-                  value={treasureAddress}
-                  onChange={(e) => onTreasureAddress(e.target.value)}
-                  disabled={disabled}
-                />
-              </div>
-              <div className="grid gap-2 sm:col-span-2">
-                <Label htmlFor="tarea">Area name</Label>
-                <Input
-                  id="tarea"
-                  value={treasureAreaName}
-                  onChange={(e) => onTreasureAreaName(e.target.value)}
-                  disabled={disabled}
-                  placeholder="e.g. Central"
-                />
-              </div>
-            </div>
+            </>
           )}
         </>
       )}
