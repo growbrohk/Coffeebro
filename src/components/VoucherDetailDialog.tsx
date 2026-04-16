@@ -55,7 +55,7 @@ function VoucherRedeemFooter({ voucher }: { voucher: MyVoucher }) {
   if (!address && !url) return null;
 
   return (
-    <div className="mt-4 space-y-2 border-t border-border pt-4">
+    <div className="mt-2 space-y-2 border-t border-border pt-2">
       <p className="text-xs font-semibold text-muted-foreground">Redeem address & directions</p>
       {address ? (
         <p className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">{address}</p>
