@@ -16,6 +16,8 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  /** Starts Google OAuth; on success redirects the browser to Google (then back to redirectTo). */
+  signInWithGoogle: (redirectTo?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -181,13 +183,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithGoogle = async (redirectTo?: string) => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectTo ?? `${window.location.origin}/profile`,
+      },
+    });
+    if (error) {
+      return { error };
+    }
+    if (data.url) {
+      window.location.assign(data.url);
+      return { error: null };
+    }
+    return { error: new Error('No OAuth URL returned') };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ user, session, profile, loading, signUp, signIn, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

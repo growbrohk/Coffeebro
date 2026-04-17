@@ -71,7 +71,7 @@ export default function ProfilePage() {
   };
 
   const authMessage = getMessage();
-  const { user, profile, loading, signIn, signUp } = useAuth();
+  const { user, profile, loading, signIn, signUp, signInWithGoogle } = useAuth();
   const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
 
@@ -88,15 +88,21 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(openAuthAsSignUp);
-
-  useEffect(() => {
-    if (openAuthAsSignUp) setIsSignUp(true);
-  }, [openAuthAsSignUp]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (openAuthAsSignUp) setIsSignUp(true);
+  }, [openAuthAsSignUp]);
+
+  /** After Google OAuth, land on /profile?claim=… then mirror email/password success navigation. */
+  useEffect(() => {
+    if (!user || !profile || !claimParam) return;
+    navigate(`/q?claim=${claimParam}`, { replace: true });
+  }, [user, profile, claimParam, navigate]);
 
   if (loading) {
     return (
@@ -135,6 +141,22 @@ export default function ProfilePage() {
     } catch {
       setError('Something went wrong');
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const redirectTo = `${window.location.origin}/profile${window.location.search}`;
+      const { error } = await signInWithGoogle(redirectTo);
+      if (error) {
+        setError(error.message);
+        setIsSubmitting(false);
+      }
+    } catch {
+      setError('Something went wrong');
       setIsSubmitting(false);
     }
   };
@@ -318,6 +340,19 @@ export default function ProfilePage() {
         )}
 
         <form onSubmit={handleSubmit} className="mx-auto max-w-sm space-y-4">
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full border-[#2E1A14]/20 text-base font-semibold"
+              onClick={handleGoogleSignIn}
+              disabled={isSubmitting}
+            >
+              Continue with Google
+            </Button>
+            <p className="text-center text-xs font-medium text-muted-foreground">or</p>
+          </div>
+
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-semibold tracking-normal">
