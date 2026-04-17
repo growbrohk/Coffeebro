@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, QrCode } from 'lucide-react';
 import { HuntTreasureQrCard } from '@/components/campaigns/HuntTreasureQrCard';
@@ -95,20 +95,15 @@ export default function SettingsPage() {
           </Button>
         )}
 
-        <div
-          className="rounded-2xl bg-[#f37721] p-4"
-          style={{ '--quiz-fg': '#ffffff' } as CSSProperties}
+        <Button
+          type="button"
+          variant="default"
+          className="w-full bg-[#f37721] text-white hover:bg-[#f37721]/90 hover:text-white"
+          onClick={() => setSiteQrOpen(true)}
         >
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 w-full border-white/80 bg-transparent font-semibold text-[var(--quiz-fg)] hover:bg-white/10 hover:text-[var(--quiz-fg)]"
-            onClick={() => setSiteQrOpen(true)}
-          >
-            <QrCode className="h-4 w-4 shrink-0" aria-hidden />
-            Share CoffeeBro QR
-          </Button>
-        </div>
+          <QrCode className="h-4 w-4 shrink-0" aria-hidden />
+          Share CoffeeBro QR
+        </Button>
 
         <Dialog open={siteQrOpen} onOpenChange={setSiteQrOpen}>
           <DialogContent className="max-h-[min(90dvh,720px)] max-w-[min(100vw-1.5rem,20rem)] gap-2 overflow-y-auto rounded-2xl p-4 sm:max-w-[22rem]">
