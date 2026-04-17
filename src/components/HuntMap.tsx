@@ -83,7 +83,8 @@ function iconForPinKind(kind: HuntMapPinKind, scanned: boolean): L.DivIcon {
   return iconCache.hunt.active;
 }
 
-const LABEL_MIN_ZOOM = 14;
+/** Show org names at street-ish zoom; keep ≤ typical fitBounds result so labels aren’t stuck off until zoom. */
+const LABEL_MIN_ZOOM = 13;
 
 function shouldShowOrgLabel(t: CampaignMapItem, zoom: number): boolean {
   return Boolean(t.orgName?.trim()) && !t.scanned && zoom >= LABEL_MIN_ZOOM;
@@ -182,12 +183,13 @@ function FitBounds({
     const fitOptions: L.FitBoundsOptions = {
       paddingTopLeft: L.point(horizontalPadding, padTop),
       paddingBottomRight: L.point(horizontalPadding, padBottom),
-      maxZoom: 16,
+      // Allow a bit tighter fit so single / tight clusters zoom in enough for labels + street context.
+      maxZoom: 17,
     };
     if (forFit.length === 1) {
       const lat = forFit[0].lat!;
       const lng = forFit[0].lng!;
-      const bounds = L.latLngBounds([lat, lng], [lat, lng]).pad(0.008);
+      const bounds = L.latLngBounds([lat, lng], [lat, lng]).pad(0.0045);
       map.fitBounds(bounds, fitOptions);
       return;
     }
@@ -307,7 +309,7 @@ export function HuntMap({
     <div className="relative hunt-map-wrapper h-full w-full min-h-0 overflow-hidden rounded-none">
       <MapContainer
         center={[centerLat, centerLng]}
-        zoom={13}
+        zoom={14}
         className="h-full w-full min-h-0"
         scrollWheelZoom={true}
         zoomControl={false}
