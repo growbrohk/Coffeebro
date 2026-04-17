@@ -22,7 +22,6 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
-import { CoffeeCupIcon, COFFEE_CUP_FILL_1 } from '@/components/CoffeeCupMark';
 import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
 import { useOrgMenuItems } from '@/hooks/useOrgMenuItems';
 import { cn } from '@/lib/utils';
@@ -240,12 +239,9 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
             <p className="text-center text-lg font-semibold lowercase text-muted-foreground">
               log a coffee
             </p>
-            <div className="mt-3 flex items-center gap-3 px-2">
-              <CoffeeCupIcon fill={COFFEE_CUP_FILL_1} className="h-16 w-16 shrink-0" />
-              <h2 className="min-w-0 flex-1 text-left text-xl font-bold lowercase leading-tight text-foreground">
-                what coffee did you drink today?
-              </h2>
-            </div>
+            <h2 className="mt-3 px-2 text-center text-xl font-bold lowercase leading-tight text-foreground">
+              what coffee did you drink today?
+            </h2>
           </div>
 
           <div className="flex flex-1 flex-col rounded-t-3xl bg-primary px-4 pb-8 pt-6 -mt-2">
