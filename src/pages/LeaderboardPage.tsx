@@ -1,21 +1,35 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
-import { useLeaderboard } from '@/hooks/useLeaderboard';
+import {
+  useLeaderboard,
+  type LeaderboardKind,
+  type LeaderboardPeriod,
+} from '@/hooks/useLeaderboard';
 import { useSearchUsers } from '@/hooks/useUserRuns';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+
+function leaderboardSubtitle(kind: LeaderboardKind, period: LeaderboardPeriod) {
+  const label = kind === 'coffee' ? 'Coffee' : 'Voucher';
+  if (period === 'day') return `${label} · Today`;
+  if (period === 'week') return `${label} · This week`;
+  return `${label} · ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+}
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
-  const { data: leaderboard, isLoading } = useLeaderboard();
+  const [kind, setKind] = useState<LeaderboardKind>('voucher');
+  const [period, setPeriod] = useState<LeaderboardPeriod>('day');
+  const { data: leaderboard, isLoading } = useLeaderboard(kind, period);
   const { profile, user } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { data: searchResults = [] } = useSearchUsers(searchQuery);
 
-  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long' });
+  const countColumnLabel = kind === 'coffee' ? 'Coffee' : 'Vouchers';
 
   const handleUsernameClick = (userId: string) => {
     if (!user) {
@@ -71,7 +85,7 @@ export default function LeaderboardPage() {
                 Leaderboard
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {currentMonth} Rankings
+                {leaderboardSubtitle(kind, period)}
               </p>
             </div>
             <Button
@@ -106,6 +120,60 @@ export default function LeaderboardPage() {
         </div>
       )}
 
+      <div className="container space-y-3 px-4 pt-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              type="button"
+              onClick={() => setKind('coffee')}
+              className={cn(
+                'inline-flex shrink-0 items-center rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                kind === 'coffee'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground',
+              )}
+            >
+              Coffee
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind('voucher')}
+              className={cn(
+                'inline-flex shrink-0 items-center rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                kind === 'voucher'
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground',
+              )}
+            >
+              Voucher
+            </button>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(
+              [
+                { id: 'day' as const, label: 'Day' },
+                { id: 'week' as const, label: 'Week' },
+                { id: 'month' as const, label: 'Month' },
+              ] as const
+            ).map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPeriod(id)}
+                className={cn(
+                  'inline-flex shrink-0 items-center rounded-full px-3 py-2 text-sm font-medium transition-colors',
+                  period === id
+                    ? 'bg-foreground text-background'
+                    : 'border border-border bg-card text-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="container px-4 py-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -117,7 +185,7 @@ export default function LeaderboardPage() {
             <div className="grid grid-cols-12 gap-3 py-2 text-sm font-semibold tracking-normal text-muted-foreground">
               <div className="col-span-2 text-center">#</div>
               <div className="col-span-7">Runner</div>
-              <div className="col-span-3 text-right">Days</div>
+              <div className="col-span-3 text-right">{countColumnLabel}</div>
             </div>
 
             {/* Entries */}

@@ -723,6 +723,16 @@ export type Database = {
           description: string | null
         }[]
       }
+      get_public_leaderboard: {
+        Args: { p_kind: string; p_period: string }
+        Returns: {
+          id: string
+          user_id: string
+          username: string
+          created_at: string
+          run_count: number
+        }[]
+      }
       get_published_campaign_voucher_pool: {
         Args: { p_campaign_id: string }
         Returns: {
