@@ -5,28 +5,17 @@ import type { HuntMapPinKind } from '@/lib/huntMapPinKind';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap, useMapEvent } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import coffeeShopPin from '@/assets/coffee-shop-pin.svg';
+import userLocationPin from '@/assets/user-location-pin.svg';
 import { isNearHongKong, MAP_FIT_SPAN_OUTLIER_DEG } from '@/lib/hkMapBounds';
 
 const TILE_LAYERS = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
 } as const;
-
-/** Leaflet default blue pin (same as treasure map picker). */
-const leafletDefaultUserIcon = L.icon({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
 
 /** Pin glyph size on the map (Leaflet icon box matches this exactly). */
 const PIN_SIZE = 24;
@@ -51,6 +40,11 @@ function createSvgIcon(
     iconAnchor: [w / 2, h],
   });
 }
+
+/** Red teardrop “map app” style pin for the user’s current location. */
+const USER_LOC_PIN_W = 28;
+const USER_LOC_PIN_H = 40;
+const userLocationIcon = createSvgIcon(userLocationPin, USER_LOC_PIN_W, USER_LOC_PIN_H, false);
 
 const iconCache = {
   coffee: { active: null as L.DivIcon | null, scanned: null as L.DivIcon | null },
@@ -331,7 +325,7 @@ export function HuntMap({
         Number.isFinite(userLocation.lng) ? (
           <Marker
             position={[userLocation.lat, userLocation.lng]}
-            icon={leafletDefaultUserIcon}
+            icon={userLocationIcon}
             interactive={false}
             zIndexOffset={1000}
           />
