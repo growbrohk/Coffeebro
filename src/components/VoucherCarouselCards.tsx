@@ -66,10 +66,8 @@ export function VoucherCarouselCard({
   showRedemptionPeriod = true,
   variant = 'voucher',
 }: VoucherCarouselCardProps) {
-  const clue =
-    variant === 'cafe'
-      ? (treasure.orgPreviewPhotoUrl ?? treasure.clue_image ?? null)
-      : (treasure.clue_image ?? null);
+  const coverImage =
+    treasure.orgPreviewPhotoUrl ?? treasure.clue_image ?? null;
   const offerName = treasure.offerTitle?.trim() || 'Offer';
   const nameQuotaTitle =
     treasure.quantityLimit != null
@@ -114,8 +112,8 @@ export function VoucherCarouselCard({
           variant === 'cafe' ? 'rounded-t-2xl' : 'rounded-t-3xl'
         )}
       >
-        {clue ? (
-          <img src={clue} alt="" className="h-full w-full object-cover" />
+        {coverImage ? (
+          <img src={coverImage} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ImageIcon className="h-6 w-6 text-muted-foreground/35" strokeWidth={1.25} />
