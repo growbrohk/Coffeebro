@@ -367,7 +367,7 @@ export default function ProfilePage() {
               )}
               <Button
                 type="button"
-                className="h-5 shrink-0 px-2.5 py-0 text-sm font-semibold leading-none text-primary-foreground hover:bg-primary/90"
+                className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                 onClick={() => navigate('/leaderboard')}
               >
                 view leaderboard
