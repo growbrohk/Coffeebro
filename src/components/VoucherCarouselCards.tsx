@@ -47,12 +47,10 @@ interface VoucherCarouselCardProps {
 function VoucherTicketDivider({ bodyClass }: { bodyClass: string }) {
   return (
     <div
-      className={cn('relative h-3 flex-shrink-0 overflow-visible', bodyClass)}
+      className={cn('relative h-3 flex-shrink-0 overflow-hidden', bodyClass)}
       aria-hidden
     >
-      <div className="pointer-events-none absolute left-0 top-1/2 z-[1] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background ring-1 ring-border/50" />
-      <div className="pointer-events-none absolute right-0 top-1/2 z-[1] h-2.5 w-2.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-background ring-1 ring-border/50" />
-      <div className="absolute left-4 right-4 top-1/2 border-t border-dashed border-border" />
+      <div className="absolute inset-x-3 top-1/2 border-t border-dashed border-border" />
     </div>
   );
 }
