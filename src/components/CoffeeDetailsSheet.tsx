@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronLeft, Check, ChevronsUpDown } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -7,19 +7,34 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1 } from '@/components/CoffeeCupMark';
+import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
+import { useOrgMenuItems } from '@/hooks/useOrgMenuItems';
+import { cn } from '@/lib/utils';
+
+const PLACE_HOME_LABEL = 'Home';
+const ORG_MENU_OTHER = '__org_menu_other__';
 
 export interface CoffeeDetails {
-  rating: number | null;
   coffee_type: string | null;
   coffee_type_other: string;
   place: string;
   diary: string;
-  beans: string;
-  note: string;
 }
 
 interface CoffeeDetailsSheetProps {
@@ -29,56 +44,140 @@ interface CoffeeDetailsSheetProps {
   isPending?: boolean;
 }
 
+type LocationKind = 'home' | 'org' | 'other';
+
 const inputOnOrange =
   'h-12 rounded-full border-0 bg-white text-foreground placeholder:text-muted-foreground shadow-none focus-visible:ring-2 focus-visible:ring-white/80';
 
 const textareaOnOrange =
   'min-h-[120px] rounded-[1.25rem] border-0 bg-white text-foreground placeholder:text-muted-foreground shadow-none focus-visible:ring-2 focus-visible:ring-white/80';
 
+function segmentBtn(active: boolean) {
+  return cn(
+    'h-11 flex-1 rounded-full px-2 text-xs font-semibold transition-colors sm:text-sm',
+    active
+      ? 'bg-white text-primary shadow-sm'
+      : 'border-2 border-white/40 bg-transparent text-primary-foreground hover:bg-white/10',
+  );
+}
+
 export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: CoffeeDetailsSheetProps) {
-  const [rating, setRating] = useState<number>(5);
-  const [ratingSet, setRatingSet] = useState(false);
+  const [locationKind, setLocationKind] = useState<LocationKind>('home');
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [placeOtherFree, setPlaceOtherFree] = useState('');
+  const [orgComboOpen, setOrgComboOpen] = useState(false);
+  const [orgSearch, setOrgSearch] = useState('');
+
   const [coffeeType, setCoffeeType] = useState<string | null>(null);
-  const [coffeeTypeOther, setCoffeeTypeOther] = useState<string>('');
-  const [place, setPlace] = useState<string>('');
+  const [coffeeTypeOther, setCoffeeTypeOther] = useState('');
+  const [orgMenuKey, setOrgMenuKey] = useState<string | null>(null);
+  const [orgMenuOtherText, setOrgMenuOtherText] = useState('');
+  const [orgMenuComboOpen, setOrgMenuComboOpen] = useState(false);
+  const [orgMenuSearch, setOrgMenuSearch] = useState('');
+
   const [diary, setDiary] = useState<string>('');
-  const [beans, setBeans] = useState<string>('');
-  const [note, setNote] = useState<string>('');
+
+  const { data: discoveryOrgs = [], isLoading: discoveryLoading } = useDiscoveryOrgs({ enabled: open });
+  const { data: menuItemsRaw = [], isLoading: menuLoading } = useOrgMenuItems(
+    locationKind === 'org' ? selectedOrgId ?? undefined : undefined,
+  );
+
+  const activeMenuItems = useMemo(
+    () => menuItemsRaw.filter((m) => m.status === 'active'),
+    [menuItemsRaw],
+  );
+
+  const selectedOrg = useMemo(
+    () => discoveryOrgs.find((o) => o.id === selectedOrgId) ?? null,
+    [discoveryOrgs, selectedOrgId],
+  );
+
+  const filteredOrgs = useMemo(() => {
+    const q = orgSearch.trim().toLowerCase();
+    if (!q) return discoveryOrgs;
+    return discoveryOrgs.filter(
+      (o) =>
+        o.org_name.toLowerCase().includes(q) ||
+        (o.location && o.location.toLowerCase().includes(q)) ||
+        (o.district && o.district.toLowerCase().includes(q)),
+    );
+  }, [discoveryOrgs, orgSearch]);
+
+  const filteredOrgMenu = useMemo(() => {
+    const q = orgMenuSearch.trim().toLowerCase();
+    const items = activeMenuItems;
+    if (!q) return items;
+    return items.filter((m) => m.item_name.toLowerCase().includes(q));
+  }, [activeMenuItems, orgMenuSearch]);
+
+  const resetCoffeeFields = () => {
+    setCoffeeType(null);
+    setCoffeeTypeOther('');
+    setOrgMenuKey(null);
+    setOrgMenuOtherText('');
+    setOrgMenuSearch('');
+  };
+
+  const setLocationKindAndReset = (kind: LocationKind) => {
+    setLocationKind(kind);
+    setSelectedOrgId(null);
+    setPlaceOtherFree('');
+    setOrgSearch('');
+    resetCoffeeFields();
+  };
+
+  const buildPlace = (): string => {
+    if (locationKind === 'home') return PLACE_HOME_LABEL;
+    if (locationKind === 'other') return placeOtherFree.trim();
+    if (locationKind === 'org' && selectedOrg) return selectedOrg.org_name.trim();
+    return '';
+  };
+
+  const buildCoffee = (): Pick<CoffeeDetails, 'coffee_type' | 'coffee_type_other'> => {
+    if (locationKind === 'org' && selectedOrgId) {
+      if (activeMenuItems.length === 0) {
+        return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+      }
+      if (orgMenuKey === ORG_MENU_OTHER) {
+        return { coffee_type: 'Other', coffee_type_other: orgMenuOtherText.trim() };
+      }
+      if (orgMenuKey) {
+        const item = activeMenuItems.find((m) => m.id === orgMenuKey);
+        if (item) return { coffee_type: item.item_name, coffee_type_other: '' };
+      }
+      return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+    }
+    return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+  };
 
   const handleSave = () => {
-    const details: CoffeeDetails = {
-      rating: ratingSet ? rating : null,
-      coffee_type: coffeeType,
-      coffee_type_other: coffeeTypeOther,
-      place,
+    const { coffee_type, coffee_type_other } = buildCoffee();
+    onSave({
+      coffee_type,
+      coffee_type_other,
+      place: buildPlace(),
       diary,
-      beans,
-      note,
-    };
-    onSave(details);
+    });
   };
 
   const handleSkip = () => {
     onSave({
-      rating: null,
       coffee_type: null,
       coffee_type_other: '',
       place: '',
       diary: '',
-      beans: '',
-      note: '',
     });
   };
 
   const resetForm = () => {
-    setRating(5);
-    setRatingSet(false);
-    setCoffeeType(null);
-    setCoffeeTypeOther('');
-    setPlace('');
+    setLocationKind('home');
+    setSelectedOrgId(null);
+    setPlaceOtherFree('');
+    setOrgSearch('');
+    setOrgComboOpen(false);
+    resetCoffeeFields();
+    setOrgMenuComboOpen(false);
     setDiary('');
-    setBeans('');
-    setNote('');
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -95,6 +194,21 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
   };
 
   const labelOrange = 'text-sm font-bold text-primary-foreground';
+
+  const orgMenuDisplay =
+    orgMenuKey === ORG_MENU_OTHER
+      ? 'Other'
+      : orgMenuKey
+        ? activeMenuItems.find((m) => m.id === orgMenuKey)?.item_name ?? 'Search menu...'
+        : 'Pick from menu...';
+
+  const showOrgMenuCoffee =
+    locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length > 0;
+
+  const showGenericCoffee =
+    locationKind === 'home' ||
+    locationKind === 'other' ||
+    (locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length === 0);
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -125,64 +239,248 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
           <div className="flex flex-1 flex-col rounded-t-3xl bg-primary px-4 pb-8 pt-6 -mt-2">
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label className={labelOrange}>How was your coffee?</Label>
-                <p className="text-xs font-medium text-primary-foreground/90">1 = terrible, 10 = heavenly</p>
-                <div className="flex items-center gap-3 pt-1">
-                  <span className="text-sm font-bold text-primary-foreground">1</span>
-                  <Slider
-                    value={[rating]}
-                    onValueChange={(value) => {
-                      setRating(value[0]);
-                      setRatingSet(true);
-                    }}
-                    min={1}
-                    max={10}
-                    step={1}
-                    className="flex-1 [&>span:first-child]:bg-black/20 [&>span:first-child>span]:bg-white"
-                    thumbClassName="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-transparent p-0 shadow-none ring-offset-primary focus-visible:ring-white/70"
-                    thumbChild={<CoffeeCupIcon className="h-5 w-5" fill="#ffffff" />}
-                  />
-                  <span className="text-sm font-bold text-primary-foreground">10</span>
+                <Label className={labelOrange}>Where did you drink it?</Label>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    className={segmentBtn(locationKind === 'home')}
+                    onClick={() => setLocationKindAndReset('home')}
+                  >
+                    Home
+                  </button>
+                  <button
+                    type="button"
+                    className={segmentBtn(locationKind === 'org')}
+                    onClick={() => setLocationKindAndReset('org')}
+                  >
+                    Coffee shop
+                  </button>
+                  <button
+                    type="button"
+                    className={segmentBtn(locationKind === 'other')}
+                    onClick={() => setLocationKindAndReset('other')}
+                  >
+                    Somewhere else
+                  </button>
                 </div>
+
+                {locationKind === 'org' && (
+                  <div className="space-y-2 pt-2">
+                    <Label className={labelOrange}>Which coffee shop?</Label>
+                    <Popover open={orgComboOpen} onOpenChange={setOrgComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={orgComboOpen}
+                          className={cn(
+                            'w-full justify-between rounded-full border-0 font-normal shadow-none',
+                            inputOnOrange,
+                          )}
+                          disabled={discoveryLoading}
+                        >
+                          {discoveryLoading
+                            ? 'Loading venues...'
+                            : selectedOrg
+                              ? selectedOrg.org_name
+                              : 'Search venues...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search venues..."
+                            value={orgSearch}
+                            onValueChange={setOrgSearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>No venue found.</CommandEmpty>
+                            <CommandGroup>
+                              {filteredOrgs.map((o) => (
+                                <CommandItem
+                                  key={o.id}
+                                  value={o.id}
+                                  onSelect={() => {
+                                    setSelectedOrgId(o.id);
+                                    resetCoffeeFields();
+                                    setOrgComboOpen(false);
+                                    setOrgSearch('');
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      selectedOrgId === o.id ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  <span className="flex flex-col gap-0.5">
+                                    <span>{o.org_name}</span>
+                                    {(o.location || o.district) && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {[o.district, o.location].filter(Boolean).join(' · ')}
+                                      </span>
+                                    )}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+
+                {locationKind === 'other' && (
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="place-other" className={labelOrange}>
+                      Where?
+                    </Label>
+                    <Input
+                      id="place-other"
+                      placeholder="e.g. office, park, friend’s place..."
+                      value={placeOtherFree}
+                      onChange={(e) => setPlaceOtherFree(e.target.value)}
+                      className={inputOnOrange}
+                    />
+                  </div>
+                )}
               </div>
 
-              <CoffeeTypeSelect
-                value={coffeeType ? [coffeeType] : []}
-                onChange={handleCoffeeTypeChange}
-                maxSelected={1}
-                label="What coffee did you have?"
-                labelClassName={labelOrange}
-                triggerClassName={inputOnOrange}
-                emptyLabel="Search coffee..."
-                searchPlaceholder="Search coffee..."
-              />
-              {coffeeType === 'Other' && (
-                <div className="space-y-2">
-                  <Label htmlFor="coffee-type-other" className={labelOrange}>
-                    Specify (optional)
-                  </Label>
-                  <Input
-                    id="coffee-type-other"
-                    placeholder="e.g. Custom blend name"
-                    value={coffeeTypeOther}
-                    onChange={(e) => setCoffeeTypeOther(e.target.value)}
-                    className={inputOnOrange}
-                  />
-                </div>
-              )}
-
               <div className="space-y-2">
-                <Label htmlFor="place" className={labelOrange}>
-                  Where did you drink it?
-                </Label>
-                <Input
-                  id="place"
-                  placeholder="e.g. home/ office/ coffee shop..."
-                  value={place}
-                  onChange={(e) => setPlace(e.target.value)}
-                  className={inputOnOrange}
-                  autoFocus={false}
-                />
+                <Label className={labelOrange}>What coffee did you have?</Label>
+
+                {locationKind === 'org' && !selectedOrgId && (
+                  <p className="text-xs font-medium text-primary-foreground/90">Choose a venue first.</p>
+                )}
+
+                {locationKind === 'org' && selectedOrgId && menuLoading && (
+                  <p className="text-xs font-medium text-primary-foreground/90">Loading menu...</p>
+                )}
+
+                {showOrgMenuCoffee && (
+                  <div className="space-y-2">
+                    <Popover open={orgMenuComboOpen} onOpenChange={setOrgMenuComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={orgMenuComboOpen}
+                          className={cn(
+                            'w-full justify-between rounded-full border-0 font-normal shadow-none',
+                            inputOnOrange,
+                          )}
+                          disabled={menuLoading}
+                        >
+                          {menuLoading ? 'Loading menu...' : orgMenuDisplay}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search menu..."
+                            value={orgMenuSearch}
+                            onValueChange={setOrgMenuSearch}
+                          />
+                          <CommandList>
+                            <CommandEmpty>No item found.</CommandEmpty>
+                            <CommandGroup>
+                              {filteredOrgMenu.map((m) => (
+                                <CommandItem
+                                  key={m.id}
+                                  value={m.id}
+                                  onSelect={() => {
+                                    setOrgMenuKey(m.id);
+                                    setOrgMenuOtherText('');
+                                    setOrgMenuComboOpen(false);
+                                    setOrgMenuSearch('');
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      orgMenuKey === m.id ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                  />
+                                  {m.item_name}
+                                </CommandItem>
+                              ))}
+                              <CommandItem
+                                value={ORG_MENU_OTHER}
+                                onSelect={() => {
+                                  setOrgMenuKey(ORG_MENU_OTHER);
+                                  setOrgMenuComboOpen(false);
+                                  setOrgMenuSearch('');
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    orgMenuKey === ORG_MENU_OTHER ? 'opacity-100' : 'opacity-0',
+                                  )}
+                                />
+                                Other
+                              </CommandItem>
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    {orgMenuKey === ORG_MENU_OTHER && (
+                      <div className="space-y-2">
+                        <Label htmlFor="org-menu-other" className={labelOrange}>
+                          Specify (optional)
+                        </Label>
+                        <Input
+                          id="org-menu-other"
+                          placeholder="What did you have?"
+                          value={orgMenuOtherText}
+                          onChange={(e) => setOrgMenuOtherText(e.target.value)}
+                          className={inputOnOrange}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {locationKind === 'org' && selectedOrgId && !menuLoading && activeMenuItems.length === 0 && (
+                  <p className="text-xs font-medium text-primary-foreground/90">
+                    No menu listed for this venue yet — pick a drink type below.
+                  </p>
+                )}
+
+                {showGenericCoffee && (
+                  <>
+                    <CoffeeTypeSelect
+                      value={coffeeType ? [coffeeType] : []}
+                      onChange={handleCoffeeTypeChange}
+                      maxSelected={1}
+                      label=""
+                      labelClassName={labelOrange}
+                      triggerClassName={inputOnOrange}
+                      emptyLabel="Search coffee..."
+                      searchPlaceholder="Search coffee..."
+                    />
+                    {coffeeType === 'Other' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="coffee-type-other" className={labelOrange}>
+                          Specify (optional)
+                        </Label>
+                        <Input
+                          id="coffee-type-other"
+                          placeholder="e.g. Custom blend name"
+                          value={coffeeTypeOther}
+                          onChange={(e) => setCoffeeTypeOther(e.target.value)}
+                          className={inputOnOrange}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -195,32 +493,6 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                   value={diary}
                   onChange={(e) => setDiary(e.target.value)}
                   className={textareaOnOrange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="beans" className={labelOrange}>
-                  What beans was used?
-                </Label>
-                <Input
-                  id="beans"
-                  placeholder="e.g. ethiopia"
-                  value={beans}
-                  onChange={(e) => setBeans(e.target.value)}
-                  className={inputOnOrange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="note" className={labelOrange}>
-                  Notes
-                </Label>
-                <Input
-                  id="note"
-                  placeholder="e.g. notes to take down on this coffee"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className={inputOnOrange}
                 />
               </div>
             </div>

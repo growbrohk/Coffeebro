@@ -165,7 +165,7 @@ export function CoffeeTypeSelect({
             role="combobox"
             aria-expanded={comboboxOpen}
             className={cn('w-full justify-between bg-background border-border', triggerClassName)}
-            disabled={value.length >= maxSelected}
+            disabled={maxSelected > 1 && value.length >= maxSelected}
           >
             {displayValue}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

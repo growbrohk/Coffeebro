@@ -23,13 +23,13 @@ export function useLogCoffeeEntry() {
   const handleDetailsSave = async (details: CoffeeDetails) => {
     try {
       await addCoffee.mutateAsync({
-        rating: details.rating,
+        rating: null,
         coffee_type: details.coffee_type,
         coffee_type_other: details.coffee_type_other,
         place: details.place,
         diary: details.diary,
-        beans: details.beans,
-        note: details.note,
+        beans: null,
+        note: null,
       });
       setShowDetailsSheet(false);
       setShowCelebrationModal(true);
