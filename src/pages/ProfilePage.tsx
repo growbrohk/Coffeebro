@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,11 @@ import { FROG_AVATAR_PATH, FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/cons
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings } from 'lucide-react';
+import { suggestUsernameFromDisplayName } from '@/lib/username';
+
+function isTempProfileUsername(name: string) {
+  return name.startsWith('temp_');
+}
 
 /** Profile stat cards — warm cream surface to match design reference */
 const profileCardClass =
@@ -71,7 +76,7 @@ export default function ProfilePage() {
   };
 
   const authMessage = getMessage();
-  const { user, profile, loading, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, profile, loading, signIn, signUp, signInWithGoogle, completeUsername } = useAuth();
   const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
 
@@ -93,16 +98,34 @@ export default function ProfilePage() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingUsername, setPendingUsername] = useState('');
+  const oauthUsernamePrefillDone = useRef(false);
 
   useEffect(() => {
     if (openAuthAsSignUp) setIsSignUp(true);
   }, [openAuthAsSignUp]);
 
-  /** After Google OAuth, land on /profile?claim=… then mirror email/password success navigation. */
+  /** After Google OAuth, land on /profile?claim=… once a real username exists (not temp_). */
   useEffect(() => {
     if (!user || !profile || !claimParam) return;
+    if (isTempProfileUsername(profile.username)) return;
     navigate(`/q?claim=${claimParam}`, { replace: true });
   }, [user, profile, claimParam, navigate]);
+
+  useEffect(() => {
+    if (!user || !profile || !isTempProfileUsername(profile.username)) {
+      oauthUsernamePrefillDone.current = false;
+      return;
+    }
+    if (oauthUsernamePrefillDone.current) return;
+    oauthUsernamePrefillDone.current = true;
+    const meta = user.user_metadata as Record<string, unknown> | undefined;
+    const display =
+      (typeof meta?.full_name === 'string' && meta.full_name) ||
+      (typeof meta?.name === 'string' && meta.name) ||
+      '';
+    setPendingUsername(suggestUsernameFromDisplayName(display));
+  }, [user, profile]);
 
   if (loading) {
     return (
@@ -160,6 +183,79 @@ export default function ProfilePage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleCompleteOAuthUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!pendingUsername.trim()) {
+      setError('Username is required');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const { error: err } = await completeUsername(pendingUsername);
+      if (err) {
+        setError(err.message);
+      }
+    } catch {
+      setError('Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (user && profile && isTempProfileUsername(profile.username)) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="sticky top-0 z-10 border-b border-border bg-background py-4 px-4">
+          <h1 className="font-heading text-center text-2xl font-bold tracking-normal">
+            Choose username
+          </h1>
+        </div>
+
+        <div className="container px-4 py-8">
+          {claimParam && (
+            <div className="mx-auto mb-6 max-w-sm bg-foreground p-4 text-center text-background">
+              <p className="font-bold tracking-normal">
+                Choose a username to finish unlocking your frog!
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleCompleteOAuthUsername} className="mx-auto max-w-sm space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="oauth-username" className="text-sm font-semibold tracking-normal">
+                Username
+              </Label>
+              <Input
+                id="oauth-username"
+                type="text"
+                value={pendingUsername}
+                onChange={(e) => setPendingUsername(e.target.value)}
+                placeholder="yourname"
+                className="h-12 text-lg"
+                autoComplete="username"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Letters and numbers only; shown on your profile and leaderboard.
+              </p>
+            </div>
+
+            {error && (
+              <p className="bg-foreground p-2 text-center text-sm font-medium text-background">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" className="w-full btn-run btn-run-yes" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Continue'}
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (user && profile) {
     const frogSubtitle = quizResultType

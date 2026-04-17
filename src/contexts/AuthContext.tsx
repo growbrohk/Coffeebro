@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeUsernameHandle } from '@/lib/username';
 
 interface Profile {
   id: string;
@@ -18,6 +19,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   /** Starts Google OAuth; on success redirects the browser to Google (then back to redirectTo). */
   signInWithGoogle: (redirectTo?: string) => Promise<{ error: Error | null }>;
+  /** Set profile username after OAuth when the row still uses a temp_ placeholder. */
+  completeUsername: (username: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -204,6 +207,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: new Error('No OAuth URL returned') };
   };
 
+  const completeUsername = async (username: string) => {
+    const normalized = normalizeUsernameHandle(username);
+    if (!normalized) {
+      return { error: new Error('Username is required') };
+    }
+
+    const {
+      data: { session: s },
+    } = await supabase.auth.getSession();
+    const uid = s?.user?.id;
+    if (!uid) {
+      return { error: new Error('Not signed in') };
+    }
+
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('username', normalized)
+      .maybeSingle();
+
+    if (existing && existing.user_id !== uid) {
+      return { error: new Error('Username already taken') };
+    }
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ username: normalized })
+      .eq('user_id', uid);
+
+    if (updateError) {
+      if (
+        updateError.code === '23505' ||
+        updateError.message?.toLowerCase().includes('unique')
+      ) {
+        return { error: new Error('Username already taken') };
+      }
+      return { error: new Error(updateError.message) };
+    }
+
+    await supabase.auth.updateUser({ data: { username: normalized } });
+
+    const updated = await fetchProfile(uid);
+    if (updated) {
+      setProfile(updated);
+    }
+
+    return { error: null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -211,7 +263,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, loading, signUp, signIn, signInWithGoogle, signOut }}
+      value={{
+        user,
+        session,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        completeUsername,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
