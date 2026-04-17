@@ -140,7 +140,7 @@ export default function LeaderboardPage() {
             onValueChange={(v) => setPeriod(v as LeaderboardPeriod)}
           >
             <SelectTrigger
-              className="h-9 w-[min(7.5rem,32vw)] shrink-0 rounded-full border px-2.5 text-xs font-medium shadow-none"
+              className="relative h-9 w-[min(6rem,28vw)] shrink-0 justify-center rounded-full border px-2 text-xs font-medium shadow-none [&>:first-child]:w-full [&>:first-child]:text-center [&>:first-child]:pr-5 [&>:last-child]:absolute [&>:last-child]:right-1.5 [&>:last-child]:top-1/2 [&>:last-child]:-translate-y-1/2 [&_svg]:h-3.5 [&_svg]:w-3.5"
               style={{
                 borderColor: FG,
                 backgroundColor: BG,
