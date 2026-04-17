@@ -91,10 +91,16 @@ export default function LeaderboardPage() {
 
   const handleUsernameClick = (userId: string) => {
     if (!user) {
-      navigate('/profile?msg=view-calendar');
+      navigate(
+        kind === 'voucher' ? '/profile?msg=view-vouchers' : '/profile?msg=view-calendar',
+      );
       return;
     }
-    navigate(`/users/${userId}`);
+    if (kind === 'voucher') {
+      navigate(`/users/${userId}/vouchers`);
+    } else {
+      navigate(`/users/${userId}`);
+    }
   };
 
   const top = leaderboard?.slice(0, 3) ?? [];

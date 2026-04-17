@@ -10,6 +10,7 @@ import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
 import SettingsPage from "./pages/SettingsPage";
 import UserCalendarPage from "./pages/UserCalendarPage";
+import UserPublicVouchersPage from "./pages/UserPublicVouchersPage";
 import ScanPage from "./pages/Scan";
 import QuizPage from "./pages/QuizPage";
 import QuizResultPage from "./pages/QuizResultPage";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/users/:userId/vouchers" element={<UserPublicVouchersPage />} />
               <Route path="/users/:userId" element={<UserCalendarPage />} />
               <Route path="/scan" element={<ScanPage />} />
               <Route path="/hunts" element={<HuntMapPage />} />

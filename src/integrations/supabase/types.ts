@@ -734,6 +734,31 @@ export type Database = {
           quiz_result_type: string | null
         }[]
       }
+      get_public_user_vouchers: {
+        Args: { p_owner_id: string }
+        Returns: {
+          id: string
+          status: string
+          created_at: string
+          redeemed_at: string | null
+          expires_at: string | null
+          campaign_id: string
+          org_id: string
+          org_name: string | null
+          org_logo_url: string | null
+          org_lat: number | null
+          org_lng: number | null
+          org_location: string | null
+          org_google_maps_url: string | null
+          offer_type: string | null
+          menu_item_name: string | null
+          display_title: string | null
+          campaign_type: string | null
+          hint_text: string | null
+          hint_image_url: string | null
+          campaign_end_at: string | null
+        }[]
+      }
       get_published_campaign_voucher_pool: {
         Args: { p_campaign_id: string }
         Returns: {
