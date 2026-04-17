@@ -100,6 +100,9 @@ export default function ExplorePage() {
                   items={filteredDiscovery}
                   variant="cafe"
                   onCta={() => navigate("/hunts")}
+                  onCardPress={(t) => {
+                    if (t.org_id) navigate(`/orgs/${t.org_id}`);
+                  }}
                   showRedemptionPeriod={false}
                   className="pl-0 pr-0"
                 />
