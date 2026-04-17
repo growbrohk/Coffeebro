@@ -33,6 +33,9 @@ export const FROG_AVATAR_PATH: Record<FrogType, string> = {
   HDR: '/quiz-frogs/hand-drip.svg',
 };
 
+/** Profile hero when the user has not taken the quiz (all frogs — not a single type). */
+export const FROG_DEFAULT_GROUP_AVATAR_PATH = '/quiz-frogs/seven-frogs.svg';
+
 /** URL path segment for `/q/share/<slug>.html` and `/og-quiz/<slug>.png`. */
 export const FROG_SHARE_SLUG: Record<FrogType, string> = {
   ESP: 'espresso',

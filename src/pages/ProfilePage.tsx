@@ -13,7 +13,12 @@ import {
 } from '@/hooks/useCoffees';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
-import { FROG_AVATAR_PATH, FROG_NAMES, FROG_PROFILE_CARD } from '@/lib/quiz/constants';
+import {
+  FROG_AVATAR_PATH,
+  FROG_DEFAULT_GROUP_AVATAR_PATH,
+  FROG_NAMES,
+  FROG_PROFILE_CARD,
+} from '@/lib/quiz/constants';
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings } from 'lucide-react';
@@ -285,9 +290,9 @@ export default function ProfilePage() {
                 src={
                   quizResultType
                     ? FROG_AVATAR_PATH[quizResultType]
-                    : FROG_AVATAR_PATH.ESP
+                    : FROG_DEFAULT_GROUP_AVATAR_PATH
                 }
-                alt={quizResultType ? FROG_NAMES[quizResultType] : FROG_NAMES.ESP}
+                alt={quizResultType ? FROG_NAMES[quizResultType] : 'Coffee frogs'}
                 className="h-40 w-auto max-w-[min(100%,220px)] object-contain"
               />
             </div>
