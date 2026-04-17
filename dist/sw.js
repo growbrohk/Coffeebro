@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "9d8c0162d2a3a5c40b6aabe8866a34b9"
+    "revision": "62e52c0df8fd30ebac5708a261932966"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -106,25 +106,25 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "d9a67c75d4c948493f458e0fac45ef67"
   }, {
     "url": "quiz-frogs/mocha.svg",
-    "revision": "92f35eac64a0f9d6497b4fc1380ed3bc"
+    "revision": "6f5be6d140b1b72057ad1dfb30399f6e"
   }, {
     "url": "quiz-frogs/matcha.svg",
-    "revision": "1a75b2b3ce3705ac1c686d372765f8ab"
+    "revision": "4e207c053e3ad8f41c3f914ce500433d"
   }, {
     "url": "quiz-frogs/latte.svg",
-    "revision": "ecadc4f3c194f855417366656acded78"
+    "revision": "398fb1fc0df8bad8eeb8d2174e8b598c"
   }, {
     "url": "quiz-frogs/hand-drip.svg",
-    "revision": "f5675116de27083afc9e3aa33e96ba9b"
+    "revision": "3adb39ab4e12a462359deee8139917ee"
   }, {
     "url": "quiz-frogs/espresso.svg",
-    "revision": "99506ae00138bb9b6efce18b8ea8189f"
+    "revision": "e463df4f2cd83d05a86ac519419a7084"
   }, {
     "url": "quiz-frogs/dirty.svg",
-    "revision": "221d20c324156fc87c361a264e5a1d95"
+    "revision": "a7a98f6f82e35e58ea39e92afebe3327"
   }, {
     "url": "quiz-frogs/cold-brew.svg",
-    "revision": "f5675116de27083afc9e3aa33e96ba9b"
+    "revision": "99394444659e823df09a2c5f95986c4d"
   }, {
     "url": "quiz-frogs/americano.svg",
     "revision": "1fb8fec8abd71770847f73700e1cbaff"
@@ -154,25 +154,25 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "d39c01da58f41879ce3f82184d5d81c7"
   }, {
     "url": "og-quiz/mocha.png",
-    "revision": "5bbbf4be5117945501533867eb341404"
+    "revision": "76ee7c38ea8faa879a8d9300dd2545a7"
   }, {
     "url": "og-quiz/matcha.png",
-    "revision": "ee58f7a3fae42de5422125974b87c975"
+    "revision": "4d36e5c7716aad36825c54399c56e504"
   }, {
     "url": "og-quiz/latte.png",
-    "revision": "9356d902bd0a465f1efaffafe803c043"
+    "revision": "b74c16cf2d986c6ac66744b5dcc44984"
   }, {
     "url": "og-quiz/hand-drip.png",
-    "revision": "da6bee92dd840076c80a313ececde81f"
+    "revision": "890c7fe0a33d7a9fd3b50f17f90c697b"
   }, {
     "url": "og-quiz/espresso.png",
-    "revision": "717f3545d1705bc94a3d84f37f64f8a4"
+    "revision": "149d6287071955a1c77891c2e6936cbd"
   }, {
     "url": "og-quiz/dirty.png",
-    "revision": "fe31e9e285eb2df91fb825d11fae277e"
+    "revision": "4e845c777f92622454e228a4cbe3444c"
   }, {
     "url": "og-quiz/cold-brew.png",
-    "revision": "83a56eb6ff930a59bf5670eef1372852"
+    "revision": "6617e8c19249e0a58158da1eee0a5f3c"
   }, {
     "url": "icons/icon-maskable-512.png",
     "revision": "b52fa36f76f5fa573e63e70421155a73"
@@ -195,10 +195,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-CaEdhkS5.js",
+    "url": "assets/index-N7DGwqgR.js",
     "revision": null
   }, {
-    "url": "assets/index-BVYe3rau.css",
+    "url": "assets/index-Cub4m9ZL.css",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",
