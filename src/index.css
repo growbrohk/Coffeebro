@@ -475,6 +475,29 @@
   display: none !important;
 }
 
+.hunt-map-org-label.leaflet-tooltip {
+  background: hsl(var(--card) / 0.88) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border) / 0.7) !important;
+  border-radius: 8px !important;
+  padding: 2px 6px !important;
+  font-family: var(--font-body) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  line-height: 1.1 !important;
+  max-width: 96px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18) !important;
+  backdrop-filter: blur(4px);
+  pointer-events: none !important;
+}
+
+.hunt-map-org-label.leaflet-tooltip::before {
+  display: none !important;
+}
+
 .leaflet-popup-content-wrapper {
   background: hsl(var(--popover));
   color: hsl(var(--foreground));

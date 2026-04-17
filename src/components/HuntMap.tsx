@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTheme } from 'next-themes';
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import type { HuntMapPinKind } from '@/lib/huntMapPinKind';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap, useMapEvent } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -71,6 +71,31 @@ function iconForPinKind(kind: HuntMapPinKind, scanned: boolean): L.DivIcon {
   return iconCache.hunt.active;
 }
 
+const LABEL_MIN_ZOOM = 14;
+
+function shouldShowOrgLabel(t: CampaignMapItem, zoom: number): boolean {
+  return Boolean(t.orgName?.trim()) && !t.scanned && zoom >= LABEL_MIN_ZOOM;
+}
+
+/** Negative Y nudges tooltip up so text sits near the pin’s visual center (icon anchor is at tip). */
+function pinLabelYOffsetForKind(kind: HuntMapPinKind): number {
+  return kind === 'coffee_shop' ? -CUP_H / 2 : -PIN_SIZE / 2;
+}
+
+function ZoomTracker({ setZoom }: { setZoom: Dispatch<SetStateAction<number>> }) {
+  const map = useMap();
+
+  useEffect(() => {
+    setZoom(map.getZoom());
+  }, [map, setZoom]);
+
+  useMapEvent('zoomend', () => {
+    setZoom(map.getZoom());
+  });
+
+  return null;
+}
+
 /** Pixel insets so fitBounds clears floating search (top) and tab bar / voucher sheet (bottom). */
 export type HuntMapOverlayPadding = { top: number; bottom: number };
 
@@ -107,13 +132,16 @@ function treasuresForFitBounds(withCoords: CampaignMapItem[]): CampaignMapItem[]
 }
 
 const FIT_H_PADDING = 24;
+const FIT_H_PADDING_WITH_LABELS = 96;
 
 function FitBounds({
   treasures,
   mapOverlayPadding,
+  horizontalPadding,
 }: {
   treasures: CampaignMapItem[];
   mapOverlayPadding: HuntMapOverlayPadding;
+  horizontalPadding: number;
 }) {
   const map = useMap();
   const signature = useMemo(() => fitBoundsSignature(treasures), [treasures]);
@@ -130,8 +158,8 @@ function FitBounds({
     if (withCoords.length === 0) return;
     const forFit = treasuresForFitBounds(withCoords);
     const fitOptions: L.FitBoundsOptions = {
-      paddingTopLeft: L.point(FIT_H_PADDING, padTop),
-      paddingBottomRight: L.point(FIT_H_PADDING, padBottom),
+      paddingTopLeft: L.point(horizontalPadding, padTop),
+      paddingBottomRight: L.point(horizontalPadding, padBottom),
       maxZoom: 16,
     };
     if (forFit.length === 1) {
@@ -146,7 +174,7 @@ function FitBounds({
     );
     map.fitBounds(bounds, fitOptions);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry / chrome insets change
-  }, [map, signature, padTop, padBottom]);
+  }, [map, signature, padTop, padBottom, horizontalPadding]);
   return null;
 }
 
@@ -183,6 +211,20 @@ export function HuntMap({
   }, [treasuresWithCoords]);
 
   const hasCoords = treasuresWithCoords.length > 0;
+
+  const hasUnscannedOrgLabels = useMemo(
+    () =>
+      treasuresWithCoords.some(
+        (t) => Boolean(t.orgName?.trim()) && !t.scanned
+      ),
+    [treasuresWithCoords]
+  );
+
+  const fitHorizontalPadding = hasUnscannedOrgLabels
+    ? FIT_H_PADDING_WITH_LABELS
+    : FIT_H_PADDING;
+
+  const [mapZoom, setMapZoom] = useState(13);
 
   if (treasures.length > 0 && !hasCoords) {
     return (
@@ -230,7 +272,12 @@ export function HuntMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
           url={tileUrl}
         />
-        <FitBounds treasures={treasuresWithCoords} mapOverlayPadding={overlayPad} />
+        <ZoomTracker setZoom={setMapZoom} />
+        <FitBounds
+          treasures={treasuresWithCoords}
+          mapOverlayPadding={overlayPad}
+          horizontalPadding={fitHorizontalPadding}
+        />
         {treasuresWithCoords.map((t) => (
           <Marker
             key={t.id}
@@ -241,7 +288,18 @@ export function HuntMap({
             eventHandlers={
               onSelectTreasure ? { click: () => onSelectTreasure(t) } : undefined
             }
-          />
+          >
+            {shouldShowOrgLabel(t, mapZoom) ? (
+              <Tooltip
+                permanent
+                direction="right"
+                offset={[6, pinLabelYOffsetForKind(t.pinKind)]}
+                className="hunt-map-org-label"
+              >
+                {t.orgName}
+              </Tooltip>
+            ) : null}
+          </Marker>
         ))}
       </MapContainer>
       {treasures.length === 0 ? (
