@@ -1,5 +1,6 @@
 import { CoffeeModal } from '@/components/CoffeeModal';
-import { CoffeeDetailsSheet, type CoffeeDetails } from '@/components/CoffeeDetailsSheet';
+import { CoffeeDetailsSheet } from '@/components/CoffeeDetailsSheet';
+import type { CoffeeDetails } from '@/hooks/useCoffees';
 
 export type LogCoffeeEntryModalsProps = {
   detailsSheetOpen: boolean;

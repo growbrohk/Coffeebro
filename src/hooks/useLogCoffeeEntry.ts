@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAddCoffee, useTodayPercentage } from '@/hooks/useCoffees';
-import type { CoffeeDetails } from '@/components/CoffeeDetailsSheet';
+import type { CoffeeDetails } from '@/hooks/useCoffees';
 
 export function useLogCoffeeEntry() {
   const { user } = useAuth();
@@ -22,15 +22,7 @@ export function useLogCoffeeEntry() {
 
   const handleDetailsSave = async (details: CoffeeDetails) => {
     try {
-      await addCoffee.mutateAsync({
-        rating: null,
-        coffee_type: details.coffee_type,
-        coffee_type_other: details.coffee_type_other,
-        place: details.place,
-        diary: details.diary,
-        beans: null,
-        note: null,
-      });
+      await addCoffee.mutateAsync(details);
       setShowDetailsSheet(false);
       setShowCelebrationModal(true);
     } catch (error) {

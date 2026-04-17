@@ -16,48 +16,53 @@ export type Database = {
     Tables: {
       daily_coffees: {
         Row: {
-          beans: string | null
           coffee_date: string
-          coffee_type: string | null
-          coffee_type_other: string | null
           created_at: string
-          diary: string | null
           id: string
-          note: string | null
+          location_kind: string | null
+          log_item: string | null
+          log_item_other: string | null
+          org_id: string | null
           place: string | null
-          rating: number | null
+          tasting_notes: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          beans?: string | null
           coffee_date?: string
-          coffee_type?: string | null
-          coffee_type_other?: string | null
           created_at?: string
-          diary?: string | null
           id?: string
-          note?: string | null
+          location_kind?: string | null
+          log_item?: string | null
+          log_item_other?: string | null
+          org_id?: string | null
           place?: string | null
-          rating?: number | null
+          tasting_notes?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          beans?: string | null
           coffee_date?: string
-          coffee_type?: string | null
-          coffee_type_other?: string | null
           created_at?: string
-          diary?: string | null
           id?: string
-          note?: string | null
+          location_kind?: string | null
+          log_item?: string | null
+          log_item_other?: string | null
+          org_id?: string | null
           place?: string | null
-          rating?: number | null
+          tasting_notes?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "daily_coffees_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dm_messages: {
         Row: {

@@ -26,16 +26,10 @@ import { CoffeeCupIcon, COFFEE_CUP_FILL_1 } from '@/components/CoffeeCupMark';
 import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
 import { useOrgMenuItems } from '@/hooks/useOrgMenuItems';
 import { cn } from '@/lib/utils';
+import type { CoffeeDetails, CoffeeLocationKind } from '@/hooks/useCoffees';
 
 const PLACE_HOME_LABEL = 'Home';
 const ORG_MENU_OTHER = '__org_menu_other__';
-
-export interface CoffeeDetails {
-  coffee_type: string | null;
-  coffee_type_other: string;
-  place: string;
-  diary: string;
-}
 
 interface CoffeeDetailsSheetProps {
   open: boolean;
@@ -75,7 +69,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
   const [orgMenuComboOpen, setOrgMenuComboOpen] = useState(false);
   const [orgMenuSearch, setOrgMenuSearch] = useState('');
 
-  const [diary, setDiary] = useState<string>('');
+  const [tastingNotes, setTastingNotes] = useState<string>('');
 
   const { data: discoveryOrgs = [], isLoading: discoveryLoading } = useDiscoveryOrgs({ enabled: open });
   const { data: menuItemsRaw = [], isLoading: menuLoading } = useOrgMenuItems(
@@ -133,39 +127,55 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     return '';
   };
 
-  const buildCoffee = (): Pick<CoffeeDetails, 'coffee_type' | 'coffee_type_other'> => {
+  const buildLocationKindForSave = (): CoffeeLocationKind | null => {
+    if (locationKind === 'home') return 'home';
+    if (locationKind === 'org') return 'coffee_shop';
+    if (locationKind === 'other') return 'other';
+    return null;
+  };
+
+  const buildOrgIdForSave = (): string | null => {
+    if (locationKind === 'org' && selectedOrgId) return selectedOrgId;
+    return null;
+  };
+
+  const buildCoffee = (): Pick<CoffeeDetails, 'log_item' | 'log_item_other'> => {
     if (locationKind === 'org' && selectedOrgId) {
       if (activeMenuItems.length === 0) {
-        return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+        return { log_item: coffeeType, log_item_other: coffeeTypeOther };
       }
       if (orgMenuKey === ORG_MENU_OTHER) {
-        return { coffee_type: 'Other', coffee_type_other: orgMenuOtherText.trim() };
+        return { log_item: 'Other', log_item_other: orgMenuOtherText.trim() };
       }
       if (orgMenuKey) {
         const item = activeMenuItems.find((m) => m.id === orgMenuKey);
-        if (item) return { coffee_type: item.item_name, coffee_type_other: '' };
+        if (item) return { log_item: item.item_name, log_item_other: '' };
       }
-      return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+      return { log_item: coffeeType, log_item_other: coffeeTypeOther };
     }
-    return { coffee_type: coffeeType, coffee_type_other: coffeeTypeOther };
+    return { log_item: coffeeType, log_item_other: coffeeTypeOther };
   };
 
   const handleSave = () => {
-    const { coffee_type, coffee_type_other } = buildCoffee();
+    const { log_item, log_item_other } = buildCoffee();
     onSave({
-      coffee_type,
-      coffee_type_other,
-      place: buildPlace(),
-      diary,
+      location_kind: buildLocationKindForSave(),
+      org_id: buildOrgIdForSave(),
+      place: buildPlace() || null,
+      log_item,
+      log_item_other: log_item_other || null,
+      tasting_notes: tastingNotes.trim() || null,
     });
   };
 
   const handleSkip = () => {
     onSave({
-      coffee_type: null,
-      coffee_type_other: '',
-      place: '',
-      diary: '',
+      location_kind: null,
+      org_id: null,
+      place: null,
+      log_item: null,
+      log_item_other: null,
+      tasting_notes: null,
     });
   };
 
@@ -177,7 +187,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     setOrgComboOpen(false);
     resetCoffeeFields();
     setOrgMenuComboOpen(false);
-    setDiary('');
+    setTastingNotes('');
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -350,7 +360,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
               </div>
 
               <div className="space-y-2">
-                <Label className={labelOrange}>What coffee did you have?</Label>
+                <Label className={labelOrange}>What did you have?</Label>
 
                 {locationKind === 'org' && !selectedOrgId && (
                   <p className="text-xs font-medium text-primary-foreground/90">Choose a venue first.</p>
@@ -484,14 +494,14 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="diary" className={labelOrange}>
-                  Coffee diary
+                <Label htmlFor="tasting-notes" className={labelOrange}>
+                  Tasting notes
                 </Label>
                 <Textarea
-                  id="diary"
+                  id="tasting-notes"
                   placeholder="Notes about taste, vibe, who you were with..."
-                  value={diary}
-                  onChange={(e) => setDiary(e.target.value)}
+                  value={tastingNotes}
+                  onChange={(e) => setTastingNotes(e.target.value)}
                   className={textareaOnOrange}
                 />
               </div>

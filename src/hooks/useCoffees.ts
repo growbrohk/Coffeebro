@@ -82,14 +82,16 @@ export function useCoffeeStreak() {
   });
 }
 
+export type CoffeeLocationKind = 'home' | 'coffee_shop' | 'other';
+
+/** Payload for inserting a daily coffee log (matches `daily_coffees` after restructure). */
 export interface CoffeeDetails {
-  rating?: number | null;
-  coffee_type?: string | null;
-  coffee_type_other?: string | null;
-  place?: string | null;
-  diary?: string | null;
-  beans?: string | null;
-  note?: string | null;
+  location_kind: CoffeeLocationKind | null;
+  org_id: string | null;
+  place: string | null;
+  log_item: string | null;
+  log_item_other: string | null;
+  tasting_notes: string | null;
 }
 
 // A) useAddCoffee() - INSERT mutation (NOT upsert)
@@ -107,13 +109,12 @@ export function useAddCoffee() {
         .insert({
           user_id: user.id,
           coffee_date: today,
-          rating: details.rating ?? null,
-          coffee_type: details.coffee_type ?? null,
-          coffee_type_other: details.coffee_type_other ?? null,
+          location_kind: details.location_kind ?? null,
+          org_id: details.org_id ?? null,
           place: details.place ?? null,
-          diary: details.diary ?? null,
-          beans: details.beans ?? null,
-          note: details.note ?? null,
+          log_item: details.log_item ?? null,
+          log_item_other: details.log_item_other ?? null,
+          tasting_notes: details.tasting_notes ?? null,
         })
         .select()
         .single();
@@ -160,12 +161,12 @@ export function useTodayCoffees() {
 }
 
 function drinkLabelFromRow(row: {
-  coffee_type: string | null;
-  coffee_type_other: string | null;
+  log_item: string | null;
+  log_item_other: string | null;
 }): string {
-  const t = (row.coffee_type || '').trim();
+  const t = (row.log_item || '').trim();
   if (!t) return '';
-  if (t === 'Other') return (row.coffee_type_other || '').trim();
+  if (t === 'Other') return (row.log_item_other || '').trim();
   return t;
 }
 
@@ -218,7 +219,7 @@ export function useCoffeeProfileStats() {
 
       const { data, error } = await supabase
         .from('daily_coffees')
-        .select('place, coffee_type, coffee_type_other')
+        .select('place, log_item, log_item_other')
         .eq('user_id', user.id);
 
       if (error) throw error;

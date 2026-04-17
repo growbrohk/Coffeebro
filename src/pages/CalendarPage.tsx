@@ -47,10 +47,10 @@ function buildMonthWeeks(daysInMonth: number, firstDay: number): (number | null)
 }
 
 function drinkLabel(row: DailyCoffeeRow): string {
-  if (row.coffee_type === 'Other') {
-    return row.coffee_type_other?.trim() || 'Coffee';
+  if (row.log_item === 'Other') {
+    return row.log_item_other?.trim() || 'Coffee';
   }
-  return row.coffee_type?.trim() || 'Coffee';
+  return row.log_item?.trim() || 'Coffee';
 }
 
 /** Third row of the grid when there are ≥3 weeks; otherwise last row. */
@@ -259,8 +259,7 @@ export default function CalendarPage() {
                   minute: '2-digit',
                   hour12: false,
                 });
-                const noteText = entry.note?.trim();
-                const diaryFallback = entry.diary?.trim();
+                const tastingText = entry.tasting_notes?.trim();
                 return (
                   <div
                     key={entry.id}
@@ -282,18 +281,9 @@ export default function CalendarPage() {
                           {entry.place.trim()}
                         </p>
                       ) : null}
-                      {noteText ? (
+                      {tastingText ? (
                         <p className="mt-1 text-sm font-normal leading-snug text-muted-foreground">
-                          {noteText}
-                        </p>
-                      ) : diaryFallback ? (
-                        <p className="mt-1 text-sm font-normal leading-snug text-muted-foreground">
-                          {diaryFallback}
-                        </p>
-                      ) : null}
-                      {entry.beans?.trim() ? (
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          Beans: {entry.beans.trim()}
+                          {tastingText}
                         </p>
                       ) : null}
                     </div>
