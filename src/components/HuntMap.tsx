@@ -5,6 +5,9 @@ import type { HuntMapPinKind } from '@/lib/huntMapPinKind';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap, useMapEvent } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 import huntPinStar from '@/assets/hunt-pin-star.svg';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
@@ -15,6 +18,15 @@ const TILE_LAYERS = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
 } as const;
+
+/** Leaflet default blue pin (same as treasure map picker). */
+const leafletDefaultUserIcon = L.icon({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 
 /** Pin glyph size on the map (Leaflet icon box matches this exactly). */
 const PIN_SIZE = 24;
@@ -101,11 +113,19 @@ export type HuntMapOverlayPadding = { top: number; bottom: number };
 
 const DEFAULT_MAP_OVERLAY_PADDING: HuntMapOverlayPadding = { top: 140, bottom: 96 };
 
+export type HuntMapUserLocation = { lat: number; lng: number };
+
 interface HuntMapProps {
   treasures: CampaignMapItem[];
   onSelectTreasure?: (treasure: CampaignMapItem) => void;
   emptyMessage?: string;
   mapOverlayPadding?: HuntMapOverlayPadding;
+  /** Shown after user taps “my location”; not included in fit-bounds. */
+  userLocation?: HuntMapUserLocation | null;
+  /** Increments on each locate tap so the map re-centers every time. */
+  locateFlyNonce?: number;
+  /** Increments when filter pills are tapped to re-run fitBounds even if the treasure set is unchanged. */
+  refitNonce?: number;
 }
 
 /** Only refit when pin locations / set membership change — not on unrelated re-renders (e.g. closing popup). */
@@ -138,10 +158,12 @@ function FitBounds({
   treasures,
   mapOverlayPadding,
   horizontalPadding,
+  refitNonce,
 }: {
   treasures: CampaignMapItem[];
   mapOverlayPadding: HuntMapOverlayPadding;
   horizontalPadding: number;
+  refitNonce: number;
 }) {
   const map = useMap();
   const signature = useMemo(() => fitBoundsSignature(treasures), [treasures]);
@@ -173,8 +195,27 @@ function FitBounds({
       forFit.map((t) => [t.lat!, t.lng!] as [number, number])
     );
     map.fitBounds(bounds, fitOptions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry / chrome insets change
-  }, [map, signature, padTop, padBottom, horizontalPadding]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only when visible pin geometry / chrome insets / explicit refit change
+  }, [map, signature, padTop, padBottom, horizontalPadding, refitNonce]);
+  return null;
+}
+
+function FlyToUserLocation({
+  userLocation,
+  locateFlyNonce,
+}: {
+  userLocation: HuntMapUserLocation | null | undefined;
+  locateFlyNonce: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!userLocation || locateFlyNonce === 0) return;
+    const { lat, lng } = userLocation;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    map.flyTo([lat, lng], 16);
+  }, [map, locateFlyNonce, userLocation?.lat, userLocation?.lng]);
+
   return null;
 }
 
@@ -183,6 +224,9 @@ export function HuntMap({
   onSelectTreasure,
   emptyMessage,
   mapOverlayPadding,
+  userLocation = null,
+  locateFlyNonce = 0,
+  refitNonce = 0,
 }: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -277,7 +321,19 @@ export function HuntMap({
           treasures={treasuresWithCoords}
           mapOverlayPadding={overlayPad}
           horizontalPadding={fitHorizontalPadding}
+          refitNonce={refitNonce}
         />
+        <FlyToUserLocation userLocation={userLocation} locateFlyNonce={locateFlyNonce} />
+        {userLocation &&
+        Number.isFinite(userLocation.lat) &&
+        Number.isFinite(userLocation.lng) ? (
+          <Marker
+            position={[userLocation.lat, userLocation.lng]}
+            icon={leafletDefaultUserIcon}
+            interactive={false}
+            zIndexOffset={1000}
+          />
+        ) : null}
         {treasuresWithCoords.map((t) => (
           <Marker
             key={t.id}

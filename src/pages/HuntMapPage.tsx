@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HuntMap } from "@/components/HuntMap";
@@ -11,8 +11,9 @@ import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
-import { Search } from "lucide-react";
+import { Loader2, LocateFixed, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
 
 import coffeeShopPin from "@/assets/coffee-shop-pin.svg";
@@ -29,7 +30,12 @@ export default function HuntMapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [pillar, setPillar] = useState<PillarId>("hunt_grab");
   const [voucherSheetDismissed, setVoucherSheetDismissed] = useState(false);
+  const [userPin, setUserPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [locateFlyNonce, setLocateFlyNonce] = useState(0);
+  const [refitNonce, setRefitNonce] = useState(0);
+  const [locating, setLocating] = useState(false);
   const prevSelectedTreasureRef = useRef<CampaignMapItem | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (huntId) {
@@ -160,6 +166,54 @@ export default function HuntMapPage() {
       ? haversineDistance(userPosition.lat, userPosition.lng, selectedTreasure.lat, selectedTreasure.lng)
       : null;
 
+  const applyUserLocation = useCallback((lat: number, lng: number) => {
+    setUserPin({ lat, lng });
+    setLocateFlyNonce((n) => n + 1);
+  }, []);
+
+  const handleMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Location unavailable",
+        description: "Geolocation is not supported.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (
+      userPosition &&
+      Number.isFinite(userPosition.lat) &&
+      Number.isFinite(userPosition.lng)
+    ) {
+      applyUserLocation(userPosition.lat, userPosition.lng);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        applyUserLocation(pos.coords.latitude, pos.coords.longitude);
+        setLocating(false);
+      },
+      (err: GeolocationPositionError) => {
+        const msg =
+          err.code === 1
+            ? "Location permission denied."
+            : err.code === 2
+              ? "Position unavailable."
+              : err.code === 3
+                ? "Location request timed out."
+                : err.message || "Could not get location.";
+        toast({
+          title: "Could not use your location",
+          description: msg,
+          variant: "destructive",
+        });
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }, [userPosition, applyUserLocation, toast]);
+
   useEffect(() => {
     const prev = prevSelectedTreasureRef.current;
     if (prev !== null && selectedTreasure === null) {
@@ -193,6 +247,9 @@ export default function HuntMapPage() {
           <HuntMap
             treasures={mapTreasures}
             mapOverlayPadding={mapOverlayPadding}
+            userLocation={userPin}
+            locateFlyNonce={locateFlyNonce}
+            refitNonce={refitNonce}
             onSelectTreasure={(t) => {
               if (t.scanned && t.campaign_id) {
                 navigate(`/campaigns/${t.campaign_id}`);
@@ -227,41 +284,67 @@ export default function HuntMapPage() {
               autoComplete="off"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex items-center gap-2 pb-0.5">
+            <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRefitNonce((n) => n + 1);
+                    setPillar("hunt_grab");
+                  }}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                    pillar === "hunt_grab"
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-card text-foreground",
+                  )}
+                >
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    <img src={huntPinStar} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                    <span>hunt</span>
+                    <span className={cn(pillar === "hunt_grab" ? "opacity-80" : "text-muted-foreground")}>&</span>
+                    <img src={huntPinGrab} alt="" className="h-5 w-5 shrink-0 object-contain" />
+                    <span>grab</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRefitNonce((n) => n + 1);
+                    setPillar("coffee_shop");
+                  }}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                    pillar === "coffee_shop"
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-card text-foreground",
+                  )}
+                >
+                  <img
+                    src={coffeeShopPin}
+                    alt=""
+                    className={cn("h-5 w-5 object-contain", pillar === "coffee_shop" && "brightness-0 invert")}
+                  />
+                  coffee shops
+                </button>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={() => setPillar("hunt_grab")}
+              onClick={() => void handleMyLocation()}
+              disabled={locating}
+              aria-label="Center on my location"
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                pillar === "hunt_grab"
-                  ? "bg-foreground text-background"
-                  : "border border-border bg-card text-foreground",
+                "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/60 bg-card/95 text-foreground shadow-md backdrop-blur-md transition-opacity",
+                locating && "cursor-wait opacity-80",
               )}
             >
-              <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                <img src={huntPinStar} alt="" className="h-5 w-5 shrink-0 object-contain" />
-                <span>hunt</span>
-                <span className={cn(pillar === "hunt_grab" ? "opacity-80" : "text-muted-foreground")}>&</span>
-                <img src={huntPinGrab} alt="" className="h-5 w-5 shrink-0 object-contain" />
-                <span>grab</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPillar("coffee_shop")}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                pillar === "coffee_shop"
-                  ? "bg-foreground text-background"
-                  : "border border-border bg-card text-foreground",
+              {locating ? (
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
+              ) : (
+                <LocateFixed className="h-5 w-5" strokeWidth={2} aria-hidden />
               )}
-            >
-              <img
-                src={coffeeShopPin}
-                alt=""
-                className={cn("h-5 w-5 object-contain", pillar === "coffee_shop" && "brightness-0 invert")}
-              />
-              coffee shops
             </button>
           </div>
         </div>
