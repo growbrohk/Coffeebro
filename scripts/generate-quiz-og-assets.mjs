@@ -16,7 +16,7 @@ const SITE_ORIGIN = (process.env.SITE_ORIGIN || 'https://www.coffee-bro.com').re
 const OG_IMAGE_W = 1200;
 const OG_IMAGE_H = 630;
 /** Matches .quiz-flow in src/index.css */
-const BRAND_ORANGE = '#f38132';
+const BRAND_ORANGE = '#f37721';
 
 /** Align narratives with src/lib/quiz/constants.ts FROG_DESCRIPTIONS */
 const FROGS = [

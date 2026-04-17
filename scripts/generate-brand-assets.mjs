@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const src = join(root, 'public/brand/logo-source.png');
-const BRAND = { r: 243, g: 129, b: 50, alpha: 1 }; // #f38132
+const BRAND = { r: 243, g: 119, b: 33, alpha: 1 }; // #f37721
 
 /** Truecolor PNG for consistent favicon / PWA decoding. */
 async function pngResize(w, h) {

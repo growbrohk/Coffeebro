@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /** Cup silhouette from brand SVG; fill encodes log intensity on the calendar */
-export const COFFEE_CUP_FILL_1 = '#f38132';
+export const COFFEE_CUP_FILL_1 = '#f37721';
 export const COFFEE_CUP_FILL_2 = '#8B5A3C';
 export const COFFEE_CUP_FILL_3 = '#2e1a14';
 

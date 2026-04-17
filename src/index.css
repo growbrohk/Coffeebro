@@ -7,7 +7,7 @@
 /* CoffeeBro design tokens — hex references */
 @layer base {
   :root {
-    --color-primary: #f38132;
+    --color-primary: #f37721;
     --color-dark: #2e1a14;
     --color-bg: #fffcf7;
     --color-accent: #b16850;
@@ -503,7 +503,7 @@
 
 /* Quiz flow (/q) — scoped orange shell; does not change global theme */
 .quiz-flow {
-  --quiz-bg: #f38132;
+  --quiz-bg: #f37721;
   --quiz-fg: #ffffff;
   --quiz-segment-active: #1a0f0a;
   /* Sit above fixed TabNavigation (.tab-nav z-50); siblings can’t stack over it */

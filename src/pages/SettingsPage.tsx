@@ -96,7 +96,7 @@ export default function SettingsPage() {
         )}
 
         <div
-          className="rounded-2xl bg-[#f38132] p-4"
+          className="rounded-2xl bg-[#f37721] p-4"
           style={{ '--quiz-fg': '#ffffff' } as CSSProperties}
         >
           <Button
