@@ -188,6 +188,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: 'google',
       options: {
         redirectTo: redirectTo ?? `${window.location.origin}/profile`,
+        queryParams: {
+          // login forces an interactive step so the same Google session cannot silently re-link after app sign-out.
+          prompt: 'select_account login',
+        },
       },
     });
     if (error) {
