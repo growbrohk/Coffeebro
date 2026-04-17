@@ -168,7 +168,6 @@ export default function OrgPublicPage() {
                 onCta={(t) => {
                   if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
                 }}
-                showRedemptionPeriod
                 className="pl-0 pr-0"
               />
             )}

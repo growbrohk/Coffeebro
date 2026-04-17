@@ -1,5 +1,4 @@
 import { ImageIcon } from 'lucide-react';
-import { formatHuntRedemptionPeriod } from '@/lib/formatHuntRedemption';
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,7 +41,6 @@ interface VoucherCarouselCardProps {
   treasure: CampaignMapItem;
   onCta: (treasure: CampaignMapItem) => void;
   onCardPress?: (treasure: CampaignMapItem) => void;
-  showRedemptionPeriod?: boolean;
   variant?: VoucherCarouselVariant;
 }
 
@@ -63,7 +61,6 @@ export function VoucherCarouselCard({
   treasure,
   onCta,
   onCardPress,
-  showRedemptionPeriod = true,
   variant = 'voucher',
 }: VoucherCarouselCardProps) {
   const coverImage =
@@ -73,7 +70,6 @@ export function VoucherCarouselCard({
     treasure.quantityLimit != null
       ? `${offerName} · ${treasure.quantityLimit}`
       : offerName;
-  const timeLine = formatHuntRedemptionPeriod(treasure.starts_at, treasure.ends_at);
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
   const isGrab = isGrabCampaignCard(treasure);
@@ -148,7 +144,7 @@ export function VoucherCarouselCard({
       ) : (
         <div className={cn('flex min-w-0 flex-1 flex-col rounded-b-2xl bg-muted/40')}>
           <VoucherTicketDivider bodyClass={campaignBodyClass} />
-          <div className="flex min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-2">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-2">
             <div
               className="flex min-w-0 items-baseline gap-1 text-sm font-bold leading-snug text-foreground"
               title={nameQuotaTitle}
@@ -160,18 +156,13 @@ export function VoucherCarouselCard({
                 </span>
               ) : null}
             </div>
-            {showRedemptionPeriod && timeLine ? (
-              <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
-                Available: {timeLine}
-              </p>
-            ) : null}
             <p className="min-w-0 text-sm font-bold leading-snug text-foreground line-clamp-2" title={orgLine}>
               {orgLine}
             </p>
             {locationLine ? (
               <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
             ) : null}
-            <div className="flex justify-center pt-1">
+            <div className="mt-auto flex justify-start pt-1">
               <Button
                 type="button"
                 size="sm"
@@ -208,7 +199,6 @@ interface VoucherCarouselRowProps {
   items: CampaignMapItem[];
   onCta: (treasure: CampaignMapItem) => void;
   onCardPress?: (treasure: CampaignMapItem) => void;
-  showRedemptionPeriod?: boolean;
   variant?: VoucherCarouselVariant;
   className?: string;
 }
@@ -217,7 +207,6 @@ export function VoucherCarouselRow({
   items,
   onCta,
   onCardPress,
-  showRedemptionPeriod = true,
   variant = 'voucher',
   className,
 }: VoucherCarouselRowProps) {
@@ -237,7 +226,6 @@ export function VoucherCarouselRow({
           treasure={treasure}
           onCta={onCta}
           onCardPress={onCardPress}
-          showRedemptionPeriod={showRedemptionPeriod}
           variant={variant}
         />
       ))}

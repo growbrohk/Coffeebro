@@ -83,7 +83,6 @@ export default function ExplorePage() {
                   onCta={(t) => {
                     if (t.campaign_id) navigate(`/campaigns/${t.campaign_id}`);
                   }}
-                  showRedemptionPeriod
                   className="pl-0 pr-0"
                 />
               )}
@@ -103,7 +102,6 @@ export default function ExplorePage() {
                   onCardPress={(t) => {
                     if (t.org_id) navigate(`/orgs/${t.org_id}`);
                   }}
-                  showRedemptionPeriod={false}
                   className="pl-0 pr-0"
                 />
               )}

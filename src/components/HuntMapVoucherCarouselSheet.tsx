@@ -41,7 +41,6 @@ export function HuntMapVoucherCarouselSheet({
           items={items}
           onCta={onCta}
           onCardPress={onCardPress}
-          showRedemptionPeriod
           className="mt-2 pl-3 pr-3"
         />
       </div>
