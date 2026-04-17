@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { TabNavigation } from './TabNavigation';
+import { LogCoffeeEntryProvider } from '@/contexts/LogCoffeeEntryContext';
 
 interface LayoutProps {
   children: ReactNode;
@@ -7,9 +8,11 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background">
-      {children}
-      <TabNavigation />
-    </div>
+    <LogCoffeeEntryProvider>
+      <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background">
+        {children}
+        <TabNavigation />
+      </div>
+    </LogCoffeeEntryProvider>
   );
 }

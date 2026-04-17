@@ -1,6 +1,7 @@
 import { CoffeeModal } from '@/components/CoffeeModal';
 import { CoffeeDetailsSheet } from '@/components/CoffeeDetailsSheet';
 import type { CoffeeDetails } from '@/hooks/useCoffees';
+import type { LogCoffeePrefill } from '@/contexts/LogCoffeeEntryContext';
 
 export type LogCoffeeEntryModalsProps = {
   detailsSheetOpen: boolean;
@@ -10,6 +11,8 @@ export type LogCoffeeEntryModalsProps = {
   onDetailsSave: (details: CoffeeDetails) => Promise<void>;
   addCoffeePending: boolean;
   percentBeat: number;
+  prefill: LogCoffeePrefill | null;
+  lockCoffeeShop: boolean;
 };
 
 export function LogCoffeeEntryModals({
@@ -20,6 +23,8 @@ export function LogCoffeeEntryModals({
   onDetailsSave,
   addCoffeePending,
   percentBeat,
+  prefill,
+  lockCoffeeShop,
 }: LogCoffeeEntryModalsProps) {
   return (
     <>
@@ -28,6 +33,8 @@ export function LogCoffeeEntryModals({
         onOpenChange={onDetailsSheetOpenChange}
         onSave={onDetailsSave}
         isPending={addCoffeePending}
+        prefill={prefill}
+        lockCoffeeShop={lockCoffeeShop}
       />
       <CoffeeModal
         open={celebrationOpen}

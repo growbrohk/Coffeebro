@@ -6,6 +6,7 @@ import { VoucherDetailDialog } from '@/components/VoucherDetailDialog';
 import { cn } from '@/lib/utils';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
+import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 
 function inactiveLabel(status: MyVoucher['status']): string {
   if (status === 'redeemed') return 'redeemed';
@@ -21,16 +22,33 @@ export interface WalletVoucherCardProps {
 export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const { startLogCoffeeFromVoucher } = useLogCoffeeEntry();
 
   const isActive = voucher.status === 'active';
+  const isRedeemed = voucher.status === 'redeemed';
+  const hasReview = Boolean(voucher.review);
   const redemption = formatVoucherRedemptionPeriod(voucher.expires_at, voucher.event_date ?? null);
+
+  const handleReviewClick = () => {
+    if (!voucher.org_id) return;
+    startLogCoffeeFromVoucher({
+      voucherId: voucher.id,
+      orgId: voucher.org_id,
+      orgName: voucher.org_name ?? null,
+      menuItemId: voucher.menu_item_id ?? null,
+      menuItemName: voucher.menu_item_name ?? null,
+      redeemedAt: voucher.redeemed_at ?? new Date().toISOString(),
+      existing: voucher.review ?? null,
+    });
+  };
 
   return (
     <>
       <div
         className={cn(
           'tap-card flex gap-3 rounded-2xl bg-card p-4 shadow-soft transition-[transform,box-shadow] duration-200 ease-out',
-          !isActive && 'opacity-50'
+          !isActive && !isRedeemed && 'opacity-50',
+          isRedeemed && 'opacity-80'
         )}
       >
         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -80,6 +98,32 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
               >
                 show QR
               </Button>
+            </>
+          ) : isRedeemed ? (
+            <>
+              <span className="text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                redeemed
+              </span>
+              {hasReview ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-w-[4.5rem] border-primary/80 text-primary hover:bg-primary/10"
+                  onClick={handleReviewClick}
+                >
+                  Edit review
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="min-w-[4.5rem] bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={handleReviewClick}
+                >
+                  Review
+                </Button>
+              )}
             </>
           ) : (
             <Button

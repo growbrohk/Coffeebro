@@ -4,6 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
 import { orgDirectionsUrl } from "@/lib/orgDirectionsUrl";
 
+export interface MyVoucherReview {
+  id: string;
+  log_item: string | null;
+  log_item_other: string | null;
+  tasting_notes: string | null;
+  share_publicly: boolean;
+  coffee_date: string;
+}
+
 export interface MyVoucher {
   id: string;
   code: string;
@@ -21,10 +30,16 @@ export interface MyVoucher {
   org_logo_url?: string | null;
   campaign_id?: string;
   org_id?: string;
+  /** Menu item id embedded in the voucher's campaign_voucher (nullable). */
+  menu_item_id?: string | null;
+  /** Menu item display name embedded in the voucher's campaign_voucher. */
+  menu_item_name?: string | null;
   /** Campaign `display_title` for the wallet details dialog. */
   campaign_details?: string | null;
   /** Google Maps directions URL for the redeeming org, when derivable. */
   redeem_directions_url?: string | null;
+  /** Present for redeemed vouchers with an associated daily_coffees review row. */
+  review?: MyVoucherReview | null;
 }
 
 export function formatVoucherRedemptionPeriod(
@@ -77,7 +92,7 @@ export function useMyVouchers() {
           orgs ( org_name, logo_url, lat, lng, location, google_maps_url ),
           campaign_vouchers (
             offer_type,
-            menu_items ( item_name ),
+            menu_items ( id, item_name ),
             campaigns ( display_title, campaign_type, start_at, end_at, hint_text, hint_image_url )
           )
         `,
@@ -92,7 +107,7 @@ export function useMyVouchers() {
         const cv = (Array.isArray(rawCv) ? rawCv[0] : rawCv) as
           | {
               offer_type: string;
-              menu_items: { item_name: string } | null;
+              menu_items: { id: string; item_name: string } | null;
               campaigns: {
                 display_title: string | null;
                 campaign_type: string;
@@ -156,10 +171,46 @@ export function useMyVouchers() {
           event_date: camp?.end_at ?? null,
           thumbnail_url: thumb,
           campaign_id: v.campaign_id as string,
+          menu_item_id: menu?.id ?? null,
+          menu_item_name: menu?.item_name?.trim() ?? null,
           campaign_details: campaignDetails,
           redeem_directions_url: redeemDirectionsUrl,
+          review: null,
         };
       });
+
+      const redeemedIds = result
+        .filter((v) => v.status === "redeemed")
+        .map((v) => v.id);
+
+      if (redeemedIds.length > 0) {
+        const { data: reviewRows } = await supabase
+          .from("daily_coffees")
+          .select(
+            "id, voucher_id, log_item, log_item_other, tasting_notes, share_publicly, coffee_date",
+          )
+          .eq("user_id", user.id)
+          .in("voucher_id", redeemedIds);
+
+        const byVoucher = new Map<string, MyVoucherReview>();
+        for (const r of reviewRows ?? []) {
+          if (!r.voucher_id) continue;
+          byVoucher.set(r.voucher_id, {
+            id: r.id,
+            log_item: r.log_item ?? null,
+            log_item_other: r.log_item_other ?? null,
+            tasting_notes: r.tasting_notes ?? null,
+            share_publicly: Boolean(r.share_publicly),
+            coffee_date: r.coffee_date,
+          });
+        }
+
+        for (const v of result) {
+          if (v.status === "redeemed") {
+            v.review = byVoucher.get(v.id) ?? null;
+          }
+        }
+      }
 
       return result;
     },

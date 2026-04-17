@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ChevronLeft, Check, ChevronsUpDown } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, Check, ChevronsUpDown, Ticket } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
   PopoverContent,
@@ -25,7 +26,9 @@ import { CoffeeTypeSelect } from '@/components/CoffeeTypeSelect';
 import { useDiscoveryOrgs } from '@/hooks/useDiscoveryOrgs';
 import { useOrgMenuItems } from '@/hooks/useOrgMenuItems';
 import { cn } from '@/lib/utils';
+import { localYMD } from '@/lib/date';
 import type { CoffeeDetails, CoffeeLocationKind } from '@/hooks/useCoffees';
+import type { LogCoffeePrefill } from '@/contexts/LogCoffeeEntryContext';
 
 const PLACE_HOME_LABEL = 'Home';
 const ORG_MENU_OTHER = '__org_menu_other__';
@@ -35,6 +38,8 @@ interface CoffeeDetailsSheetProps {
   onOpenChange: (open: boolean) => void;
   onSave: (details: CoffeeDetails) => void;
   isPending?: boolean;
+  prefill?: LogCoffeePrefill | null;
+  lockCoffeeShop?: boolean;
 }
 
 type LocationKind = 'home' | 'org' | 'other';
@@ -54,7 +59,14 @@ function segmentBtn(active: boolean) {
   );
 }
 
-export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: CoffeeDetailsSheetProps) {
+export function CoffeeDetailsSheet({
+  open,
+  onOpenChange,
+  onSave,
+  isPending,
+  prefill,
+  lockCoffeeShop = false,
+}: CoffeeDetailsSheetProps) {
   const [locationKind, setLocationKind] = useState<LocationKind>('home');
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [placeOtherFree, setPlaceOtherFree] = useState('');
@@ -69,6 +81,9 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
   const [orgMenuSearch, setOrgMenuSearch] = useState('');
 
   const [tastingNotes, setTastingNotes] = useState<string>('');
+  const [sharePublicly, setSharePublicly] = useState(false);
+  /** When voucher menu item id is not in menu list (e.g. inactive), hold label for save + display */
+  const [lockedMenuFallbackLabel, setLockedMenuFallbackLabel] = useState<string | null>(null);
 
   const { data: discoveryOrgs = [], isLoading: discoveryLoading } = useDiscoveryOrgs({ enabled: open });
   const { data: menuItemsRaw = [], isLoading: menuLoading } = useOrgMenuItems(
@@ -84,6 +99,9 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     () => discoveryOrgs.find((o) => o.id === selectedOrgId) ?? null,
     [discoveryOrgs, selectedOrgId],
   );
+
+  const orgDisplayName =
+    selectedOrg?.org_name?.trim() || prefill?.orgName?.trim() || '';
 
   const filteredOrgs = useMemo(() => {
     const q = orgSearch.trim().toLowerCase();
@@ -109,6 +127,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     setOrgMenuKey(null);
     setOrgMenuOtherText('');
     setOrgMenuSearch('');
+    setLockedMenuFallbackLabel(null);
   };
 
   const setLocationKindAndReset = (kind: LocationKind) => {
@@ -119,10 +138,80 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     resetCoffeeFields();
   };
 
+  /** Seed voucher prefill whenever sheet opens or voucher changes */
+  useEffect(() => {
+    if (!open || !prefill || !lockCoffeeShop) return;
+    const existing = prefill.existing ?? null;
+    setLocationKind('org');
+    setSelectedOrgId(prefill.orgId);
+    setPlaceOtherFree('');
+    setOrgSearch('');
+    setCoffeeType(null);
+    setCoffeeTypeOther('');
+    setOrgMenuKey(null);
+    setOrgMenuOtherText(existing?.log_item === 'Other' ? existing.log_item_other ?? '' : '');
+    setOrgMenuSearch('');
+    setTastingNotes(existing?.tasting_notes ?? '');
+    setSharePublicly(existing?.share_publicly ?? false);
+    setLockedMenuFallbackLabel(null);
+  }, [open, lockCoffeeShop, prefill?.voucherId, prefill?.orgId, prefill?.existing?.id]);
+
+  /** Match menu row (including inactive) after menu loads. Also restores edit-mode menu selection. */
+  useEffect(() => {
+    if (!open || !prefill || !lockCoffeeShop || locationKind !== 'org') return;
+    if (menuLoading || !selectedOrgId) return;
+
+    const existing = prefill.existing ?? null;
+
+    if (existing) {
+      if (existing.log_item === 'Other') {
+        setOrgMenuKey(ORG_MENU_OTHER);
+        setLockedMenuFallbackLabel(null);
+        return;
+      }
+      if (existing.log_item) {
+        const hit = menuItemsRaw.find((m) => m.item_name === existing.log_item);
+        if (hit) {
+          setOrgMenuKey(hit.id);
+          setLockedMenuFallbackLabel(null);
+        } else {
+          setOrgMenuKey(null);
+          setLockedMenuFallbackLabel(existing.log_item);
+        }
+        return;
+      }
+    }
+
+    if (!prefill.menuItemId) {
+      if (prefill.menuItemName) setLockedMenuFallbackLabel(prefill.menuItemName);
+      return;
+    }
+    const row = menuItemsRaw.find((m) => m.id === prefill.menuItemId);
+    if (row) {
+      setOrgMenuKey(prefill.menuItemId);
+      setLockedMenuFallbackLabel(null);
+    } else if (prefill.menuItemName) {
+      setOrgMenuKey(null);
+      setLockedMenuFallbackLabel(prefill.menuItemName);
+    }
+  }, [
+    open,
+    lockCoffeeShop,
+    locationKind,
+    menuItemsRaw,
+    menuLoading,
+    selectedOrgId,
+    prefill?.voucherId,
+    prefill?.menuItemId,
+    prefill?.menuItemName,
+    prefill?.existing?.id,
+    prefill?.existing?.log_item,
+  ]);
+
   const buildPlace = (): string => {
     if (locationKind === 'home') return PLACE_HOME_LABEL;
     if (locationKind === 'other') return placeOtherFree.trim();
-    if (locationKind === 'org' && selectedOrg) return selectedOrg.org_name.trim();
+    if (locationKind === 'org' && orgDisplayName) return orgDisplayName;
     return '';
   };
 
@@ -139,9 +228,21 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
   };
 
   const buildCoffee = (): Pick<CoffeeDetails, 'log_item' | 'log_item_other'> => {
+    if (lockCoffeeShop && prefill && lockedMenuFallbackLabel && !orgMenuKey) {
+      return { log_item: lockedMenuFallbackLabel, log_item_other: null };
+    }
     if (locationKind === 'org' && selectedOrgId) {
-      if (activeMenuItems.length === 0) {
+      if (activeMenuItems.length === 0 && !lockCoffeeShop) {
         return { log_item: coffeeType, log_item_other: coffeeTypeOther };
+      }
+      if (lockCoffeeShop && prefill && menuItemsRaw.length > 0) {
+        if (orgMenuKey === ORG_MENU_OTHER) {
+          return { log_item: 'Other', log_item_other: orgMenuOtherText.trim() };
+        }
+        if (orgMenuKey) {
+          const inRaw = menuItemsRaw.find((m) => m.id === orgMenuKey);
+          if (inRaw) return { log_item: inRaw.item_name, log_item_other: '' };
+        }
       }
       if (orgMenuKey === ORG_MENU_OTHER) {
         return { log_item: 'Other', log_item_other: orgMenuOtherText.trim() };
@@ -157,6 +258,21 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
 
   const handleSave = () => {
     const { log_item, log_item_other } = buildCoffee();
+    if (prefill && lockCoffeeShop) {
+      onSave({
+        location_kind: 'coffee_shop',
+        org_id: prefill.orgId,
+        place: orgDisplayName || null,
+        log_item,
+        log_item_other: log_item_other || null,
+        tasting_notes: tastingNotes.trim() || null,
+        voucher_id: prefill.voucherId,
+        coffee_date: localYMD(new Date(prefill.redeemedAt)),
+        share_publicly: sharePublicly,
+        review_id: prefill.existing?.id ?? null,
+      });
+      return;
+    }
     onSave({
       location_kind: buildLocationKindForSave(),
       org_id: buildOrgIdForSave(),
@@ -167,15 +283,8 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     });
   };
 
-  const handleSkip = () => {
-    onSave({
-      location_kind: null,
-      org_id: null,
-      place: null,
-      log_item: null,
-      log_item_other: null,
-      tasting_notes: null,
-    });
+  const handleDismissLater = () => {
+    handleOpenChange(false);
   };
 
   const resetForm = () => {
@@ -187,6 +296,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
     resetCoffeeFields();
     setOrgMenuComboOpen(false);
     setTastingNotes('');
+    setSharePublicly(false);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -211,13 +321,35 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
         ? activeMenuItems.find((m) => m.id === orgMenuKey)?.item_name ?? 'Search menu...'
         : 'Pick from menu...';
 
+  const lockedMenuDisplayLabel =
+    orgMenuKey === ORG_MENU_OTHER
+      ? 'Other'
+      : orgMenuKey
+        ? menuItemsRaw.find((m) => m.id === orgMenuKey)?.item_name ??
+          activeMenuItems.find((m) => m.id === orgMenuKey)?.item_name ??
+          '…'
+        : lockedMenuFallbackLabel ?? prefill?.menuItemName ?? 'Pick from menu…';
+
   const showOrgMenuCoffee =
-    locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length > 0;
+    !lockCoffeeShop &&
+    locationKind === 'org' &&
+    !!selectedOrgId &&
+    !menuLoading &&
+    activeMenuItems.length > 0;
+
+  const showLockedMenuRow =
+    lockCoffeeShop &&
+    prefill &&
+    locationKind === 'org' &&
+    !!selectedOrgId &&
+    !menuLoading &&
+    (!!orgMenuKey || !!lockedMenuFallbackLabel || !!prefill.menuItemName);
 
   const showGenericCoffee =
-    locationKind === 'home' ||
-    locationKind === 'other' ||
-    (locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length === 0);
+    (locationKind === 'home' ||
+      locationKind === 'other' ||
+      (locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length === 0)) &&
+    !(lockCoffeeShop && prefill && showLockedMenuRow);
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -253,6 +385,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                     type="button"
                     className={segmentBtn(locationKind === 'home')}
                     onClick={() => setLocationKindAndReset('home')}
+                    disabled={lockCoffeeShop && !!prefill}
                   >
                     Home
                   </button>
@@ -260,6 +393,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                     type="button"
                     className={segmentBtn(locationKind === 'org')}
                     onClick={() => setLocationKindAndReset('org')}
+                    disabled={lockCoffeeShop && !!prefill}
                   >
                     Coffee shop
                   </button>
@@ -267,6 +401,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                     type="button"
                     className={segmentBtn(locationKind === 'other')}
                     onClick={() => setLocationKindAndReset('other')}
+                    disabled={lockCoffeeShop && !!prefill}
                   >
                     Somewhere else
                   </button>
@@ -275,69 +410,81 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                 {locationKind === 'org' && (
                   <div className="space-y-2 pt-2">
                     <Label className={labelOrange}>Which coffee shop?</Label>
-                    <Popover open={orgComboOpen} onOpenChange={setOrgComboOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={orgComboOpen}
-                          className={cn(
-                            'w-full justify-between rounded-full border-0 font-normal shadow-none',
-                            inputOnOrange,
-                          )}
-                          disabled={discoveryLoading}
-                        >
-                          {discoveryLoading
-                            ? 'Loading venues...'
-                            : selectedOrg
-                              ? selectedOrg.org_name
-                              : 'Search venues...'}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="Search venues..."
-                            value={orgSearch}
-                            onValueChange={setOrgSearch}
-                          />
-                          <CommandList>
-                            <CommandEmpty>No venue found.</CommandEmpty>
-                            <CommandGroup>
-                              {filteredOrgs.map((o) => (
-                                <CommandItem
-                                  key={o.id}
-                                  value={o.id}
-                                  onSelect={() => {
-                                    setSelectedOrgId(o.id);
-                                    resetCoffeeFields();
-                                    setOrgComboOpen(false);
-                                    setOrgSearch('');
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      'mr-2 h-4 w-4',
-                                      selectedOrgId === o.id ? 'opacity-100' : 'opacity-0',
-                                    )}
-                                  />
-                                  <span className="flex flex-col gap-0.5">
-                                    <span>{o.org_name}</span>
-                                    {(o.location || o.district) && (
-                                      <span className="text-xs text-muted-foreground">
-                                        {[o.district, o.location].filter(Boolean).join(' · ')}
-                                      </span>
-                                    )}
-                                  </span>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    {lockCoffeeShop && prefill ? (
+                      <div
+                        className={cn(
+                          'flex min-h-12 w-full items-center rounded-full border-0 px-4 font-normal opacity-90',
+                          inputOnOrange,
+                        )}
+                      >
+                        <Ticket className="mr-2 h-4 w-4 shrink-0 opacity-70" aria-hidden />
+                        <span className="truncate">{orgDisplayName || '…'}</span>
+                      </div>
+                    ) : (
+                      <Popover open={orgComboOpen} onOpenChange={setOrgComboOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={orgComboOpen}
+                            className={cn(
+                              'w-full justify-between rounded-full border-0 font-normal shadow-none',
+                              inputOnOrange,
+                            )}
+                            disabled={discoveryLoading}
+                          >
+                            {discoveryLoading
+                              ? 'Loading venues...'
+                              : selectedOrg
+                                ? selectedOrg.org_name
+                                : 'Search venues...'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Search venues..."
+                              value={orgSearch}
+                              onValueChange={setOrgSearch}
+                            />
+                            <CommandList>
+                              <CommandEmpty>No venue found.</CommandEmpty>
+                              <CommandGroup>
+                                {filteredOrgs.map((o) => (
+                                  <CommandItem
+                                    key={o.id}
+                                    value={o.id}
+                                    onSelect={() => {
+                                      setSelectedOrgId(o.id);
+                                      resetCoffeeFields();
+                                      setOrgComboOpen(false);
+                                      setOrgSearch('');
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        selectedOrgId === o.id ? 'opacity-100' : 'opacity-0',
+                                      )}
+                                    />
+                                    <span className="flex flex-col gap-0.5">
+                                      <span>{o.org_name}</span>
+                                      {(o.location || o.district) && (
+                                        <span className="text-xs text-muted-foreground">
+                                          {[o.district, o.location].filter(Boolean).join(' · ')}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    )}
                   </div>
                 )}
 
@@ -366,6 +513,17 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
 
                 {locationKind === 'org' && selectedOrgId && menuLoading && (
                   <p className="text-xs font-medium text-primary-foreground/90">Loading menu...</p>
+                )}
+
+                {showLockedMenuRow && lockCoffeeShop && (
+                  <div
+                    className={cn(
+                      'flex min-h-12 w-full items-center rounded-full border-0 px-4 font-normal',
+                      inputOnOrange,
+                    )}
+                  >
+                    {lockedMenuDisplayLabel}
+                  </div>
                 )}
 
                 {showOrgMenuCoffee && (
@@ -455,7 +613,7 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                   </div>
                 )}
 
-                {locationKind === 'org' && selectedOrgId && !menuLoading && activeMenuItems.length === 0 && (
+                {locationKind === 'org' && selectedOrgId && !menuLoading && activeMenuItems.length === 0 && !lockCoffeeShop && (
                   <p className="text-xs font-medium text-primary-foreground/90">
                     No menu listed for this venue yet — pick a drink type below.
                   </p>
@@ -503,17 +661,31 @@ export function CoffeeDetailsSheet({ open, onOpenChange, onSave, isPending }: Co
                   className={textareaOnOrange}
                 />
               </div>
+
+              {lockCoffeeShop && prefill ? (
+                <div className="flex items-start gap-3 rounded-2xl bg-white/10 px-3 py-3">
+                  <Checkbox
+                    id="share-public"
+                    checked={sharePublicly}
+                    onCheckedChange={(c) => setSharePublicly(c === true)}
+                    className="mt-0.5 border-primary-foreground data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                  />
+                  <label htmlFor="share-public" className="text-sm font-medium leading-snug text-primary-foreground">
+                    Share this note on the café’s public page (optional)
+                  </label>
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-8 flex gap-3">
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 flex-1 border-2 border-primary-foreground bg-transparent font-semibold text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                onClick={handleSkip}
+                className="h-12 flex-1 border-2 border-primary-foreground bg-transparent px-2 font-semibold leading-tight text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                onClick={handleDismissLater}
                 disabled={isPending}
               >
-                Skip
+                I'll come back after another sip!
               </Button>
               <Button
                 type="button"

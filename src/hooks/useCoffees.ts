@@ -92,6 +92,13 @@ export interface CoffeeDetails {
   log_item: string | null;
   log_item_other: string | null;
   tasting_notes: string | null;
+  /** Present for post-voucher redemption logs — uses `log_coffee_for_voucher` RPC. */
+  voucher_id?: string | null;
+  /** Local calendar date (YYYY-MM-DD); voucher flow uses redemption day */
+  coffee_date?: string | null;
+  share_publicly?: boolean | null;
+  /** When set, PATCH the existing voucher-linked daily_coffees row instead of inserting. */
+  review_id?: string | null;
 }
 
 // A) useAddCoffee() - INSERT mutation (NOT upsert)
@@ -104,17 +111,59 @@ export function useAddCoffee() {
     mutationFn: async (details: CoffeeDetails) => {
       if (!user) throw new Error('Not authenticated');
 
+      if (details.voucher_id && details.review_id) {
+        const { data, error } = await supabase
+          .from('daily_coffees')
+          .update({
+            log_item: details.log_item ?? null,
+            log_item_other: details.log_item_other ?? null,
+            tasting_notes: details.tasting_notes ?? null,
+            share_publicly: details.share_publicly ?? false,
+          })
+          .eq('id', details.review_id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+
+      if (details.voucher_id) {
+        const coffeeDate = details.coffee_date ?? today;
+        const { data, error } = await supabase.rpc('log_coffee_for_voucher', {
+          p_voucher_id: details.voucher_id,
+          p_org_id: details.org_id ?? (() => {
+            throw new Error('org_id required for voucher log');
+          })(),
+          p_place: details.place,
+          p_log_item: details.log_item,
+          p_log_item_other: details.log_item_other,
+          p_tasting_notes: details.tasting_notes,
+          p_share_publicly: details.share_publicly ?? false,
+          p_coffee_date: coffeeDate,
+        });
+
+        if (error) throw error;
+        const row = data as Record<string, unknown> | Record<string, unknown>[] | null;
+        if (Array.isArray(row)) return row[0] ?? null;
+        return row;
+      }
+
       const { data, error } = await supabase
         .from('daily_coffees')
         .insert({
           user_id: user.id,
-          coffee_date: today,
+          coffee_date: details.coffee_date ?? today,
           location_kind: details.location_kind ?? null,
           org_id: details.org_id ?? null,
           place: details.place ?? null,
           log_item: details.log_item ?? null,
           log_item_other: details.log_item_other ?? null,
           tasting_notes: details.tasting_notes ?? null,
+          log_type: 'normal',
+          share_publicly: false,
+          voucher_id: null,
         })
         .select()
         .single();
@@ -122,7 +171,7 @@ export function useAddCoffee() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['today-coffees'] });
       queryClient.invalidateQueries({ queryKey: ['month-coffee-count'] });
       queryClient.invalidateQueries({ queryKey: ['month-coffee-day-counts'] });
@@ -132,6 +181,9 @@ export function useAddCoffee() {
       queryClient.invalidateQueries({ queryKey: ['coffee-streak'] });
       queryClient.invalidateQueries({ queryKey: ['lifetime-coffee-count'] });
       queryClient.invalidateQueries({ queryKey: ['coffee-profile-stats'] });
+      if (variables.voucher_id) {
+        queryClient.invalidateQueries({ queryKey: ['vouchers', 'my', user?.id] });
+      }
     },
   });
 }

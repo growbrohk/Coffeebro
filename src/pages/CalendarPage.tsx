@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogCoffeeNavButton } from '@/components/LogCoffeeNavButton';
-import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -273,8 +272,14 @@ export default function CalendarPage() {
                       {t}
                     </p>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-base font-bold leading-snug text-foreground">
-                        {drinkLabel(entry)}
+                      <p className="flex items-center gap-1.5 truncate text-base font-bold leading-snug text-foreground">
+                        {entry.log_type === 'voucher' ? (
+                          <Ticket className="h-4 w-4 shrink-0 text-primary" aria-label="Voucher" />
+                        ) : null}
+                        <span className="truncate">{drinkLabel(entry)}</span>
+                        {entry.log_type === 'voucher' ? (
+                          <span className="shrink-0 text-xs font-normal text-muted-foreground">Voucher</span>
+                        ) : null}
                       </p>
                       {entry.place?.trim() ? (
                         <p className="mt-0.5 truncate text-sm font-normal leading-snug text-muted-foreground">
@@ -295,15 +300,6 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <LogCoffeeEntryModals
-        detailsSheetOpen={logCoffee.detailsSheetOpen}
-        onDetailsSheetOpenChange={logCoffee.setDetailsSheetOpen}
-        celebrationOpen={logCoffee.celebrationOpen}
-        onCelebrationOpenChange={logCoffee.setCelebrationOpen}
-        onDetailsSave={logCoffee.handleDetailsSave}
-        addCoffeePending={logCoffee.addCoffeePending}
-        percentBeat={logCoffee.percentBeat}
-      />
     </div>
   );
 }

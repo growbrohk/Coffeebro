@@ -22,11 +22,14 @@ export type Database = {
           location_kind: string | null
           log_item: string | null
           log_item_other: string | null
+          log_type: string
           org_id: string | null
           place: string | null
+          share_publicly: boolean
           tasting_notes: string | null
           updated_at: string
           user_id: string
+          voucher_id: string | null
         }
         Insert: {
           coffee_date?: string
@@ -35,11 +38,14 @@ export type Database = {
           location_kind?: string | null
           log_item?: string | null
           log_item_other?: string | null
+          log_type?: string
           org_id?: string | null
           place?: string | null
+          share_publicly?: boolean
           tasting_notes?: string | null
           updated_at?: string
           user_id: string
+          voucher_id?: string | null
         }
         Update: {
           coffee_date?: string
@@ -48,11 +54,14 @@ export type Database = {
           location_kind?: string | null
           log_item?: string | null
           log_item_other?: string | null
+          log_type?: string
           org_id?: string | null
           place?: string | null
+          share_publicly?: boolean
           tasting_notes?: string | null
           updated_at?: string
           user_id?: string
+          voucher_id?: string | null
         }
         Relationships: [
           {
@@ -60,6 +69,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_coffees_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
             referencedColumns: ["id"]
           },
         ]
@@ -616,14 +632,17 @@ export type Database = {
       daily_coffees_authed_read: {
         Row: {
           coffee_date: string | null
+          log_type: string | null
           user_id: string | null
         }
         Insert: {
           coffee_date?: string | null
+          log_type?: string | null
           user_id?: string | null
         }
         Update: {
           coffee_date?: string | null
+          log_type?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -726,6 +745,32 @@ export type Database = {
           mtr_station: string | null
           hk_area: string | null
           description: string | null
+        }[]
+      }
+      get_public_org_coffee_notes: {
+        Args: {
+          p_org_id: string
+          p_cursor_created_at: string | null
+          p_cursor_id: string | null
+          p_limit: number | null
+        }
+        Returns: {
+          id: string
+          tasting_notes: string
+          menu_item_label: string | null
+          created_at: string
+          reviewer_label: string
+        }[]
+      }
+      get_voucher_log_prefill: {
+        Args: { p_voucher_id: string }
+        Returns: {
+          voucher_id: string
+          org_id: string
+          org_name: string | null
+          menu_item_id: string | null
+          menu_item_name: string | null
+          redeemed_at: string
         }[]
       }
       get_public_leaderboard: {
@@ -844,6 +889,34 @@ export type Database = {
           status: string
           voucher_id: string
         }[]
+      }
+      log_coffee_for_voucher: {
+        Args: {
+          p_voucher_id: string
+          p_org_id: string
+          p_place: string | null
+          p_log_item: string | null
+          p_log_item_other: string | null
+          p_tasting_notes: string | null
+          p_share_publicly: boolean
+          p_coffee_date: string
+        }
+        Returns: {
+          id: string
+          user_id: string
+          coffee_date: string
+          location_kind: string | null
+          org_id: string | null
+          place: string | null
+          log_item: string | null
+          log_item_other: string | null
+          tasting_notes: string | null
+          log_type: string
+          share_publicly: boolean
+          voucher_id: string | null
+          created_at: string
+          updated_at: string
+        }
       }
       start_quiz_anon: {
         Args: { p_session_token: string; p_store_id: string }

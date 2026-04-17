@@ -13,6 +13,7 @@ import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
 import { weeklyOpeningHoursDisplayRows } from "@/lib/openingHoursCustomerDisplay";
 import { orgDirectionsUrl } from "@/lib/orgDirectionsUrl";
 import { cn } from "@/lib/utils";
+import { OrgPublicCoffeeNotes } from "@/components/OrgPublicCoffeeNotes";
 
 export type PublicOrgProfileRow = {
   id: string;
@@ -172,6 +173,8 @@ export default function OrgPublicPage() {
               />
             )}
           </section>
+
+          {orgId ? <OrgPublicCoffeeNotes orgId={orgId} /> : null}
 
           <section>
             <h2 className="text-lg font-bold leading-snug tracking-normal text-[#2e1a14]">Opening Hours</h2>
