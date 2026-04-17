@@ -47,7 +47,7 @@ interface VoucherCarouselCardProps {
 function VoucherTicketDivider({ bodyClass }: { bodyClass: string }) {
   return (
     <div
-      className={cn('relative h-3 flex-shrink-0 overflow-hidden', bodyClass)}
+      className={cn('relative h-2 flex-shrink-0 overflow-hidden', bodyClass)}
       aria-hidden
     >
       <div className="absolute inset-x-3 top-1/2 border-t border-dashed border-border" />
@@ -142,19 +142,19 @@ export function VoucherCarouselCard({
       ) : (
         <div className={cn('flex min-w-0 flex-1 flex-col rounded-b-2xl bg-muted/40')}>
           <VoucherTicketDivider bodyClass={campaignBodyClass} />
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-2">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-1">
             <div
-              className="flex min-w-0 items-baseline gap-1 text-xs font-bold leading-snug text-foreground"
+              className="flex min-w-0 items-baseline gap-1 text-sm font-bold leading-snug text-foreground"
               title={nameQuotaTitle}
             >
               <span className="min-w-0 truncate">{offerName}</span>
               {treasure.quantityLimit != null ? (
-                <span className="shrink-0 text-xs font-bold tabular-nums text-foreground">
+                <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
                   · {treasure.quantityLimit}
                 </span>
               ) : null}
             </div>
-            <p className="min-w-0 text-xs font-bold leading-snug text-foreground line-clamp-2" title={orgLine}>
+            <p className="min-w-0 text-sm font-bold leading-snug text-foreground line-clamp-2" title={orgLine}>
               {orgLine}
             </p>
             {locationLine ? (
