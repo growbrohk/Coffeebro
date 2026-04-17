@@ -731,6 +731,7 @@ export type Database = {
           username: string
           created_at: string
           run_count: number
+          quiz_result_type: string | null
         }[]
       }
       get_published_campaign_voucher_pool: {

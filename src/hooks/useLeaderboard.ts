@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export type LeaderboardKind = 'coffee' | 'voucher';
-export type LeaderboardPeriod = 'day' | 'week' | 'month';
+export type LeaderboardPeriod = 'day' | 'week' | 'month' | 'alltime';
 
 export interface LeaderboardEntry {
   id: string;
@@ -10,6 +10,7 @@ export interface LeaderboardEntry {
   username: string;
   created_at: string;
   run_count: number;
+  quiz_result_type: string | null;
 }
 
 export function useLeaderboard(

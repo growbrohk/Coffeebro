@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "bd5526b65f1e01b40e236cdc7382ef53"
+    "revision": "18ab81bfc26c85a9d1459b41c57a54e9"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -101,6 +101,9 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
   }, {
     "url": "apple-touch-icon.png",
     "revision": "c899ae9b6f501c0f55a567cb28cab7b9"
+  }, {
+    "url": "quiz-frogs/seven-frogs.svg",
+    "revision": "d9a67c75d4c948493f458e0fac45ef67"
   }, {
     "url": "quiz-frogs/mocha.svg",
     "revision": "92f35eac64a0f9d6497b4fc1380ed3bc"
@@ -192,10 +195,10 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-sy7miEAw.css",
+    "url": "assets/index-fHs4mgkm.css",
     "revision": null
   }, {
-    "url": "assets/index-B10L5i05.js",
+    "url": "assets/index-DDeMTloi.js",
     "revision": null
   }, {
     "url": "assets/hunt-pin-star-Da2i0JzL.svg",
