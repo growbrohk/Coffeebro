@@ -1,1 +1,25 @@
+# Linked project (Coffeebro). Push auth settings with: supabase config push
+# See: https://supabase.com/docs/guides/local-development/cli/config
 project_id = "mhrbfgathudkequhmvjs"
+
+[auth]
+enabled = true
+# Must match production app URL (email links, default redirects).
+site_url = "https://www.coffee-bro.com"
+# Exact URLs allowed for OAuth redirect_to (e.g. signInWithGoogle in AuthContext).
+additional_redirect_urls = [
+  "http://localhost:8080/profile",
+  "https://www.coffee-bro.com/profile",
+]
+
+# Restored to match remote (before a minimal config push); do not revert without checking Dashboard.
+[auth.email]
+max_frequency = "1m0s"
+otp_length = 8
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

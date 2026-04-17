@@ -186,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  /** Google OAuth: enable provider + secrets in Supabase Dashboard; Google Cloud redirect URI must include `https://mhrbfgathudkequhmvjs.supabase.co/auth/v1/callback`. See supabase/config.toml for `additional_redirect_urls`. */
   const signInWithGoogle = async (redirectTo?: string) => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
