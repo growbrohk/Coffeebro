@@ -284,7 +284,7 @@ export default function HuntMapPage() {
           items={voucherTreasures}
           onClose={() => setVoucherSheetDismissed(true)}
           onCta={(t) => void handleCampaignCta(t)}
-          onCardPress={(t) => setSelectedTreasure(t)}
+          onCardPress={(t) => void handleCampaignCta(t)}
         />
       ) : null}
     </div>
