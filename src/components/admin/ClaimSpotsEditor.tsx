@@ -1,8 +1,21 @@
-import { useState } from 'react';
-import { MapPin, Plus, Trash2 } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { ChevronsUpDown, MapPin, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   useOrgClaimSpots,
   useCreateClaimSpot,
@@ -10,8 +23,11 @@ import {
   useUpdateClaimSpot,
   type OrgClaimSpotRow,
 } from '@/hooks/useOrgClaimSpots';
+import { useDiscoveryOrgs, type DiscoveryOrgRow } from '@/hooks/useDiscoveryOrgs';
 import { useToast } from '@/hooks/use-toast';
 import { TreasureMapPickerDialog } from '@/components/campaigns/TreasureMapPickerDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 type Props = {
   orgId: string;
@@ -24,6 +40,16 @@ type Draft = {
   latStr: string;
   lngStr: string;
   google_maps_url: string;
+};
+
+type DraftKey = string;
+
+type PublicOrgRow = {
+  org_name: string;
+  location: string | null;
+  lat: number | null;
+  lng: number | null;
+  google_maps_url: string | null;
 };
 
 const emptyDraft = (): Draft => ({
@@ -51,17 +77,136 @@ function rowToDraft(row: OrgClaimSpotRow): Draft {
   };
 }
 
+function filterDiscoveryCandidates(rows: DiscoveryOrgRow[], currentOrgId: string): DiscoveryOrgRow[] {
+  return rows.filter(
+    (o) =>
+      o.shop_type === 'physical' &&
+      o.id !== currentOrgId &&
+      (!!o.location?.trim() || (o.lat != null && o.lng != null)),
+  );
+}
+
+function filterBySearch(rows: DiscoveryOrgRow[], q: string): DiscoveryOrgRow[] {
+  const trimmed = q.trim().toLowerCase();
+  let list = rows;
+  if (trimmed) {
+    list = rows.filter((o) => {
+      const hay = [o.org_name, o.district, o.mtr_station, o.location]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(trimmed);
+    });
+  }
+  return [...list].sort((a, b) => a.org_name.localeCompare(b.org_name));
+}
+
+function applyPublicRowToDraft(draft: Draft, row: PublicOrgRow): Partial<Draft> {
+  const patch: Partial<Draft> = {};
+  const loc = row.location?.trim();
+  if (loc) patch.address = loc;
+  if (row.lat != null && row.lng != null) {
+    patch.latStr = String(row.lat);
+    patch.lngStr = String(row.lng);
+  }
+  const g = row.google_maps_url?.trim();
+  if (g) patch.google_maps_url = g;
+  if (!draft.label.trim() && row.org_name) patch.label = row.org_name;
+  return patch;
+}
+
 export function ClaimSpotsEditor({ orgId, disabled }: Props) {
   const { data: spots = [], isLoading } = useOrgClaimSpots(orgId);
+  const { data: discovery = [] } = useDiscoveryOrgs();
   const createSpot = useCreateClaimSpot();
   const updateSpot = useUpdateClaimSpot();
   const deleteSpot = useDeleteClaimSpot();
   const { toast } = useToast();
 
+  const candidates = useMemo(() => filterDiscoveryCandidates(discovery, orgId), [discovery, orgId]);
+
   const [editing, setEditing] = useState<Record<string, Draft>>({});
   const [newDraft, setNewDraft] = useState<Draft>(emptyDraft());
   const [adding, setAdding] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | 'new' | null>(null);
+
+  const [modeByDraft, setModeByDraft] = useState<Record<DraftKey, 'manual' | 'fromOrg'>>({});
+  const [orgPickerOpen, setOrgPickerOpen] = useState<Record<DraftKey, boolean>>({});
+  const [orgPickerBusy, setOrgPickerBusy] = useState<Record<DraftKey, boolean>>({});
+  const [orgSearch, setOrgSearch] = useState<Record<DraftKey, string>>({});
+  const reqIdsRef = useRef<Record<DraftKey, number>>({});
+
+  const getMode = (key: DraftKey) => modeByDraft[key] ?? 'manual';
+
+  const clearDraftContext = (key: DraftKey) => {
+    setModeByDraft((m) => {
+      const n = { ...m };
+      delete n[key];
+      return n;
+    });
+    setOrgPickerOpen((o) => {
+      const n = { ...o };
+      delete n[key];
+      return n;
+    });
+    setOrgPickerBusy((b) => {
+      const n = { ...b };
+      delete n[key];
+      return n;
+    });
+    setOrgSearch((s) => {
+      const n = { ...s };
+      delete n[key];
+      return n;
+    });
+  };
+
+  const applyOrgToDraft = async (draftKey: DraftKey, orgIdToFetch: string) => {
+    reqIdsRef.current[draftKey] = (reqIdsRef.current[draftKey] ?? 0) + 1;
+    const token = reqIdsRef.current[draftKey];
+    setOrgPickerBusy((b) => ({ ...b, [draftKey]: true }));
+    setOrgPickerOpen((o) => ({ ...o, [draftKey]: false }));
+    try {
+      const { data, error } = await supabase.rpc('get_public_org_by_id', { p_org_id: orgIdToFetch });
+      if (error) throw error;
+      const row = data?.[0] as PublicOrgRow | undefined;
+      if (!row) {
+        toast({
+          title: 'Could not load organization',
+          description: 'No data returned for this org.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (reqIdsRef.current[draftKey] !== token) return;
+
+      if (draftKey === 'new') {
+        setNewDraft((prev) => {
+          if (reqIdsRef.current[draftKey] !== token) return prev;
+          return { ...prev, ...applyPublicRowToDraft(prev, row) };
+        });
+      } else {
+        setEditing((prev) => {
+          const cur = prev[draftKey];
+          if (!cur) return prev;
+          if (reqIdsRef.current[draftKey] !== token) return prev;
+          return { ...prev, [draftKey]: { ...cur, ...applyPublicRowToDraft(cur, row) } };
+        });
+      }
+      toast({ title: `Filled from ${row.org_name}` });
+    } catch (e) {
+      if (reqIdsRef.current[draftKey] !== token) return;
+      toast({
+        title: 'Could not load organization',
+        description: e instanceof Error ? e.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      if (reqIdsRef.current[draftKey] === token) {
+        setOrgPickerBusy((b) => ({ ...b, [draftKey]: false }));
+      }
+    }
+  };
 
   const beginEdit = (row: OrgClaimSpotRow) => {
     setEditing((prev) => ({ ...prev, [row.id]: rowToDraft(row) }));
@@ -73,6 +218,7 @@ export function ClaimSpotsEditor({ orgId, disabled }: Props) {
       delete next[id];
       return next;
     });
+    clearDraftContext(id);
   };
 
   const patchEdit = (id: string, patch: Partial<Draft>) => {
@@ -145,6 +291,7 @@ export function ClaimSpotsEditor({ orgId, disabled }: Props) {
       });
       setNewDraft(emptyDraft());
       setAdding(false);
+      clearDraftContext('new');
       toast({ title: 'Spot added' });
     } catch (e) {
       toast({
@@ -170,105 +317,202 @@ export function ClaimSpotsEditor({ orgId, disabled }: Props) {
     }
   };
 
-  const renderDraftFields = (
-    id: string | 'new',
-    draft: Draft,
-    patch: (p: Partial<Draft>) => void,
-  ) => (
-    <div className="grid gap-3">
-      <div className="space-y-1.5">
-        <Label htmlFor={`spot-label-${id}`}>Label</Label>
-        <Input
-          id={`spot-label-${id}`}
-          value={draft.label}
-          onChange={(e) => patch({ label: e.target.value })}
-          placeholder="e.g. Central pickup counter"
-          disabled={disabled}
-          className="h-10"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`spot-address-${id}`}>Address</Label>
-        <Input
-          id={`spot-address-${id}`}
-          value={draft.address}
-          onChange={(e) => patch({ address: e.target.value })}
-          placeholder="Building, street, district"
-          disabled={disabled}
-          className="h-10"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
+  const renderDraftFields = (draftKey: DraftKey, draft: Draft, patch: (p: Partial<Draft>) => void) => {
+    const mode = getMode(draftKey);
+    const search = orgSearch[draftKey] ?? '';
+    const filtered = filterBySearch(candidates, search);
+    const pickerOpen = Boolean(orgPickerOpen[draftKey]);
+    const pickerBusy = Boolean(orgPickerBusy[draftKey]);
+    const triggerId = `claim-spot-org-trigger-${draftKey}`;
+    const listId = `claim-spot-org-list-${draftKey}`;
+
+    return (
+      <div className="grid gap-3">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={mode === 'manual' ? 'secondary' : 'ghost'}
+            disabled={disabled}
+            onClick={() => {
+              setModeByDraft((m) => ({ ...m, [draftKey]: 'manual' }));
+              setOrgPickerOpen((o) => ({ ...o, [draftKey]: false }));
+            }}
+          >
+            Manual entry
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={mode === 'fromOrg' ? 'secondary' : 'ghost'}
+            disabled={disabled}
+            onClick={() => setModeByDraft((m) => ({ ...m, [draftKey]: 'fromOrg' }))}
+          >
+            Copy from organization
+          </Button>
+        </div>
+
+        {mode === 'fromOrg' ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={triggerId}>Organization</Label>
+            <Popover
+              open={pickerOpen}
+              onOpenChange={(open) => {
+                setOrgPickerOpen((o) => ({ ...o, [draftKey]: open }));
+                if (!open) setOrgSearch((s) => ({ ...s, [draftKey]: '' }));
+              }}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  id={triggerId}
+                  role="combobox"
+                  aria-expanded={pickerOpen}
+                  aria-controls={listId}
+                  aria-busy={pickerBusy}
+                  variant="outline"
+                  disabled={disabled || pickerBusy}
+                  className={cn('h-10 w-full justify-between font-normal', !pickerBusy && 'bg-background')}
+                >
+                  <span className="truncate text-left">
+                    {pickerBusy ? 'Loading…' : 'Search organizations…'}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                id={listId}
+                className="w-[var(--radix-popover-trigger-width)] p-0"
+                align="start"
+              >
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search by name, area…"
+                    value={search}
+                    onValueChange={(v) => setOrgSearch((s) => ({ ...s, [draftKey]: v }))}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No organization found.</CommandEmpty>
+                    <CommandGroup>
+                      {filtered.map((o) => (
+                        <CommandItem
+                          key={o.id}
+                          value={`${o.org_name}|${o.id}`}
+                          onSelect={() => {
+                            void applyOrgToDraft(draftKey, o.id);
+                          }}
+                        >
+                          <span className="truncate">{o.org_name}</span>
+                          {o.district ? (
+                            <span className="ml-2 shrink-0 text-xs text-muted-foreground">{o.district}</span>
+                          ) : null}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              Pick an org to fill address, coordinates, and Google Maps link. You can edit them below.
+            </p>
+          </div>
+        ) : null}
+
         <div className="space-y-1.5">
-          <Label htmlFor={`spot-lat-${id}`}>Latitude</Label>
+          <Label htmlFor={`spot-label-${draftKey}`}>Label</Label>
           <Input
-            id={`spot-lat-${id}`}
-            inputMode="decimal"
-            value={draft.latStr}
-            onChange={(e) => patch({ latStr: e.target.value })}
-            placeholder="22.2783"
+            id={`spot-label-${draftKey}`}
+            value={draft.label}
+            onChange={(e) => patch({ label: e.target.value })}
+            placeholder="e.g. Central pickup counter"
             disabled={disabled}
             className="h-10"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`spot-lng-${id}`}>Longitude</Label>
+          <Label htmlFor={`spot-address-${draftKey}`}>Address</Label>
           <Input
-            id={`spot-lng-${id}`}
-            inputMode="decimal"
-            value={draft.lngStr}
-            onChange={(e) => patch({ lngStr: e.target.value })}
-            placeholder="114.1747"
+            id={`spot-address-${draftKey}`}
+            value={draft.address}
+            onChange={(e) => patch({ address: e.target.value })}
+            placeholder="Building, street, district"
             disabled={disabled}
             className="h-10"
           />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={`spot-lat-${draftKey}`}>Latitude</Label>
+            <Input
+              id={`spot-lat-${draftKey}`}
+              inputMode="decimal"
+              value={draft.latStr}
+              onChange={(e) => patch({ latStr: e.target.value })}
+              placeholder="22.2783"
+              disabled={disabled}
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`spot-lng-${draftKey}`}>Longitude</Label>
+            <Input
+              id={`spot-lng-${draftKey}`}
+              inputMode="decimal"
+              value={draft.lngStr}
+              onChange={(e) => patch({ lngStr: e.target.value })}
+              placeholder="114.1747"
+              disabled={disabled}
+              className="h-10"
+            />
+          </div>
+        </div>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={disabled}
+            onClick={() => setPickerFor(draftKey)}
+          >
+            <MapPin className="h-4 w-4" />
+            Pick on map
+          </Button>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`spot-gmaps-${draftKey}`}>Google Maps link (optional)</Label>
+          <Input
+            id={`spot-gmaps-${draftKey}`}
+            type="url"
+            value={draft.google_maps_url}
+            onChange={(e) => patch({ google_maps_url: e.target.value })}
+            placeholder="https://maps.app.goo.gl/…"
+            disabled={disabled}
+            className="h-10"
+          />
+        </div>
+        {pickerFor === draftKey ? (
+          <TreasureMapPickerDialog
+            open={pickerFor === draftKey}
+            onOpenChange={(open) => {
+              if (!open) setPickerFor(null);
+            }}
+            initialLat={draft.latStr}
+            initialLng={draft.lngStr}
+            disabled={disabled}
+            onApply={({ lat, lng, address }) => {
+              patch({
+                latStr: lat,
+                lngStr: lng,
+                address: draft.address.trim() || address,
+              });
+            }}
+          />
+        ) : null}
       </div>
-      <div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          disabled={disabled}
-          onClick={() => setPickerFor(id)}
-        >
-          <MapPin className="h-4 w-4" />
-          Pick on map
-        </Button>
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`spot-gmaps-${id}`}>Google Maps link (optional)</Label>
-        <Input
-          id={`spot-gmaps-${id}`}
-          type="url"
-          value={draft.google_maps_url}
-          onChange={(e) => patch({ google_maps_url: e.target.value })}
-          placeholder="https://maps.app.goo.gl/…"
-          disabled={disabled}
-          className="h-10"
-        />
-      </div>
-      {pickerFor === id ? (
-        <TreasureMapPickerDialog
-          open={pickerFor === id}
-          onOpenChange={(open) => {
-            if (!open) setPickerFor(null);
-          }}
-          initialLat={draft.latStr}
-          initialLng={draft.lngStr}
-          disabled={disabled}
-          onApply={({ lat, lng, address }) => {
-            patch({
-              latStr: lat,
-              lngStr: lng,
-              address: draft.address.trim() || address,
-            });
-          }}
-        />
-      ) : null}
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -389,6 +633,7 @@ export function ClaimSpotsEditor({ orgId, disabled }: Props) {
                 onClick={() => {
                   setAdding(false);
                   setNewDraft(emptyDraft());
+                  clearDraftContext('new');
                 }}
                 disabled={disabled || createSpot.isPending}
               >
