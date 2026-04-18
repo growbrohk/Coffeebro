@@ -3,11 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from './useUserRole';
 
+export type OrgShopType = 'physical' | 'online';
+
 export interface Org {
   id: string;
   owner_user_id: string;
   org_name: string;
   created_at: string;
+  shop_type: OrgShopType;
   location?: string | null;
   lat?: number | null;
   lng?: number | null;

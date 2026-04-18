@@ -13,6 +13,7 @@ import { useOrgStaff } from "@/hooks/useOrgStaff";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
+import { normalizeClaimSpot } from "@/lib/campaignToMapItem";
 import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
@@ -83,8 +84,13 @@ function getHuntQrMapTarget(campaign: PublishedCampaignRow, org: ReturnType<type
     return { displayAddress: null, mapsUrl: null };
   }
 
-  const orgLat = org?.lat ?? null;
-  const orgLng = org?.lng ?? null;
+  const isOnline = org?.shop_type === "online";
+  const claimSpot = normalizeClaimSpot(campaign.org_claim_spots);
+  const orgLat = isOnline ? claimSpot?.lat ?? null : org?.lat ?? null;
+  const orgLng = isOnline ? claimSpot?.lng ?? null : org?.lng ?? null;
+  const shopAddress = isOnline
+    ? claimSpot?.address?.trim() || claimSpot?.label?.trim() || null
+    : org?.location?.trim() || null;
 
   let lat: number | null = null;
   let lng: number | null = null;
@@ -93,14 +99,14 @@ function getHuntQrMapTarget(campaign: PublishedCampaignRow, org: ReturnType<type
   if (campaign.treasure_location_type === "shop") {
     lat = orgLat;
     lng = orgLng;
-    address = org?.location?.trim() || null;
+    address = shopAddress;
   } else {
     lat = campaign.treasure_lat ?? orgLat;
     lng = campaign.treasure_lng ?? orgLng;
     address =
       campaign.treasure_address?.trim() ||
       campaign.treasure_area_name?.trim() ||
-      org?.location?.trim() ||
+      shopAddress ||
       null;
   }
 
@@ -148,7 +154,8 @@ export default function CampaignDetailPage() {
         .select(
           `
           *,
-          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id ),
+          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id, shop_type ),
+          org_claim_spots ( id, label, address, lat, lng, google_maps_url ),
           campaign_vouchers ( *, menu_items (*) )
         `,
         )

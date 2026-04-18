@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
 import { useOrgMenuItems } from "@/hooks/useOrgMenuItems";
+import { useOrgClaimSpots } from "@/hooks/useOrgClaimSpots";
 import { useCampaign } from "@/hooks/useOrgCampaigns";
 import type { CampaignWithVouchers } from "@/hooks/useOrgCampaigns";
 import { useCampaignMutations } from "@/hooks/useCampaignMutations";
@@ -74,10 +75,12 @@ export default function OrgCampaignEditorPage() {
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: menuItems = [] } = useOrgMenuItems(orgId);
+  const { data: claimSpots = [] } = useOrgClaimSpots(orgId);
   const { data: campaign, isLoading: campLoading, error: campError } = useCampaign(
     orgId,
     isNew ? undefined : campaignId,
   );
+  const isOnlineOrg = org?.shop_type === "online";
   const saveCampaign = useCampaignMutations();
   const { toast } = useToast();
 
@@ -99,6 +102,7 @@ export default function OrgCampaignEditorPage() {
   const [hintImageUploading, setHintImageUploading] = useState(false);
   const hintImageFileRef = useRef<HTMLInputElement>(null);
   const [vouchers, setVouchers] = useState<VoucherDraft[]>([]);
+  const [claimSpotId, setClaimSpotId] = useState<string>("");
   const [hydrated, setHydrated] = useState(false);
 
   const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
@@ -120,25 +124,39 @@ export default function OrgCampaignEditorPage() {
     setHintText(campaign.hint_text ?? "");
     setHintImageUrl(campaign.hint_image_url ?? "");
     setVouchers(vouchersFromCampaign(campaign));
+    setClaimSpotId(campaign.claim_spot_id ?? "");
     setHydrated(true);
   }, [campaign, isNew]);
 
   useEffect(() => {
     if (!isNew || hydrated || orgLoading) return;
-    if (org) {
+    if (org && org.shop_type !== "online") {
       setTreasureLat(org.lat != null ? String(org.lat) : "");
       setTreasureLng(org.lng != null ? String(org.lng) : "");
     }
     setHydrated(true);
   }, [isNew, org, orgLoading, hydrated]);
 
+  // Grab campaigns always mirror the "shop" as the treasure location. For physical
+  // orgs that means copying org.lat/lng into the treasure state so the UI can
+  // preview coordinates. For online orgs there is no org-level coord — the server
+  // resolves pickup location from the selected claim spot at read time.
   useEffect(() => {
-    if (campaignType === "grab") {
-      setTreasureLocationType("shop");
-      if (org?.lat != null) setTreasureLat(String(org.lat));
-      if (org?.lng != null) setTreasureLng(String(org.lng));
+    if (campaignType !== "grab") return;
+    setTreasureLocationType("shop");
+    if (org?.shop_type === "online") {
+      setTreasureLat("");
+      setTreasureLng("");
+      return;
     }
-  }, [campaignType, org?.lat, org?.lng]);
+    if (org?.lat != null) setTreasureLat(String(org.lat));
+    if (org?.lng != null) setTreasureLng(String(org.lng));
+  }, [campaignType, org?.shop_type, org?.lat, org?.lng]);
+
+  const selectedClaimSpot = useMemo(
+    () => claimSpots.find((s) => s.id === claimSpotId) ?? null,
+    [claimSpots, claimSpotId],
+  );
 
   const previewVouchers = useMemo(
     () =>
@@ -204,6 +222,56 @@ export default function OrgCampaignEditorPage() {
     });
     const finalTitle = displayTitle.trim() || autoTitle;
 
+    // shop_type-dependent rules: the zod schema has no org context so we validate here.
+    if (isOnlineOrg) {
+      if (!claimSpotId) {
+        if (status === "published") {
+          toast({
+            title: "Claim spot required",
+            description: "Pick a reward claim spot before publishing an online-shop campaign.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      if (claimSpotId) {
+        const spot = claimSpots.find((s) => s.id === claimSpotId);
+        if (status === "published" && (!spot || spot.lat == null || spot.lng == null)) {
+          toast({
+            title: "Claim spot needs coordinates",
+            description: "Open Claim spots and set lat/lng for the selected pickup location.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    // For online orgs, campaign rows do NOT carry treasure_lat/lng/address for the
+    // shop-location path — consumers resolve those from the linked claim_spot at
+    // read time. Only "custom" hunt pins continue to write coords directly.
+    const writeTreasureFromShop = !isOnlineOrg;
+    const treasureLatForRow =
+      campaignType === "grab"
+        ? writeTreasureFromShop
+          ? org?.lat ?? latNum
+          : null
+        : treasureLocationType === "shop"
+          ? writeTreasureFromShop
+            ? org?.lat ?? latNum
+            : null
+          : latNum;
+    const treasureLngForRow =
+      campaignType === "grab"
+        ? writeTreasureFromShop
+          ? org?.lng ?? lngNum
+          : null
+        : treasureLocationType === "shop"
+          ? writeTreasureFromShop
+            ? org?.lng ?? lngNum
+            : null
+          : lngNum;
+
     const payload = {
       org_id: orgId,
       display_title: finalTitle || null,
@@ -213,13 +281,14 @@ export default function OrgCampaignEditorPage() {
       reward_mode: rewardMode,
       reward_per_action: rewardPerAction,
       treasure_location_type: campaignType === "grab" ? "shop" : treasureLocationType,
-      treasure_lat: campaignType === "grab" ? org?.lat ?? latNum : latNum,
-      treasure_lng: campaignType === "grab" ? org?.lng ?? lngNum : lngNum,
+      treasure_lat: treasureLatForRow,
+      treasure_lng: treasureLngForRow,
       treasure_address: treasureAddress.trim() || null,
       treasure_area_name: treasureAreaName.trim() || null,
       hint_text: campaignType === "grab" ? null : hintText.trim() || null,
       hint_image_url: campaignType === "grab" ? null : hintImageUrl.trim() || null,
       status,
+      claim_spot_id: claimSpotId || null,
       vouchers: vouchers.map((v, i) => ({
         ...(v.id ? { id: v.id } : {}),
         menu_item_id: v.menu_item_id,
@@ -268,6 +337,7 @@ export default function OrgCampaignEditorPage() {
           hint_text: d.hint_text,
           hint_image_url: d.hint_image_url,
           status: d.status,
+          claim_spot_id: d.claim_spot_id ?? null,
           qr_payload: null,
         }
       : {
@@ -286,6 +356,7 @@ export default function OrgCampaignEditorPage() {
           hint_text: d.hint_text,
           hint_image_url: d.hint_image_url,
           status: d.status,
+          claim_spot_id: d.claim_spot_id ?? null,
         };
 
     try {
@@ -395,6 +466,48 @@ export default function OrgCampaignEditorPage() {
           disabled={saveCampaign.isPending}
         />
 
+        {isOnlineOrg ? (
+          <section className="space-y-3">
+            <div className="grid gap-2">
+              <Label htmlFor="claim-spot">Reward claim spot</Label>
+              {claimSpots.length === 0 ? (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+                  <p>No claim spots defined for this org yet.</p>
+                  <p className="mt-1 text-xs">
+                    Add at least one pickup location on the organization page before publishing an online-shop
+                    campaign.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Select
+                    value={claimSpotId || "__none__"}
+                    onValueChange={(v) => setClaimSpotId(v === "__none__" ? "" : v)}
+                    disabled={saveCampaign.isPending}
+                  >
+                    <SelectTrigger id="claim-spot">
+                      <SelectValue placeholder="Select a claim spot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Not set</SelectItem>
+                      {claimSpots.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.label}
+                          {s.address ? ` — ${s.address}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Map pin, voucher directions, and hunt &quot;same as shop&quot; destinations use this pickup
+                    location.
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
+        ) : null}
+
         <CampaignScheduleSection
           startAt={startLocal}
           endAt={endLocal}
@@ -416,6 +529,8 @@ export default function OrgCampaignEditorPage() {
             onTreasureLng={setTreasureLng}
             onTreasureAddress={setTreasureAddress}
             onTreasureAreaName={setTreasureAreaName}
+            shopType={org?.shop_type}
+            claimSpotLabel={selectedClaimSpot?.label ?? null}
             disabled={saveCampaign.isPending}
           />
         ) : null}

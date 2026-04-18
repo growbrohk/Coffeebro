@@ -44,6 +44,7 @@ export const campaignFormSchema = z
       .transform((v) => (v === "" || v === undefined ? null : v)),
     status: z.enum(CAMPAIGN_STATUSES).default("draft"),
     qr_payload: z.string().max(500).nullable().optional(),
+    claim_spot_id: z.string().uuid().nullable().optional(),
     vouchers: z.array(campaignVoucherLineSchema).default([]),
   })
   .superRefine((data, ctx) => {

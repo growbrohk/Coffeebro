@@ -230,6 +230,7 @@ export type Database = {
           location: string | null
           org_name: string
           owner_user_id: string
+          shop_type: string
           lat: number | null
           lng: number | null
           instagram_handle: string | null
@@ -249,6 +250,7 @@ export type Database = {
           location?: string | null
           org_name: string
           owner_user_id: string
+          shop_type?: string
           lat?: number | null
           lng?: number | null
           instagram_handle?: string | null
@@ -268,6 +270,7 @@ export type Database = {
           location?: string | null
           org_name?: string
           owner_user_id?: string
+          shop_type?: string
           lat?: number | null
           lng?: number | null
           instagram_handle?: string | null
@@ -424,6 +427,7 @@ export type Database = {
       campaigns: {
         Row: {
           campaign_type: string
+          claim_spot_id: string | null
           created_at: string
           display_title: string | null
           end_at: string | null
@@ -445,6 +449,7 @@ export type Database = {
         }
         Insert: {
           campaign_type: string
+          claim_spot_id?: string | null
           created_at?: string
           display_title?: string | null
           end_at?: string | null
@@ -466,6 +471,7 @@ export type Database = {
         }
         Update: {
           campaign_type?: string
+          claim_spot_id?: string | null
           created_at?: string
           display_title?: string | null
           end_at?: string | null
@@ -488,6 +494,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "campaigns_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_claim_spot_id_fkey"
+            columns: ["claim_spot_id"]
+            isOneToOne: false
+            referencedRelation: "org_claim_spots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_claim_spots: {
+        Row: {
+          address: string | null
+          created_at: string
+          google_maps_url: string | null
+          id: string
+          label: string
+          lat: number | null
+          lng: number | null
+          org_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          google_maps_url?: string | null
+          id?: string
+          label: string
+          lat?: number | null
+          lng?: number | null
+          org_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          google_maps_url?: string | null
+          id?: string
+          label?: string
+          lat?: number | null
+          lng?: number | null
+          org_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_claim_spots_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
@@ -717,6 +777,7 @@ export type Database = {
         Returns: {
           id: string
           org_name: string
+          shop_type: string
           logo_url: string | null
           preview_photo_url: string | null
           location: string | null
@@ -734,6 +795,7 @@ export type Database = {
         Returns: {
           id: string
           org_name: string
+          shop_type: string
           location: string | null
           lat: number | null
           lng: number | null

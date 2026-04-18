@@ -18,6 +18,8 @@ type Props = {
   onTreasureLng: (v: string) => void;
   onTreasureAddress: (v: string) => void;
   onTreasureAreaName: (v: string) => void;
+  shopType?: "physical" | "online";
+  claimSpotLabel?: string | null;
   disabled?: boolean;
 };
 
@@ -33,16 +35,29 @@ export function TreasureLocationSection({
   onTreasureLng,
   onTreasureAddress,
   onTreasureAreaName,
+  shopType,
+  claimSpotLabel,
   disabled,
 }: Props) {
   const isGrab = campaignType === "grab";
+  const isOnline = shopType === "online";
   const [mapPickerOpen, setMapPickerOpen] = useState(false);
+
+  const sameAsShopHelp = isOnline
+    ? claimSpotLabel
+      ? `Directions use the selected reward claim spot: ${claimSpotLabel}.`
+      : "Select a reward claim spot above so directions and the map pin have a destination."
+    : null;
 
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Treasure location</h2>
       {isGrab && (
-        <p className="text-sm text-muted-foreground">Grab campaigns always use your shop coordinates.</p>
+        <p className="text-sm text-muted-foreground">
+          {isOnline
+            ? "Grab campaigns for online shops use the selected reward claim spot for the map pin and directions."
+            : "Grab campaigns always use your shop coordinates."}
+        </p>
       )}
       {!isGrab && (
         <>
@@ -61,6 +76,9 @@ export function TreasureLocationSection({
               Custom pin / address
             </label>
           </RadioGroup>
+          {treasureLocationType === "shop" && sameAsShopHelp ? (
+            <p className="text-sm text-muted-foreground">{sameAsShopHelp}</p>
+          ) : null}
           {treasureLocationType === "custom" && (
             <>
               <Button

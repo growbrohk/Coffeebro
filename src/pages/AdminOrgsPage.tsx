@@ -31,6 +31,9 @@ import {
 import { HK_DISTRICTS } from '@/data/hkDistricts';
 import { getMtrStationsForDistrict } from '@/data/mtrStationsByDistrict';
 import { isNearHongKong } from '@/lib/hkMapBounds';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ClaimSpotsEditor } from '@/components/admin/ClaimSpotsEditor';
+import type { OrgShopType } from '@/hooks/useOrgs';
 
 const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
 const PREVIEW_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -64,6 +67,7 @@ function mapsPreviewUrl(
 
 type Draft = {
   org_name: string;
+  shop_type: OrgShopType;
   location: string;
   description: string;
   latStr: string;
@@ -84,6 +88,7 @@ type Draft = {
 function emptyDraft(): Draft {
   return {
     org_name: '',
+    shop_type: 'physical',
     location: '',
     description: '',
     latStr: '',
@@ -105,6 +110,7 @@ function emptyDraft(): Draft {
 function draftFromOrg(org: Org): Draft {
   return {
     org_name: org.org_name ?? '',
+    shop_type: (org.shop_type ?? 'physical') as OrgShopType,
     location: org.location ?? '',
     description: org.description ?? '',
     latStr: org.lat != null ? String(org.lat) : '',
@@ -565,6 +571,7 @@ export default function AdminOrgsPage() {
       return;
     }
 
+    const isOnline = draft.shop_type === 'online';
     const lat = parseCoord(draft.latStr);
     const lng = parseCoord(draft.lngStr);
     const openingPayload = weeklyToJson(draft.openingHours);
@@ -576,20 +583,23 @@ export default function AdminOrgsPage() {
 
     const row = {
       org_name: name,
-      location: draft.location.trim() || null,
+      shop_type: draft.shop_type,
       description: draft.description.trim() || null,
-      lat,
-      lng,
       instagram_handle: draft.instagram_handle.trim() || null,
       phone: draft.phone.trim() || null,
-      google_maps_url: draft.google_maps_url.trim() || null,
-      opening_hours: openingPayload as unknown,
-      hk_area: draft.hk_area.trim() || null,
-      district: draft.district.trim() || null,
-      mtr_station: draft.mtr_station.trim() || null,
       logo_url: logoUrlForRow,
       preview_photo_url: previewUrlForRow,
       owner_user_id: draft.owner_user_id,
+      // Location-only fields nulled for online shops so discovery map + public profile
+      // never pick up a stale storefront value.
+      location: isOnline ? null : draft.location.trim() || null,
+      lat: isOnline ? null : lat,
+      lng: isOnline ? null : lng,
+      google_maps_url: isOnline ? null : draft.google_maps_url.trim() || null,
+      opening_hours: isOnline ? null : (openingPayload as unknown),
+      hk_area: isOnline ? null : draft.hk_area.trim() || null,
+      district: isOnline ? null : draft.district.trim() || null,
+      mtr_station: isOnline ? null : draft.mtr_station.trim() || null,
     };
 
     setSaving(true);
@@ -789,14 +799,38 @@ export default function AdminOrgsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Address</Label>
-                <Input
-                  id="location"
-                  value={draft.location}
-                  onChange={(e) => patchDraft({ location: e.target.value })}
-                  className="h-11"
-                />
+                <Label>Shop type</Label>
+                <RadioGroup
+                  value={draft.shop_type}
+                  onValueChange={(v) => patchDraft({ shop_type: v as OrgShopType })}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <label className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                    <RadioGroupItem value="physical" id="admin-shop-type-physical" />
+                    Physical shop
+                  </label>
+                  <label className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                    <RadioGroupItem value="online" id="admin-shop-type-online" />
+                    Online shop
+                  </label>
+                </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  {draft.shop_type === 'online'
+                    ? 'Online shops hide storefront fields. Manage pickup destinations under Claim spots below.'
+                    : 'Physical shops use the org address and coordinates as the storefront pin.'}
+                </p>
               </div>
+              {draft.shop_type === 'physical' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="location">Address</Label>
+                  <Input
+                    id="location"
+                    value={draft.location}
+                    onChange={(e) => patchDraft({ location: e.target.value })}
+                    className="h-11"
+                  />
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="org_description">Description (public profile)</Label>
                 <Textarea
@@ -808,32 +842,36 @@ export default function AdminOrgsPage() {
                   className="min-h-[100px] resize-y"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="lat">Latitude</Label>
-                  <Input
-                    id="lat"
-                    inputMode="decimal"
-                    value={draft.latStr}
-                    onChange={(e) => patchDraft({ latStr: e.target.value })}
-                    placeholder="22.2783"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lng">Longitude</Label>
-                  <Input
-                    id="lng"
-                    inputMode="decimal"
-                    value={draft.lngStr}
-                    onChange={(e) => patchDraft({ lngStr: e.target.value })}
-                    placeholder="114.1747"
-                    className="h-11"
-                  />
-                </div>
-              </div>
-              {mapCoordHint ? (
-                <p className="text-sm text-muted-foreground">{mapCoordHint}</p>
+              {draft.shop_type === 'physical' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="lat">Latitude</Label>
+                      <Input
+                        id="lat"
+                        inputMode="decimal"
+                        value={draft.latStr}
+                        onChange={(e) => patchDraft({ latStr: e.target.value })}
+                        placeholder="22.2783"
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lng">Longitude</Label>
+                      <Input
+                        id="lng"
+                        inputMode="decimal"
+                        value={draft.lngStr}
+                        onChange={(e) => patchDraft({ lngStr: e.target.value })}
+                        placeholder="114.1747"
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                  {mapCoordHint ? (
+                    <p className="text-sm text-muted-foreground">{mapCoordHint}</p>
+                  ) : null}
+                </>
               ) : null}
               <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram handle</Label>
@@ -1007,6 +1045,14 @@ export default function AdminOrgsPage() {
               </div>
             </section>
 
+            {draft.shop_type === 'online' && activeOrgIdForStaff ? (
+              <section className="space-y-4">
+                <h3 className="text-sm font-semibold tracking-normal text-foreground">Pickup locations</h3>
+                <ClaimSpotsEditor orgId={activeOrgIdForStaff} />
+              </section>
+            ) : null}
+
+            {draft.shop_type === 'physical' ? (
             <section className="space-y-4">
               <h3 className="text-sm font-semibold tracking-normal text-foreground">Discovery</h3>
               <div className="space-y-2">
@@ -1119,6 +1165,7 @@ export default function AdminOrgsPage() {
                 ) : null}
               </div>
             </section>
+            ) : null}
 
             <section className="space-y-4">
               <h3 className="text-sm font-semibold tracking-normal text-foreground">Org host</h3>

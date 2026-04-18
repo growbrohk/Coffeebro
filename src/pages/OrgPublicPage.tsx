@@ -29,6 +29,7 @@ export type PublicOrgProfileRow = {
   mtr_station: string | null;
   hk_area: string | null;
   description: string | null;
+  shop_type: "physical" | "online" | null;
 };
 
 export default function OrgPublicPage() {
@@ -62,7 +63,8 @@ export default function OrgPublicPage() {
     return out;
   }, [campaigns, claimedIds, orgId]);
 
-  const directionsUrl = orgQuery.data ? orgDirectionsUrl(orgQuery.data) : null;
+  const isOnlineOrg = orgQuery.data?.shop_type === "online";
+  const directionsUrl = orgQuery.data && !isOnlineOrg ? orgDirectionsUrl(orgQuery.data) : null;
 
   const sharePage = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -86,7 +88,7 @@ export default function OrgPublicPage() {
     }
   };
 
-  const openingRows = orgQuery.data
+  const openingRows = orgQuery.data && !isOnlineOrg
     ? weeklyOpeningHoursDisplayRows(orgQuery.data.opening_hours)
     : [];
 
@@ -147,10 +149,12 @@ export default function OrgPublicPage() {
         <div className="mx-auto max-w-lg space-y-6 px-4 py-6">
           <div>
             <h1 className="font-heading text-2xl font-bold tracking-normal text-[#2e1a14]">{org.org_name}</h1>
-            {org.location?.trim() ? (
+            {!isOnlineOrg && org.location?.trim() ? (
               <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{org.location.trim()}</p>
             ) : null}
-            <p className="mt-1 text-sm text-muted-foreground">Coffee shop</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isOnlineOrg ? "Online shop" : "Coffee shop"}
+            </p>
           </div>
 
           {org.description?.trim() ? (
@@ -176,17 +180,19 @@ export default function OrgPublicPage() {
 
           {orgId ? <OrgPublicCoffeeNotes orgId={orgId} /> : null}
 
-          <section>
-            <h2 className="text-lg font-bold leading-snug tracking-normal text-[#2e1a14]">Opening Hours</h2>
-            <ul className="mt-3 space-y-2">
-              {openingRows.map(({ day, line }) => (
-                <li key={day} className="flex items-center justify-between gap-4 text-sm">
-                  <span className="text-foreground">{day}</span>
-                  <span className={cn("tabular-nums", line === "Closed" && "text-muted-foreground")}>{line}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {!isOnlineOrg ? (
+            <section>
+              <h2 className="text-lg font-bold leading-snug tracking-normal text-[#2e1a14]">Opening Hours</h2>
+              <ul className="mt-3 space-y-2">
+                {openingRows.map(({ day, line }) => (
+                  <li key={day} className="flex items-center justify-between gap-4 text-sm">
+                    <span className="text-foreground">{day}</span>
+                    <span className={cn("tabular-nums", line === "Closed" && "text-muted-foreground")}>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
       </div>
 
@@ -203,19 +209,21 @@ export default function OrgPublicPage() {
             <Share2 className="mr-2 h-4 w-4" aria-hidden />
             share
           </Button>
-          <Button
-            type="button"
-            className="h-12 flex-1 rounded-full bg-[#F27A24] text-white hover:bg-[#e06d1c]"
-            disabled={!directionsUrl}
-            onClick={() => {
-              if (!directionsUrl) return;
-              const win = window.open(directionsUrl, "_blank", "noopener,noreferrer");
-              if (!win) window.location.href = directionsUrl;
-            }}
-          >
-            <Navigation className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-            directions
-          </Button>
+          {!isOnlineOrg ? (
+            <Button
+              type="button"
+              className="h-12 flex-1 rounded-full bg-[#F27A24] text-white hover:bg-[#e06d1c]"
+              disabled={!directionsUrl}
+              onClick={() => {
+                if (!directionsUrl) return;
+                const win = window.open(directionsUrl, "_blank", "noopener,noreferrer");
+                if (!win) window.location.href = directionsUrl;
+              }}
+            >
+              <Navigation className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              directions
+            </Button>
+          ) : null}
         </div>
       </div>
     </>

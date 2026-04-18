@@ -59,7 +59,10 @@ export default function HuntMapPage() {
   }, [campaigns, claimedIds]);
 
   const discoveryItems = useMemo(
-    () => discoveryOrgs.map(discoveryOrgToCafeTreasure),
+    () =>
+      discoveryOrgs
+        .filter((o) => o.shop_type !== "online" && o.lat != null && o.lng != null)
+        .map(discoveryOrgToCafeTreasure),
     [discoveryOrgs],
   );
 

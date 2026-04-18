@@ -13,7 +13,8 @@ export function usePublishedCampaigns() {
         .select(
           `
           *,
-          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id ),
+          orgs ( id, org_name, logo_url, preview_photo_url, lat, lng, location, owner_user_id, shop_type ),
+          org_claim_spots ( id, label, address, lat, lng, google_maps_url ),
           campaign_vouchers (
             *,
             menu_items (*)

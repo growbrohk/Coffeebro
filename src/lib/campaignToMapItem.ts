@@ -3,11 +3,27 @@ import { pinKindFromCampaignType } from "@/lib/huntMapPinKind";
 import type { Tables } from "@/integrations/supabase/types";
 import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
 
+export type PublishedCampaignClaimSpot = Pick<
+  Tables<"org_claim_spots">,
+  "id" | "label" | "address" | "lat" | "lng" | "google_maps_url"
+>;
+
 export type PublishedCampaignRow = Tables<"campaigns"> & {
-  orgs: Pick<
-    Tables<"orgs">,
-    "id" | "org_name" | "logo_url" | "preview_photo_url" | "lat" | "lng" | "location" | "owner_user_id"
-  > | null;
+  orgs:
+    | (Pick<
+        Tables<"orgs">,
+        | "id"
+        | "org_name"
+        | "logo_url"
+        | "preview_photo_url"
+        | "lat"
+        | "lng"
+        | "location"
+        | "owner_user_id"
+        | "shop_type"
+      >)
+    | null;
+  org_claim_spots: PublishedCampaignClaimSpot | PublishedCampaignClaimSpot[] | null;
   campaign_vouchers: Array<
     Tables<"campaign_vouchers"> & {
       menu_items: Tables<"menu_items"> | null;
@@ -15,14 +31,26 @@ export type PublishedCampaignRow = Tables<"campaigns"> & {
   >;
 };
 
+export function normalizeClaimSpot(
+  raw: PublishedCampaignRow["org_claim_spots"] | undefined,
+): PublishedCampaignClaimSpot | null {
+  if (!raw) return null;
+  return Array.isArray(raw) ? raw[0] ?? null : raw;
+}
+
 export function publishedCampaignToMapItem(
   row: PublishedCampaignRow,
   claimedCampaignIds: Set<string>,
 ): CampaignMapItem | null {
   const orgRaw = row.orgs as PublishedCampaignRow["orgs"] | PublishedCampaignRow["orgs"][] | null | undefined;
   const org = Array.isArray(orgRaw) ? orgRaw[0] ?? null : orgRaw ?? null;
-  const orgLat = org?.lat ?? null;
-  const orgLng = org?.lng ?? null;
+  const isOnline = org?.shop_type === "online";
+  const claimSpot = normalizeClaimSpot(row.org_claim_spots);
+  const orgLat = isOnline ? claimSpot?.lat ?? null : org?.lat ?? null;
+  const orgLng = isOnline ? claimSpot?.lng ?? null : org?.lng ?? null;
+  const shopAddress = isOnline
+    ? claimSpot?.address ?? claimSpot?.label ?? null
+    : org?.location ?? null;
   const isGrab = row.campaign_type === "grab";
 
   let lat: number | null = null;
@@ -32,11 +60,11 @@ export function publishedCampaignToMapItem(
   if (isGrab || row.treasure_location_type === "shop") {
     lat = orgLat;
     lng = orgLng;
-    address = org?.location ?? null;
+    address = shopAddress;
   } else {
     lat = row.treasure_lat ?? orgLat;
     lng = row.treasure_lng ?? orgLng;
-    address = row.treasure_address ?? row.treasure_area_name ?? org?.location ?? null;
+    address = row.treasure_address ?? row.treasure_area_name ?? shopAddress;
   }
 
   if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
