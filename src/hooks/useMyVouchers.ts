@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizeClaimSpot } from "@/lib/campaignToMapItem";
 import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
-import { orgDirectionsUrl } from "@/lib/orgDirectionsUrl";
+import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 
 export interface MyVoucherReview {
   id: string;
@@ -38,6 +39,10 @@ export interface MyVoucher {
   campaign_details?: string | null;
   /** Google Maps directions URL for the redeeming org, when derivable. */
   redeem_directions_url?: string | null;
+  /** Online-shop claim spot label when both label and address are shown (two-line footer). */
+  pickup_spot_label?: string | null;
+  /** Org `shop_type` for pickup vs redeem copy in voucher UI. */
+  org_shop_type?: string | null;
   /** Present for redeemed vouchers with an associated daily_coffees review row. */
   review?: MyVoucherReview | null;
 }
@@ -89,11 +94,19 @@ export function useMyVouchers() {
           expires_at,
           campaign_id,
           org_id,
-          orgs ( org_name, logo_url, lat, lng, location, google_maps_url ),
+          orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type ),
           campaign_vouchers (
             offer_type,
             menu_items ( id, item_name ),
-            campaigns ( display_title, campaign_type, start_at, end_at, hint_text, hint_image_url )
+            campaigns (
+              display_title,
+              campaign_type,
+              start_at,
+              end_at,
+              hint_text,
+              hint_image_url,
+              org_claim_spots ( id, label, address, lat, lng, google_maps_url )
+            )
           )
         `,
         )
@@ -115,6 +128,24 @@ export function useMyVouchers() {
                 end_at: string | null;
                 hint_text: string | null;
                 hint_image_url: string | null;
+                org_claim_spots:
+                  | {
+                      id: string;
+                      label: string;
+                      address: string | null;
+                      lat: number | null;
+                      lng: number | null;
+                      google_maps_url: string | null;
+                    }[]
+                  | {
+                      id: string;
+                      label: string;
+                      address: string | null;
+                      lat: number | null;
+                      lng: number | null;
+                      google_maps_url: string | null;
+                    }
+                  | null;
               } | null;
             }
           | null
@@ -142,17 +173,23 @@ export function useMyVouchers() {
           lng: number | null;
           location: string | null;
           google_maps_url: string | null;
+          shop_type?: string | null;
         } | null;
 
-        const locationTrimmed = orgsRow?.location?.trim() || null;
-        const redeemDirectionsUrl = orgsRow
-          ? orgDirectionsUrl({
-              lat: orgsRow.lat ?? null,
-              lng: orgsRow.lng ?? null,
-              location: orgsRow.location ?? null,
-              google_maps_url: orgsRow.google_maps_url ?? null,
-            })
-          : null;
+        const claimSpot = normalizeClaimSpot(camp?.org_claim_spots);
+        const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
+          walletRedeemLocation(
+            orgsRow
+              ? {
+                  shop_type: orgsRow.shop_type ?? null,
+                  lat: orgsRow.lat ?? null,
+                  lng: orgsRow.lng ?? null,
+                  location: orgsRow.location ?? null,
+                  google_maps_url: orgsRow.google_maps_url ?? null,
+                }
+              : null,
+            claimSpot,
+          );
 
         return {
           id: v.id as string,
@@ -175,6 +212,8 @@ export function useMyVouchers() {
           menu_item_name: menu?.item_name?.trim() ?? null,
           campaign_details: campaignDetails,
           redeem_directions_url: redeemDirectionsUrl,
+          pickup_spot_label: pickup_spot_label ?? null,
+          org_shop_type: orgsRow?.shop_type ?? null,
           review: null,
         };
       });

@@ -862,6 +862,7 @@ export type Database = {
           org_lng: number | null
           org_location: string | null
           org_google_maps_url: string | null
+          org_shop_type: string | null
           offer_type: string | null
           menu_item_name: string | null
           display_title: string | null
@@ -869,6 +870,11 @@ export type Database = {
           hint_text: string | null
           hint_image_url: string | null
           campaign_end_at: string | null
+          claim_spot_label: string | null
+          claim_spot_address: string | null
+          claim_spot_lat: number | null
+          claim_spot_lng: number | null
+          claim_spot_google_maps_url: string | null
         }[]
       }
       get_published_campaign_voucher_pool: {
