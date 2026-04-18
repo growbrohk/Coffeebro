@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { readCampaignDetailReturnTo } from '@/lib/campaignDetailReturnNav';
+import { toast } from '@/hooks/use-toast';
 
 type ResultType = "success" | "error" | null;
 type ResultMessage = string | null;
@@ -100,6 +101,7 @@ export default function ScanPage() {
           itemName: res.item_name ?? null,
           offerType: res.offer_type ?? null,
         });
+        toast({ title: 'Voucher redeemed' });
         setTimeout(() => {
           lastCodeRef.current = null;
         }, 5000);

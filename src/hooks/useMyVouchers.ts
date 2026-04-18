@@ -254,5 +254,9 @@ export function useMyVouchers() {
       return result;
     },
     enabled: !!user,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
+    retry: 1,
+    retryDelay: (attempt) => 3000 * attempt,
   });
 }
