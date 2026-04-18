@@ -65,8 +65,8 @@ export function VoucherCarouselCard({
     treasure.orgPreviewPhotoUrl ?? treasure.clue_image ?? null;
   const offerName = treasure.offerTitle?.trim() || 'Offer';
   const nameQuotaTitle =
-    treasure.quantityLimit != null
-      ? `${offerName} · ${treasure.quantityLimit}`
+    treasure.vouchersRemaining != null
+      ? `${offerName} ${treasure.vouchersRemaining}`
       : offerName;
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
@@ -148,9 +148,9 @@ export function VoucherCarouselCard({
               title={nameQuotaTitle}
             >
               <span className="min-w-0 truncate">{offerName}</span>
-              {treasure.quantityLimit != null ? (
+              {treasure.vouchersRemaining != null ? (
                 <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                  · {treasure.quantityLimit}
+                  {treasure.vouchersRemaining}
                 </span>
               ) : null}
             </div>

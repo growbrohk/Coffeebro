@@ -886,6 +886,16 @@ export type Database = {
           remaining: number
         }[]
       }
+      get_published_campaigns_voucher_pools: {
+        Args: { p_campaign_ids: string[] }
+        Returns: {
+          campaign_id: string
+          campaign_voucher_id: string
+          minted_count: number
+          quantity: number
+          remaining: number
+        }[]
+      }
       get_store_conversion_rates: {
         Args: { p_org_ids: string[] }
         Returns: {

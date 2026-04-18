@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
+import { mergePoolRowsIntoCampaignMapItems } from "@/lib/campaignVoucherPoolsMerge";
+import { usePublishedCampaignVoucherPools } from "@/hooks/usePublishedCampaignVoucherPools";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
 import { weeklyOpeningHoursDisplayRows } from "@/lib/openingHoursCustomerDisplay";
@@ -52,7 +54,7 @@ export default function OrgPublicPage() {
   const { data: campaigns = [], isLoading: campaignsLoading } = usePublishedCampaigns();
   const { data: claimedIds = new Set<string>() } = useMyClaimedCampaignIds();
 
-  const orgCampaignItems: CampaignMapItem[] = useMemo(() => {
+  const baseOrgCampaignItems: CampaignMapItem[] = useMemo(() => {
     if (!orgId) return [];
     const out: CampaignMapItem[] = [];
     for (const c of campaigns) {
@@ -62,6 +64,23 @@ export default function OrgPublicPage() {
     }
     return out;
   }, [campaigns, claimedIds, orgId]);
+
+  const orgCampaignIdsForPools = useMemo(
+    () => baseOrgCampaignItems.map((i) => i.campaign_id).filter((id): id is string => Boolean(id)),
+    [baseOrgCampaignItems],
+  );
+
+  const orgPoolsQuery = usePublishedCampaignVoucherPools(orgCampaignIdsForPools);
+
+  const orgCampaignItems: CampaignMapItem[] = useMemo(
+    () =>
+      mergePoolRowsIntoCampaignMapItems(
+        baseOrgCampaignItems,
+        orgPoolsQuery.data,
+        orgPoolsQuery.isSuccess,
+      ),
+    [baseOrgCampaignItems, orgPoolsQuery.data, orgPoolsQuery.isSuccess],
+  );
 
   const isOnlineOrg = orgQuery.data?.shop_type === "online";
   const directionsUrl = orgQuery.data && !isOnlineOrg ? orgDirectionsUrl(orgQuery.data) : null;

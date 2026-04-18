@@ -20,7 +20,10 @@ export type CampaignMapItem = {
   orgName: string | null;
   orgLogoUrl: string | null;
   orgPreviewPhotoUrl: string | null;
-  quantityLimit: number | null;
+  /** Remaining claim slots (summed across voucher lines); null until pool RPC merged or N/A. */
+  vouchersRemaining: number | null;
+  /** Primary sorted campaign_vouchers row id (for this carousel card's offer line). */
+  primaryCampaignVoucherId: string | null;
   campaignTitle: string | null;
   starts_at?: string | null;
   ends_at?: string | null;

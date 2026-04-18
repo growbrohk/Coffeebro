@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { publishedCampaignsQueryKey } from "@/hooks/usePublishedCampaigns";
+import { campaignVoucherPoolsQueryKey } from "@/hooks/usePublishedCampaignVoucherPools";
 
 function primaryErrorText(error: unknown): string {
   if (typeof error === "string") return error.trim();
@@ -46,6 +47,7 @@ export function useClaimCampaign() {
       void queryClient.invalidateQueries({ queryKey: ["voucher-hunter-top-percent"] });
       void queryClient.invalidateQueries({ queryKey: ["my_claimed_campaigns"] });
       void queryClient.invalidateQueries({ queryKey: publishedCampaignsQueryKey });
+      void queryClient.invalidateQueries({ queryKey: campaignVoucherPoolsQueryKey });
     },
   });
 }

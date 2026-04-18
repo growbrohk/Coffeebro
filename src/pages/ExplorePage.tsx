@@ -4,7 +4,9 @@ import { Search } from "lucide-react";
 import { useDiscoveryOrgs } from "@/hooks/useDiscoveryOrgs";
 import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
 import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
+import { mergePoolRowsIntoCampaignMapItems } from "@/lib/campaignVoucherPoolsMerge";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
+import { usePublishedCampaignVoucherPools } from "@/hooks/usePublishedCampaignVoucherPools";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
@@ -18,7 +20,7 @@ export default function ExplorePage() {
   const { data: claimedIds = new Set<string>() } = useMyClaimedCampaignIds();
   const { data: discoveryOrgs = [], isPending: discoveryOrgsLoading } = useDiscoveryOrgs();
 
-  const campaignItems: CampaignMapItem[] = useMemo(() => {
+  const baseCampaignItems: CampaignMapItem[] = useMemo(() => {
     const out: CampaignMapItem[] = [];
     for (const c of campaigns) {
       const m = publishedCampaignToMapItem(c, claimedIds);
@@ -26,6 +28,23 @@ export default function ExplorePage() {
     }
     return out;
   }, [campaigns, claimedIds]);
+
+  const campaignIdsForPools = useMemo(
+    () => baseCampaignItems.map((i) => i.campaign_id).filter((id): id is string => Boolean(id)),
+    [baseCampaignItems],
+  );
+
+  const poolsQuery = usePublishedCampaignVoucherPools(campaignIdsForPools);
+
+  const campaignItems: CampaignMapItem[] = useMemo(
+    () =>
+      mergePoolRowsIntoCampaignMapItems(
+        baseCampaignItems,
+        poolsQuery.data,
+        poolsQuery.isSuccess,
+      ),
+    [baseCampaignItems, poolsQuery.data, poolsQuery.isSuccess],
+  );
 
   const discoveryItems = useMemo(
     () => discoveryOrgs.map(discoveryOrgToCafeTreasure),

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  usePublishedCampaignVoucherPools,
+  campaignVoucherPoolsQueryKey,
+} from "@/hooks/usePublishedCampaignVoucherPools";
+import type { CampaignVoucherPoolRow } from "@/lib/campaignVoucherPoolsMerge";
 import { ArrowLeft, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,13 +26,6 @@ import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 import type { Tables } from "@/integrations/supabase/types";
-
-type PoolRow = {
-  campaign_voucher_id: string;
-  quantity: number;
-  minted_count: number;
-  remaining: number;
-};
 
 type CampaignVoucherRow = Tables<"campaign_vouchers"> & {
   menu_items: Tables<"menu_items"> | null;
@@ -175,21 +173,10 @@ export default function CampaignDetailPage() {
     [myVouchers, campaignId],
   );
 
-  const poolQuery = useQuery({
-    queryKey: ["campaign_voucher_pool", campaignId],
-    enabled: Boolean(campaignId),
-    queryFn: async (): Promise<PoolRow[]> => {
-      if (!campaignId) return [];
-      const { data, error } = await supabase.rpc("get_published_campaign_voucher_pool", {
-        p_campaign_id: campaignId,
-      });
-      if (error) throw error;
-      return (data ?? []) as PoolRow[];
-    },
-  });
+  const poolQuery = usePublishedCampaignVoucherPools(campaignId ? [campaignId] : []);
 
   const poolByCvId = useMemo(() => {
-    const m = new Map<string, PoolRow>();
+    const m = new Map<string, CampaignVoucherPoolRow>();
     for (const row of poolQuery.data ?? []) {
       m.set(row.campaign_voucher_id, row);
     }
@@ -237,7 +224,7 @@ export default function CampaignDetailPage() {
     if (campaign?.campaign_type !== "grab") return;
     try {
       await claim.mutateAsync(campaignId);
-      void queryClient.invalidateQueries({ queryKey: ["campaign_voucher_pool", campaignId] });
+      void queryClient.invalidateQueries({ queryKey: campaignVoucherPoolsQueryKey });
       toast({ title: "Claimed!", description: "Check your wallet." });
     } catch (e) {
       toast({

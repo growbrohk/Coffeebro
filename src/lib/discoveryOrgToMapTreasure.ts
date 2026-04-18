@@ -21,7 +21,8 @@ export function discoveryOrgToCafeTreasure(row: DiscoveryOrgRow): CampaignMapIte
     orgName: row.org_name,
     orgLogoUrl: row.logo_url ?? null,
     orgPreviewPhotoUrl: row.preview_photo_url,
-    quantityLimit: null,
+    vouchersRemaining: null,
+    primaryCampaignVoucherId: null,
     campaignTitle: null,
     org_id: row.id,
   };

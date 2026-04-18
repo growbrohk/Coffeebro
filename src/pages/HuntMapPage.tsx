@@ -8,7 +8,9 @@ import { useGeolocation, haversineDistance } from "@/hooks/useGeolocation";
 import { useDiscoveryOrgs } from "@/hooks/useDiscoveryOrgs";
 import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
 import { publishedCampaignToMapItem } from "@/lib/campaignToMapItem";
+import { mergePoolRowsIntoCampaignMapItems } from "@/lib/campaignVoucherPoolsMerge";
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
+import { usePublishedCampaignVoucherPools } from "@/hooks/usePublishedCampaignVoucherPools";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { Loader2, LocateFixed, Search } from "lucide-react";
@@ -49,7 +51,7 @@ export default function HuntMapPage() {
   const { data: discoveryOrgs = [], isLoading: discoveryLoading } = useDiscoveryOrgs();
   const { position: userPosition } = useGeolocation();
 
-  const campaignItems = useMemo(() => {
+  const baseCampaignItems = useMemo(() => {
     const out: CampaignMapItem[] = [];
     for (const c of campaigns) {
       const m = publishedCampaignToMapItem(c, claimedIds);
@@ -57,6 +59,23 @@ export default function HuntMapPage() {
     }
     return out;
   }, [campaigns, claimedIds]);
+
+  const campaignIdsForPools = useMemo(
+    () => baseCampaignItems.map((i) => i.campaign_id).filter((id): id is string => Boolean(id)),
+    [baseCampaignItems],
+  );
+
+  const poolsQuery = usePublishedCampaignVoucherPools(campaignIdsForPools);
+
+  const campaignItems = useMemo(
+    () =>
+      mergePoolRowsIntoCampaignMapItems(
+        baseCampaignItems,
+        poolsQuery.data,
+        poolsQuery.isSuccess,
+      ),
+    [baseCampaignItems, poolsQuery.data, poolsQuery.isSuccess],
+  );
 
   const discoveryItems = useMemo(
     () =>
