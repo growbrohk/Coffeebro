@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -29,11 +30,11 @@ export function ScanSuccessModal({
             <Gift className="h-5 w-5" />
             Treasure Claimed!
           </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground text-left">
+            You unlocked {vouchers.length} {vouchers.length === 1 ? 'voucher' : 'vouchers'}:
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <p className="text-sm text-muted-foreground">
-            You unlocked {vouchers.length} {vouchers.length === 1 ? 'voucher' : 'vouchers'}:
-          </p>
           <div className="space-y-3">
             {vouchers.map((v) => (
               <RedeemCodeCard

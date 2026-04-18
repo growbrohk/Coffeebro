@@ -3,6 +3,8 @@ import { ChevronLeft, Check, ChevronsUpDown, Ticket } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
+  SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -368,12 +370,12 @@ export function CoffeeDetailsSheet({
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
-            <p className="text-center text-lg font-semibold lowercase text-muted-foreground">
+            <SheetDescription className="text-center text-lg font-semibold lowercase text-muted-foreground">
               log a coffee
-            </p>
-            <h2 className="mt-3 px-2 text-center text-xl font-bold lowercase leading-tight text-foreground">
+            </SheetDescription>
+            <SheetTitle className="mt-3 px-2 text-center text-xl font-bold lowercase leading-tight text-foreground">
               what coffee did you drink today?
-            </h2>
+            </SheetTitle>
           </div>
 
           <div className="flex flex-1 flex-col rounded-t-3xl bg-primary px-4 pb-8 pt-6 -mt-2">

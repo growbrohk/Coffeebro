@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Navigation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { VoucherDetailDialog } from "@/components/VoucherDetailDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
@@ -373,6 +373,7 @@ export default function CampaignDetailPage() {
                       <Dialog open={hintImageDialogOpen} onOpenChange={setHintImageDialogOpen}>
                         <DialogContent className="box-border max-h-[min(90vh,calc(100dvh-1rem))] w-[min(430px,calc(100vw-1rem))] max-w-[min(430px,calc(100vw-1rem))] overflow-hidden border-0 bg-transparent px-2 pb-2 pt-14 shadow-none sm:max-w-[min(430px,calc(100vw-1rem))] [&>button]:right-[max(0.5rem,env(safe-area-inset-right))] [&>button]:top-[max(0.5rem,env(safe-area-inset-top))] [&>button]:flex [&>button]:size-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-full [&>button]:border-0 [&>button]:!bg-orange-500 [&>button]:!text-white [&>button]:p-0 [&>button]:opacity-100 [&>button]:shadow-lg [&>button]:ring-2 [&>button]:ring-white/30 [&>button]:hover:!bg-orange-600 [&>button]:hover:!text-white [&>button]:hover:opacity-100 [&>button]:focus-visible:ring-orange-200 [&>button]:focus-visible:ring-offset-2 [&>button]:focus-visible:ring-offset-black/50 [&>button]:data-[state=open]:!bg-orange-500 [&>button]:data-[state=open]:!text-white [&_svg]:size-[1.125rem] [&_svg]:stroke-[2.5] [&_svg]:!text-white">
                           <DialogTitle className="sr-only">Hint photo</DialogTitle>
+                          <DialogDescription className="sr-only">Full size hint image</DialogDescription>
                           <img
                             src={campaign.hint_image_url}
                             alt=""

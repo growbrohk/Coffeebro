@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import QRCode from 'react-qr-code';
 
 interface QrCodeDialogProps {
@@ -19,6 +19,9 @@ export function QrCodeDialog({
       <DialogContent className="sm:max-w-xs rounded-2xl border-0 shadow-soft">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Show this code at the venue to redeem your voucher.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-3 py-2">
           <div className="rounded-xl bg-white p-3">

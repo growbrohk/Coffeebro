@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useEffect, useState } from 'react';
 
 const COMPLIMENTS = [
@@ -33,10 +33,10 @@ export function CoffeeModal({ open, onOpenChange, percentBeat }: CoffeeModalProp
       <DialogContent className="bg-foreground text-background border-none p-8 text-center max-w-sm">
         <div className="animate-scale-in">
           <div className="text-6xl mb-6">✓</div>
-          <h2 className="text-2xl font-black mb-4">{compliment}</h2>
-          <p className="text-lg font-medium opacity-80">
+          <DialogTitle className="text-2xl font-black mb-4">{compliment}</DialogTitle>
+          <DialogDescription className="text-lg font-medium opacity-80 text-background">
             You beat {percentBeat}% of users today
-          </p>
+          </DialogDescription>
         </div>
       </DialogContent>
     </Dialog>
