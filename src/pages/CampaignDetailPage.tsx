@@ -19,6 +19,7 @@ import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
+import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 import type { Tables } from "@/integrations/supabase/types";
 
 type PoolRow = {
@@ -196,6 +197,28 @@ export default function CampaignDetailPage() {
   }, [poolQuery.data]);
 
   const org = campaign != null ? normalizeOrg(campaign) : null;
+  const { claimLocation, pickupLabel } = useMemo(() => {
+    if (!campaign) {
+      return { claimLocation: null as string | null, pickupLabel: null as string | null };
+    }
+    const spot = normalizeClaimSpot(campaign.org_claim_spots);
+    const resolved = walletRedeemLocation(
+      org
+        ? {
+            shop_type: org.shop_type,
+            lat: org.lat,
+            lng: org.lng,
+            location: org.location,
+            google_maps_url: null,
+          }
+        : null,
+      spot,
+    );
+    return {
+      claimLocation: resolved.location,
+      pickupLabel: resolved.pickup_spot_label,
+    };
+  }, [campaign, org]);
   const huntQrMapTarget = useMemo(() => {
     if (!campaign) return { displayAddress: null, mapsUrl: null } as HuntQrMapTarget;
     return getHuntQrMapTarget(campaign, org);
@@ -456,11 +479,16 @@ export default function CampaignDetailPage() {
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold leading-snug text-foreground">{org.org_name ?? "Organizer"}</p>
-                  {org.location ? (
-                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
+                  {claimLocation ? (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {claimLocation}
+                    </p>
                   ) : (
                     <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
                   )}
+                  {pickupLabel ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{pickupLabel}</p>
+                  ) : null}
                 </div>
               </Link>
             ) : (
@@ -472,11 +500,16 @@ export default function CampaignDetailPage() {
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold leading-snug text-foreground">{org?.org_name ?? "Organizer"}</p>
-                  {org?.location ? (
-                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{org.location}</p>
+                  {claimLocation ? (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      {claimLocation}
+                    </p>
                   ) : (
                     <p className="mt-1 text-sm text-muted-foreground">Address not listed.</p>
                   )}
+                  {pickupLabel ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{pickupLabel}</p>
+                  ) : null}
                 </div>
               </div>
             )}
