@@ -39,12 +39,6 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
           <span className="text-foreground">{voucher.campaign_details.trim()}</span>
         </p>
       ) : null}
-      {voucher.description ? (
-        <p className="pt-1 leading-relaxed text-muted-foreground">{voucher.description}</p>
-      ) : null}
-      {voucher.offer_type ? (
-        <p className="text-muted-foreground">Offer type: {voucher.offer_type}</p>
-      ) : null}
     </div>
   );
 }
