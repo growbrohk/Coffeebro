@@ -10,6 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { readCampaignDetailReturnTo } from '@/lib/campaignDetailReturnNav';
 import { toast } from '@/hooks/use-toast';
+import { voucherOfferLabel } from '@/lib/voucherOfferLabels';
 
 type ResultType = "success" | "error" | null;
 type ResultMessage = string | null;
@@ -95,11 +96,12 @@ export default function ScanPage() {
       
       if (res.status === "OK") {
         setResult({ type: "success", message: res.message || "Redeemed" });
+        const rawOffer = res.offer_type != null ? String(res.offer_type).trim() : "";
         setSuccessDetail({
           orgName: res.org_name ?? null,
           campaignTitle: res.campaign_title ?? null,
           itemName: res.item_name ?? null,
-          offerType: res.offer_type ?? null,
+          offerType: rawOffer ? voucherOfferLabel(rawOffer) : null,
         });
         toast({ title: 'Voucher redeemed' });
         setTimeout(() => {

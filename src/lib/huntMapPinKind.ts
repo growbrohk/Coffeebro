@@ -10,7 +10,9 @@ export function pinKindFromCampaignType(campaignType: string | null | undefined)
 export function pinKindFromOfferType(offerType: string | null | undefined): HuntMapPinKind | null {
   if (!offerType) return null;
   if (offerType === "buy1get1free") return "grab";
-  if (offerType === "$17coffee" || offerType === "free") return "hunt";
+  if (offerType === "free") return "hunt";
+  if (/^\$\d+$/.test(offerType)) return "hunt";
+  if (/^\$\d+coffee$/i.test(offerType)) return "hunt";
   return "hunt";
 }
 

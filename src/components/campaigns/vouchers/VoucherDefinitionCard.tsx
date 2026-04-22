@@ -13,17 +13,28 @@ import { allowedFulfillmentRules, allowedTemperatureRules } from "@/components/c
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
 import { Trash2 } from "lucide-react";
 
+const FIXED_PRICE_TIERS = ["fixed_price_7", "fixed_price_17", "fixed_price_27"] as const;
+
 export type VoucherDraft = {
   clientKey: string;
   id?: string;
   menu_item_id: string;
-  offer_type: "free" | "b1g1" | "fixed_price_17";
+  offer_type: "free" | "b1g1" | (typeof FIXED_PRICE_TIERS)[number];
   redeem_valid_days: number;
   quantity: number;
   temperature_rule: string;
   fulfillment_rule: string;
   sort_order: number;
 };
+
+function isFixedOfferType(ot: string): ot is (typeof FIXED_PRICE_TIERS)[number] {
+  return (FIXED_PRICE_TIERS as readonly string[]).includes(ot);
+}
+
+function fixedTierFromOfferType(ot: string): (typeof FIXED_PRICE_TIERS)[number] {
+  if (isFixedOfferType(ot)) return ot;
+  return "fixed_price_17";
+}
 
 type Props = {
   index: number;
@@ -50,6 +61,8 @@ export function VoucherDefinitionCard({
 
   const patch = (p: Partial<VoucherDraft>) => onChange({ ...value, ...p });
 
+  const offerKindValue = isFixedOfferType(value.offer_type) ? "fixed" : value.offer_type;
+
   return (
     <div className="rounded-lg border p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -63,8 +76,15 @@ export function VoucherDefinitionCard({
       <div className="grid gap-2">
         <Label>Offer</Label>
         <Select
-          value={value.offer_type}
-          onValueChange={(offer_type) => patch({ offer_type: offer_type as VoucherDraft["offer_type"] })}
+          value={offerKindValue}
+          onValueChange={(kind) => {
+            if (kind === "fixed") {
+              const tier = fixedTierFromOfferType(value.offer_type);
+              patch({ offer_type: tier });
+            } else {
+              patch({ offer_type: kind as "free" | "b1g1" });
+            }
+          }}
           disabled={disabled}
         >
           <SelectTrigger>
@@ -73,12 +93,30 @@ export function VoucherDefinitionCard({
           <SelectContent>
             <SelectItem value="free">Free</SelectItem>
             <SelectItem value="b1g1">Buy 1 get 1</SelectItem>
-            <SelectItem value="fixed_price_17" disabled={!menu || menu.category !== "coffee"}>
-              $17 fixed (coffee only)
-            </SelectItem>
+            <SelectItem value="fixed">Fixed price</SelectItem>
           </SelectContent>
         </Select>
       </div>
+      {offerKindValue === "fixed" && (
+        <div className="grid gap-2">
+          <Label>Fixed price</Label>
+          <p className="text-xs text-muted-foreground">Any menu item</p>
+          <Select
+            value={fixedTierFromOfferType(value.offer_type)}
+            onValueChange={(tier) => patch({ offer_type: tier as VoucherDraft["offer_type"] })}
+            disabled={disabled}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fixed_price_7">$7</SelectItem>
+              <SelectItem value="fixed_price_17">$17</SelectItem>
+              <SelectItem value="fixed_price_27">$27</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid gap-2">
         <Label>Menu item</Label>
         <MenuItemPicker

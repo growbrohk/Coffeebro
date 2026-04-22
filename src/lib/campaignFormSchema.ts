@@ -9,7 +9,7 @@ export const CAMPAIGN_TYPES = ["grab", "hunt"] as const;
 export const REWARD_MODES = ["fixed", "random"] as const;
 export const CAMPAIGN_STATUSES = ["draft", "published", "ended"] as const;
 export const TREASURE_LOCATION_TYPES = ["shop", "custom"] as const;
-export const OFFER_TYPES = ["free", "b1g1", "fixed_price_17"] as const;
+export const OFFER_TYPES = ["free", "b1g1", "fixed_price_7", "fixed_price_17", "fixed_price_27"] as const;
 
 export const campaignVoucherLineSchema = z.object({
   id: z.string().uuid().optional(),
@@ -134,14 +134,6 @@ export function refineCampaignVouchersWithMenuItems(
         path: ["vouchers", index, "menu_item_id"],
       });
       return;
-    }
-
-    if (v.offer_type === "fixed_price_17" && menu.category !== "coffee") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "$17 coffee offer is only valid for coffee menu items.",
-        path: ["vouchers", index, "offer_type"],
-      });
     }
 
     const tempAllowed = allowedTemperatureRules(menu) as readonly string[];

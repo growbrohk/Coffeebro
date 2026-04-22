@@ -15,13 +15,14 @@ function isGrabCampaignCard(t: CampaignMapItem): boolean {
 
 /** Short promo line on the campaign image (matches map / design). */
 function campaignImageBadgeText(t: CampaignMapItem): string {
-  const ot = t.offerType?.trim().toLowerCase() ?? '';
+  const raw = t.offerType?.trim() ?? '';
+  const ot = raw.toLowerCase();
   if (ot === 'buy1get1free' || ot.includes('buy1get')) return 'buy 1 get 1 free';
-  if (ot === '$17coffee' || ot.includes('$17')) return '$17 drink';
   if (ot === 'free') return 'free';
-  if (t.offerType?.trim()) {
-    const s = t.offerType.trim();
-    return s.length > 26 ? `${s.slice(0, 24)}…` : s;
+  const priceMatch = raw.match(/^\$(\d+)/);
+  if (priceMatch) return `$${priceMatch[1]} drink`;
+  if (raw) {
+    return raw.length > 26 ? `${raw.slice(0, 24)}…` : raw;
   }
   return t.offerTitle?.trim() || 'Offer';
 }
