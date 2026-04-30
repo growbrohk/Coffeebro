@@ -13,7 +13,7 @@ import { allowedFulfillmentRules, allowedTemperatureRules } from "@/components/c
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
 import { Trash2 } from "lucide-react";
 
-const FIXED_PRICE_TIERS = ["fixed_price_7", "fixed_price_17", "fixed_price_27"] as const;
+const FIXED_PRICE_TIERS = ["fixed_price_7", "fixed_price_17", "fixed_price_20", "fixed_price_27"] as const;
 
 export type VoucherDraft = {
   clientKey: string;
@@ -112,6 +112,7 @@ export function VoucherDefinitionCard({
             <SelectContent>
               <SelectItem value="fixed_price_7">$7</SelectItem>
               <SelectItem value="fixed_price_17">$17</SelectItem>
+              <SelectItem value="fixed_price_20">$20</SelectItem>
               <SelectItem value="fixed_price_27">$27</SelectItem>
             </SelectContent>
           </Select>

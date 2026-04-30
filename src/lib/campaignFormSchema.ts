@@ -9,7 +9,14 @@ export const CAMPAIGN_TYPES = ["grab", "hunt"] as const;
 export const REWARD_MODES = ["fixed", "random"] as const;
 export const CAMPAIGN_STATUSES = ["draft", "published", "ended"] as const;
 export const TREASURE_LOCATION_TYPES = ["shop", "custom"] as const;
-export const OFFER_TYPES = ["free", "b1g1", "fixed_price_7", "fixed_price_17", "fixed_price_27"] as const;
+export const OFFER_TYPES = [
+  "free",
+  "b1g1",
+  "fixed_price_7",
+  "fixed_price_17",
+  "fixed_price_20",
+  "fixed_price_27",
+] as const;
 
 export const campaignVoucherLineSchema = z.object({
   id: z.string().uuid().optional(),

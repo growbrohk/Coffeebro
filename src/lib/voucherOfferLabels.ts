@@ -3,6 +3,7 @@ export const VOUCHER_OFFER_LABELS = {
   b1g1: "buy1get1free",
   fixed_price_7: "$7",
   fixed_price_17: "$17",
+  fixed_price_20: "$20",
   fixed_price_27: "$27",
 } as const;
 
