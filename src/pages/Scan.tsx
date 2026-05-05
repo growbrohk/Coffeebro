@@ -46,6 +46,9 @@ export default function ScanPage() {
   
   const lastCodeRef = useRef<string | null>(null);
   const lastCodeTimeRef = useRef<number>(0);
+  const lastCodeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRedeemingRef = useRef(false);
+  const lastBusyToastAtRef = useRef(0);
   const activeTabRef = useRef(activeTab);
 
   useEffect(() => {
@@ -54,10 +57,15 @@ export default function ScanPage() {
 
   // Reliable Cleanup Function
   const cleanupScanner = useCallback(() => {
+    if (lastCodeTimerRef.current != null) {
+      clearTimeout(lastCodeTimerRef.current);
+      lastCodeTimerRef.current = null;
+    }
     if (controlsRef.current) {
       controlsRef.current.stop(); // This turns off the green light/camera
       controlsRef.current = null;
     }
+    readerRef.current = null;
     if (videoRef.current) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream?.getTracks().forEach(track => track.stop());
@@ -67,7 +75,19 @@ export default function ScanPage() {
 
   const redeem = useCallback(async (code: string) => {
     const trimmedCode = code.trim();
-    if (!trimmedCode || loading) return;
+    if (!trimmedCode) return;
+
+    if (isRedeemingRef.current) {
+      const nowTs = Date.now();
+      if (nowTs - lastBusyToastAtRef.current > 2500) {
+        lastBusyToastAtRef.current = nowTs;
+        toast({
+          title: 'Still processing',
+          description: 'Wait for the previous voucher to finish redeeming.',
+        });
+      }
+      return;
+    }
 
     // Anti-spam
     const now = Date.now();
@@ -75,6 +95,7 @@ export default function ScanPage() {
 
     lastCodeRef.current = trimmedCode;
     lastCodeTimeRef.current = now;
+    isRedeemingRef.current = true;
     setLoading(true);
     setResult({ type: null, message: null });
     setSuccessDetail(null);
@@ -104,8 +125,12 @@ export default function ScanPage() {
           offerType: rawOffer ? voucherOfferLabel(rawOffer) : null,
         });
         toast({ title: 'Voucher redeemed' });
-        setTimeout(() => {
+        if (lastCodeTimerRef.current != null) {
+          clearTimeout(lastCodeTimerRef.current);
+        }
+        lastCodeTimerRef.current = setTimeout(() => {
           lastCodeRef.current = null;
+          lastCodeTimerRef.current = null;
         }, 5000);
         return;
       }
@@ -122,9 +147,13 @@ export default function ScanPage() {
     } catch (err) {
       setResult({ type: 'error', message: 'System error' });
     } finally {
+      isRedeemingRef.current = false;
       setLoading(false);
     }
-  }, [loading]);
+  }, []);
+
+  const redeemFnRef = useRef(redeem);
+  redeemFnRef.current = redeem;
 
   // Main Scanner Effect
   useEffect(() => {
@@ -153,7 +182,7 @@ export default function ScanPage() {
           (scanResult, scanError) => {
             if (!isMounted || activeTabRef.current !== 'qr') return;
             if (scanResult) {
-              redeem(scanResult.getText());
+              void redeemFnRef.current(scanResult.getText());
             }
           }
         );
@@ -180,7 +209,7 @@ export default function ScanPage() {
       isMounted = false;
       cleanupScanner();
     };
-  }, [activeTab, redeem, cleanupScanner]);
+  }, [activeTab, cleanupScanner]);
 
   if (!roleLoading && !canHostEvent) {
     return <div className="p-8 text-center">Host access required.</div>;
