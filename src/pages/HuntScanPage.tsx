@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { describeClaimCampaignError } from "@/hooks/useClaimCampaign";
 import { useClaimHuntCampaign } from "@/hooks/useClaimHuntCampaign";
 import { ScanSuccessModal } from "@/components/ScanSuccessModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { fixedCampaignRequiresPayment } from "@/lib/campaignClaimPricing";
 
 function normalizeQrPayload(raw: string): string {
   const t = raw.trim();
@@ -69,6 +72,34 @@ export default function HuntScanPage() {
       setSuccessVouchers(null);
 
       try {
+        const { data: huntCampaign, error: huntErr } = await supabase
+          .from("campaigns")
+          .select("id, reward_mode, campaign_vouchers ( offer_type, sort_order, created_at )")
+          .eq("qr_payload", payload)
+          .eq("campaign_type", "hunt")
+          .eq("status", "published")
+          .maybeSingle();
+
+        if (huntErr) throw huntErr;
+        if (!huntCampaign) {
+          setResult({ type: "error", message: "Hunt not found or not available." });
+          return;
+        }
+
+        const rawCv = huntCampaign.campaign_vouchers;
+        const list = Array.isArray(rawCv) ? rawCv : rawCv ? [rawCv] : [];
+        const sorted = [...list].sort(
+          (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
+        );
+        const primary = sorted[0];
+
+        if (fixedCampaignRequiresPayment(huntCampaign.reward_mode, primary?.offer_type)) {
+          navigate(`/campaigns/${huntCampaign.id}/checkout`, {
+            state: { channel: "hunt", huntQrPayload: payload },
+          });
+          return;
+        }
+
         const rows = await claimHunt.mutateAsync(payload);
         if (rows.length === 0) {
           setResult({ type: "error", message: "Nothing was claimed." });
@@ -80,12 +111,12 @@ export default function HuntScanPage() {
           lastCodeRef.current = null;
         }, 5000);
       } catch (err: unknown) {
-        setResult({ type: "error", message: (err as Error).message || "Something went wrong" });
+        setResult({ type: "error", message: describeClaimCampaignError(err) });
       } finally {
         setLoading(false);
       }
     },
-    [loading, claimHunt],
+    [loading, claimHunt, navigate],
   );
 
   useEffect(() => {

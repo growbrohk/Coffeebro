@@ -367,6 +367,68 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_claim_payments: {
+        Row: {
+          amount_cents: number
+          campaign_id: string
+          claim_channel: string
+          created_at: string
+          currency: string
+          hunt_qr_payload: string | null
+          id: string
+          mint_error: string | null
+          minted_vouchers_json: Json
+          status: string
+          stripe_checkout_expires_at: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          campaign_id: string
+          claim_channel: string
+          created_at?: string
+          currency?: string
+          hunt_qr_payload?: string | null
+          id?: string
+          mint_error?: string | null
+          minted_vouchers_json?: Json
+          status?: string
+          stripe_checkout_expires_at?: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          campaign_id?: string
+          claim_channel?: string
+          created_at?: string
+          currency?: string
+          hunt_qr_payload?: string | null
+          id?: string
+          mint_error?: string | null
+          minted_vouchers_json?: Json
+          status?: string
+          stripe_checkout_expires_at?: string | null
+          stripe_checkout_session_id?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_claim_payments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_vouchers: {
         Row: {
           campaign_id: string
@@ -760,6 +822,14 @@ export type Database = {
           status: string
         }[]
       }
+      compute_campaign_claim_amount_cents: {
+        Args: { p_campaign_id: string }
+        Returns: {
+          amount_cents: number
+          currency: string
+          requires_payment: boolean
+        }[]
+      }
       get_quiz_result_by_session: {
         Args: { p_session_token: string }
         Returns: {
@@ -952,6 +1022,13 @@ export type Database = {
         Returns: {
           code: string
           id: string
+        }[]
+      }
+      finalize_campaign_claim_after_checkout: {
+        Args: { p_checkout_session_id: string }
+        Returns: {
+          code: string
+          voucher_id: string
         }[]
       }
       list_campaign_participants: {

@@ -23,3 +23,7 @@ max_enrolled_factors = 10
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+
+# Stripe webhook uses Stripe-Signature only (no Supabase JWT).
+[functions.stripe-webhook]
+verify_jwt = false

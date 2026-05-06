@@ -27,6 +27,8 @@ import OrgCampaignsPage from "./pages/OrgCampaignsPage";
 import OrgCampaignEditorPage from "./pages/OrgCampaignEditorPage";
 import CampaignParticipantsPage from "./pages/CampaignParticipantsPage";
 import CampaignDetailPage from "./pages/CampaignDetailPage";
+import CampaignCheckoutPage from "./pages/CampaignCheckoutPage";
+import CampaignClaimSuccessPage from "./pages/CampaignClaimSuccessPage";
 import OrgPublicPage from "./pages/OrgPublicPage";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,8 @@ const App = () => (
               <Route path="/hunts/:huntId/treasures/:treasureId" element={<Navigate to="/hunts" replace />} />
               <Route path="/hunts/scan" element={<HuntScanPage />} />
               <Route path="/hunts/:huntId/scan" element={<Navigate to="/hunts/scan" replace />} />
+              <Route path="/campaigns/:campaignId/checkout" element={<CampaignCheckoutPage />} />
+              <Route path="/campaigns/:campaignId/claim/success" element={<CampaignClaimSuccessPage />} />
               <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
               <Route path="/orgs/:orgId" element={<OrgPublicPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />

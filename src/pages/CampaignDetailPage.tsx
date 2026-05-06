@@ -24,6 +24,7 @@ import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
+import { fixedCampaignRequiresPayment } from "@/lib/campaignClaimPricing";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -221,7 +222,13 @@ export default function CampaignDetailPage() {
       navigate("/profile");
       return;
     }
-    if (campaign?.campaign_type !== "grab") return;
+    if (!campaign || campaign.campaign_type !== "grab") return;
+    const sorted = sortCampaignVouchers(campaign.campaign_vouchers);
+    const primary = sorted[0];
+    if (fixedCampaignRequiresPayment(campaign.reward_mode, primary?.offer_type)) {
+      navigate(`/campaigns/${campaignId}/checkout`, { state: { channel: "grab" } });
+      return;
+    }
     try {
       await claim.mutateAsync(campaignId);
       void queryClient.invalidateQueries({ queryKey: campaignVoucherPoolsQueryKey });

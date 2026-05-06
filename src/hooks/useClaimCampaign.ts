@@ -29,6 +29,14 @@ export function describeClaimCampaignError(error: unknown): string {
   if (u.includes("NOT_AUTHORIZED")) return "Please sign in to claim.";
   if (u.includes("CAMPAIGN_NOT_FOUND")) return "Campaign not found.";
   if (u.includes("CAMPAIGN_NOT_PUBLISHED")) return "This campaign is not live yet.";
+  if (u.includes("PAYMENT_REQUIRED")) return "This offer requires payment.";
+  if (u.includes("PAYMENT_PENDING")) return "Payment is still processing.";
+  if (u.includes("PAYMENT_FAILED")) return "Payment did not complete.";
+  if (u.includes("HUNT_NOT_FOUND")) return "That hunt code was not found.";
+  if (u.includes("NOT_HUNT_CAMPAIGN")) return "That code is not a hunt campaign.";
+  if (u.includes("RANDOM_CAMPAIGN_PAID_OFFER_NOT_ALLOWED")) {
+    return "Random prize pools can only include free offers.";
+  }
   if (raw) return raw;
   return "Something went wrong. Please try again.";
 }

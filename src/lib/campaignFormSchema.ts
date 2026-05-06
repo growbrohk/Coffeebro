@@ -103,6 +103,18 @@ export const campaignFormSchema = z
       });
     }
 
+    if (data.reward_mode === "random") {
+      const nonFree = data.vouchers.find((v) => v.offer_type !== "free");
+      if (nonFree) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Random prize pools can only use free offers. Use fixed reward mode for paid offers (Stripe checkout).",
+          path: ["vouchers"],
+        });
+      }
+    }
+
     if (data.status === "published") {
       if (!data.start_at || !data.end_at) {
         ctx.addIssue({
