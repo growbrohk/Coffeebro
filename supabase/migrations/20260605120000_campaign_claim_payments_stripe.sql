@@ -3,7 +3,7 @@
 -- ---------------------------------------------------------------------------
 -- 1) Ledger table
 -- ---------------------------------------------------------------------------
-create table public.campaign_claim_payments (
+create table if not exists public.campaign_claim_payments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   campaign_id uuid not null references public.campaigns (id) on delete restrict,
@@ -26,16 +26,16 @@ create table public.campaign_claim_payments (
   constraint campaign_claim_payments_amount_check check (amount_cents >= 0)
 );
 
-create unique index uq_campaign_claim_payments_stripe_session
+create unique index if not exists uq_campaign_claim_payments_stripe_session
   on public.campaign_claim_payments (stripe_checkout_session_id);
 
-create unique index uq_campaign_claim_payments_open_success
+create unique index if not exists uq_campaign_claim_payments_open_success
   on public.campaign_claim_payments (user_id, campaign_id)
   where status in ('pending', 'paid', 'minted');
 
-create index idx_campaign_claim_payments_user on public.campaign_claim_payments (user_id);
-create index idx_campaign_claim_payments_campaign on public.campaign_claim_payments (campaign_id);
-create index idx_campaign_claim_payments_pi on public.campaign_claim_payments (stripe_payment_intent_id);
+create index if not exists idx_campaign_claim_payments_user on public.campaign_claim_payments (user_id);
+create index if not exists idx_campaign_claim_payments_campaign on public.campaign_claim_payments (campaign_id);
+create index if not exists idx_campaign_claim_payments_pi on public.campaign_claim_payments (stripe_payment_intent_id);
 
 drop trigger if exists trg_campaign_claim_payments_updated_at on public.campaign_claim_payments;
 create trigger trg_campaign_claim_payments_updated_at
@@ -44,6 +44,7 @@ create trigger trg_campaign_claim_payments_updated_at
 
 alter table public.campaign_claim_payments enable row level security;
 
+drop policy if exists "campaign_claim_payments_select_own" on public.campaign_claim_payments;
 create policy "campaign_claim_payments_select_own"
   on public.campaign_claim_payments for select
   to authenticated
@@ -183,8 +184,8 @@ begin
 
   select *
   into c
-  from public.campaigns
-  where id = p_campaign_id
+  from public.campaigns camp
+  where camp.id = p_campaign_id
   for update;
 
   if not found then
