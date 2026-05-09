@@ -30,6 +30,10 @@ import CampaignDetailPage from "./pages/CampaignDetailPage";
 import CampaignCheckoutPage from "./pages/CampaignCheckoutPage";
 import CampaignClaimSuccessPage from "./pages/CampaignClaimSuccessPage";
 import OrgPublicPage from "./pages/OrgPublicPage";
+import AllMyCafesPage from "./pages/loyalty/AllMyCafesPage";
+import ShopFanDashboardPage from "./pages/loyalty/ShopFanDashboardPage";
+import ShopLoyaltyManagerPage from "./pages/host/ShopLoyaltyManagerPage";
+import VoucherStudioPage from "./pages/host/VoucherStudioPage";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +64,10 @@ const App = () => (
               <Route path="/campaigns/:campaignId/checkout" element={<CampaignCheckoutPage />} />
               <Route path="/campaigns/:campaignId/claim/success" element={<CampaignClaimSuccessPage />} />
               <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
+              <Route path="/loyalty/cafes" element={<AllMyCafesPage />} />
+              <Route path="/loyalty/orgs/:orgId" element={<ShopFanDashboardPage />} />
+              <Route path="/host/org/:orgId/loyalty" element={<ShopLoyaltyManagerPage />} />
+              <Route path="/host/org/:orgId/loyalty/vouchers" element={<VoucherStudioPage />} />
               <Route path="/orgs/:orgId" element={<OrgPublicPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />

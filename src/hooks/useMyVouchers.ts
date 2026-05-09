@@ -93,8 +93,10 @@ export function useMyVouchers() {
           redeemed_at,
           expires_at,
           campaign_id,
+          loyalty_catalog_id,
           org_id,
           orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type ),
+          vouchers_catalog ( title, menu_item_id, menu_items ( id, item_name ) ),
           campaign_vouchers (
             offer_type,
             menu_items ( id, item_name ),
@@ -116,6 +118,70 @@ export function useMyVouchers() {
       if (error) throw error;
 
       const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
+        const rawLoyalty = v.vouchers_catalog;
+        const loyaltyRow = (Array.isArray(rawLoyalty) ? rawLoyalty[0] : rawLoyalty) as
+          | {
+              title: string;
+              menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null;
+            }
+          | null
+          | undefined;
+
+        if (v.loyalty_catalog_id && loyaltyRow) {
+          const orgsRow = v.orgs as {
+            org_name: string;
+            logo_url?: string | null;
+            lat: number | null;
+            lng: number | null;
+            location: string | null;
+            google_maps_url: string | null;
+            shop_type?: string | null;
+          } | null;
+
+          const rawLm = loyaltyRow.menu_items;
+          const lmenu = Array.isArray(rawLm) ? rawLm[0] : rawLm;
+
+          const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
+            walletRedeemLocation(
+              orgsRow
+                ? {
+                    shop_type: orgsRow.shop_type ?? null,
+                    lat: orgsRow.lat ?? null,
+                    lng: orgsRow.lng ?? null,
+                    location: orgsRow.location ?? null,
+                    google_maps_url: orgsRow.google_maps_url ?? null,
+                  }
+                : null,
+              null,
+            );
+
+          return {
+            id: v.id as string,
+            code: v.code as string,
+            status: v.status as MyVoucher["status"],
+            created_at: v.created_at as string,
+            redeemed_at: (v.redeemed_at as string | null) ?? null,
+            expires_at: (v.expires_at as string | null) ?? null,
+            title: loyaltyRow.title,
+            org_id: v.org_id as string,
+            org_name: orgsRow?.org_name,
+            org_logo_url: orgsRow?.logo_url ?? null,
+            offer_type: "Loyalty reward",
+            description: "Redeem with your points at this shop.",
+            location: locationTrimmed,
+            event_date: null,
+            thumbnail_url: null,
+            campaign_id: (v.campaign_id as string | undefined) ?? undefined,
+            menu_item_id: lmenu?.id ?? null,
+            menu_item_name: lmenu?.item_name?.trim() ?? null,
+            campaign_details: loyaltyRow.title,
+            redeem_directions_url: redeemDirectionsUrl,
+            pickup_spot_label: pickup_spot_label ?? null,
+            org_shop_type: orgsRow?.shop_type ?? null,
+            review: null,
+          };
+        }
+
         const rawCv = v.campaign_vouchers;
         const cv = (Array.isArray(rawCv) ? rawCv[0] : rawCv) as
           | {
@@ -207,7 +273,7 @@ export function useMyVouchers() {
           location: locationTrimmed,
           event_date: camp?.end_at ?? null,
           thumbnail_url: thumb,
-          campaign_id: v.campaign_id as string,
+          campaign_id: (v.campaign_id as string | null) ?? undefined,
           menu_item_id: menu?.id ?? null,
           menu_item_name: menu?.item_name?.trim() ?? null,
           campaign_details: campaignDetails,

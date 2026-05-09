@@ -140,6 +140,9 @@ export default function OrgMenuPage() {
             <Plus className="h-4 w-4" />
             Add item
           </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(`/host/org/${orgId}/loyalty`)}>
+            Loyalty
+          </Button>
           <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/campaigns`)}>
             Campaigns
           </Button>

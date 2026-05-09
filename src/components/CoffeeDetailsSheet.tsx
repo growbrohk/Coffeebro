@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { localYMD } from '@/lib/date';
 import type { CoffeeDetails, CoffeeLocationKind } from '@/hooks/useCoffees';
 import type { LogCoffeePrefill } from '@/contexts/LogCoffeeEntryContext';
+import { ReceiptScanPanel } from '@/components/loyalty/ReceiptScanPanel';
 
 const PLACE_HOME_LABEL = 'Home';
 const ORG_MENU_OTHER = '__org_menu_other__';
@@ -332,8 +333,11 @@ export function CoffeeDetailsSheet({
           '…'
         : lockedMenuFallbackLabel ?? prefill?.menuItemName ?? 'Pick from menu…';
 
+  const receiptScanMode = locationKind === 'org' && !lockCoffeeShop;
+
   const showOrgMenuCoffee =
     !lockCoffeeShop &&
+    !receiptScanMode &&
     locationKind === 'org' &&
     !!selectedOrgId &&
     !menuLoading &&
@@ -348,6 +352,7 @@ export function CoffeeDetailsSheet({
     (!!orgMenuKey || !!lockedMenuFallbackLabel || !!prefill.menuItemName);
 
   const showGenericCoffee =
+    !receiptScanMode &&
     (locationKind === 'home' ||
       locationKind === 'other' ||
       (locationKind === 'org' && !!selectedOrgId && !menuLoading && activeMenuItems.length === 0)) &&
@@ -509,26 +514,34 @@ export function CoffeeDetailsSheet({
               <div className="space-y-2">
                 <Label className={labelOrange}>What did you have?</Label>
 
-                {locationKind === 'org' && !selectedOrgId && (
-                  <p className="text-xs font-medium text-primary-foreground/90">Choose a venue first.</p>
-                )}
-
-                {locationKind === 'org' && selectedOrgId && menuLoading && (
-                  <p className="text-xs font-medium text-primary-foreground/90">Loading menu...</p>
-                )}
-
-                {showLockedMenuRow && lockCoffeeShop && (
-                  <div
-                    className={cn(
-                      'flex min-h-12 w-full items-center rounded-full border-0 px-4 font-normal',
-                      inputOnOrange,
+                {receiptScanMode && selectedOrgId ? (
+                  <ReceiptScanPanel
+                    orgId={selectedOrgId}
+                    orgName={orgDisplayName || 'Coffee shop'}
+                    onSuccess={() => handleOpenChange(false)}
+                  />
+                ) : (
+                  <>
+                    {locationKind === 'org' && !selectedOrgId && (
+                      <p className="text-xs font-medium text-primary-foreground/90">Choose a venue first.</p>
                     )}
-                  >
-                    {lockedMenuDisplayLabel}
-                  </div>
-                )}
 
-                {showOrgMenuCoffee && (
+                    {locationKind === 'org' && selectedOrgId && menuLoading && (
+                      <p className="text-xs font-medium text-primary-foreground/90">Loading menu...</p>
+                    )}
+
+                    {showLockedMenuRow && lockCoffeeShop && (
+                      <div
+                        className={cn(
+                          'flex min-h-12 w-full items-center rounded-full border-0 px-4 font-normal',
+                          inputOnOrange,
+                        )}
+                      >
+                        {lockedMenuDisplayLabel}
+                      </div>
+                    )}
+
+                    {showOrgMenuCoffee && (
                   <div className="space-y-2">
                     <Popover open={orgMenuComboOpen} onOpenChange={setOrgMenuComboOpen}>
                       <PopoverTrigger asChild>
@@ -615,11 +628,16 @@ export function CoffeeDetailsSheet({
                   </div>
                 )}
 
-                {locationKind === 'org' && selectedOrgId && !menuLoading && activeMenuItems.length === 0 && !lockCoffeeShop && (
-                  <p className="text-xs font-medium text-primary-foreground/90">
-                    No menu listed for this venue yet — pick a drink type below.
-                  </p>
-                )}
+                {locationKind === 'org' &&
+                  selectedOrgId &&
+                  !menuLoading &&
+                  activeMenuItems.length === 0 &&
+                  !lockCoffeeShop &&
+                  !receiptScanMode && (
+                    <p className="text-xs font-medium text-primary-foreground/90">
+                      No menu listed for this venue yet — pick a drink type below.
+                    </p>
+                  )}
 
                 {showGenericCoffee && (
                   <>
@@ -649,8 +667,11 @@ export function CoffeeDetailsSheet({
                     )}
                   </>
                 )}
+                  </>
+                )}
               </div>
 
+              {!receiptScanMode && (
               <div className="space-y-2">
                 <Label htmlFor="tasting-notes" className={labelOrange}>
                   Tasting notes
@@ -663,6 +684,7 @@ export function CoffeeDetailsSheet({
                   className={textareaOnOrange}
                 />
               </div>
+              )}
 
               {lockCoffeeShop && prefill ? (
                 <div className="flex items-start gap-3 rounded-2xl bg-white/10 px-3 py-3">
@@ -689,14 +711,16 @@ export function CoffeeDetailsSheet({
               >
                 I'll come back after another sip!
               </Button>
-              <Button
-                type="button"
-                className="h-12 flex-1 bg-primary-foreground font-semibold text-primary hover:bg-primary-foreground/90"
-                onClick={handleSave}
-                disabled={isPending}
-              >
-                {isPending ? 'Saving...' : 'Save'}
-              </Button>
+              {!(receiptScanMode && selectedOrgId) && (
+                <Button
+                  type="button"
+                  className="h-12 flex-1 bg-primary-foreground font-semibold text-primary hover:bg-primary-foreground/90"
+                  onClick={handleSave}
+                  disabled={isPending}
+                >
+                  {isPending ? 'Saving...' : 'Save'}
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -30,6 +30,8 @@ export type Database = {
           updated_at: string
           user_id: string
           voucher_id: string | null
+          receipt_amount_cents: number | null
+          receipt_line_items: Json | null
         }
         Insert: {
           coffee_date?: string
@@ -46,6 +48,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           voucher_id?: string | null
+          receipt_amount_cents?: number | null
+          receipt_line_items?: Json | null
         }
         Update: {
           coffee_date?: string
@@ -62,6 +66,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           voucher_id?: string | null
+          receipt_amount_cents?: number | null
+          receipt_line_items?: Json | null
         }
         Relationships: [
           {
@@ -685,10 +691,122 @@ export type Database = {
         }
         Relationships: []
       }
+      vouchers_catalog: {
+        Row: {
+          id: string
+          org_id: string
+          menu_item_id: string | null
+          title: string
+          points_cost: number
+          active: boolean
+          quantity_cap: number | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          menu_item_id?: string | null
+          title: string
+          points_cost: number
+          active?: boolean
+          quantity_cap?: number | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          menu_item_id?: string | null
+          title?: string
+          points_cost?: number
+          active?: boolean
+          quantity_cap?: number | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_catalog_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_catalog_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_balances: {
+        Row: {
+          user_id: string
+          org_id: string
+          balance: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          org_id: string
+          balance?: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          org_id?: string
+          balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_balances_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_loyalty_settings: {
+        Row: {
+          org_id: string
+          cents_per_point: number
+          redemption_mode: string
+          updated_at: string
+        }
+        Insert: {
+          org_id: string
+          cents_per_point?: number
+          redemption_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          org_id?: string
+          cents_per_point?: number
+          redemption_mode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_loyalty_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vouchers: {
         Row: {
-          campaign_id: string
-          campaign_voucher_id: string
+          campaign_id: string | null
+          campaign_voucher_id: string | null
           code: string
           created_at: string
           expires_at: string | null
@@ -698,10 +816,11 @@ export type Database = {
           redeemed_at: string | null
           redeemed_by: string | null
           status: string
+          loyalty_catalog_id: string | null
         }
         Insert: {
-          campaign_id: string
-          campaign_voucher_id: string
+          campaign_id?: string | null
+          campaign_voucher_id?: string | null
           code: string
           created_at?: string
           expires_at?: string | null
@@ -711,10 +830,11 @@ export type Database = {
           redeemed_at?: string | null
           redeemed_by?: string | null
           status?: string
+          loyalty_catalog_id?: string | null
         }
         Update: {
-          campaign_id?: string
-          campaign_voucher_id?: string
+          campaign_id?: string | null
+          campaign_voucher_id?: string | null
           code?: string
           created_at?: string
           expires_at?: string | null
@@ -724,6 +844,7 @@ export type Database = {
           redeemed_at?: string | null
           redeemed_by?: string | null
           status?: string
+          loyalty_catalog_id?: string | null
         }
         Relationships: [
           {
@@ -745,6 +866,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_loyalty_catalog_id_fkey"
+            columns: ["loyalty_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -821,6 +949,25 @@ export type Database = {
           message: string
           status: string
         }[]
+      }
+      finalize_receipt_scan: {
+        Args: {
+          p_org_id: string
+          p_receipt_key: string
+          p_amount_cents: number
+          p_items: Json
+          p_place: string
+          p_coffee_date: string
+        }
+        Returns: Json
+      }
+      redeem_catalog_item: {
+        Args: { p_catalog_id: string }
+        Returns: Json
+      }
+      upsert_shop_loyalty_settings: {
+        Args: { p_org_id: string; p_cents_per_point: number }
+        Returns: undefined
       }
       compute_campaign_claim_amount_cents: {
         Args: { p_campaign_id: string }
@@ -924,7 +1071,7 @@ export type Database = {
           created_at: string
           redeemed_at: string | null
           expires_at: string | null
-          campaign_id: string
+          campaign_id: string | null
           org_id: string
           org_name: string | null
           org_logo_url: string | null

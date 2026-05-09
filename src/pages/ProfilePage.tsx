@@ -11,6 +11,7 @@ import {
   useLifetimeCoffeeCount,
   useCoffeeProfileStats,
 } from '@/hooks/useCoffees';
+import { useTopCafes } from '@/hooks/useTopCafes';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
 import {
@@ -56,6 +57,41 @@ function listRankedWithCounts(
   ));
 }
 
+function listTopCafesRows(
+  items: { label: string; points: number; orgId: string }[],
+  loading: boolean,
+  onPick: (orgId: string) => void,
+) {
+  const slots = [0, 1, 2].map((i) => {
+    if (loading) return { label: '…', points: null as number | null, orgId: null as string | null };
+    const it = items[i];
+    return it ? { label: it.label, points: it.points, orgId: it.orgId } : { label: '—', points: null, orgId: null };
+  });
+  return slots.map((slot, i) => (
+    <li
+      key={i}
+      className="flex items-baseline justify-between gap-2 text-sm font-medium"
+    >
+      {slot.orgId ? (
+        <button
+          type="button"
+          className="min-w-0 truncate text-left underline-offset-2 hover:underline"
+          onClick={() => onPick(slot.orgId!)}
+        >
+          {i + 1}. {slot.label}
+        </button>
+      ) : (
+        <span className="min-w-0 truncate">
+          {i + 1}. {slot.label}
+        </span>
+      )}
+      {slot.points != null ? (
+        <span className="shrink-0 tabular-nums text-[#2E1A14]/55">{slot.points} pts</span>
+      ) : null}
+    </li>
+  ));
+}
+
 export default function ProfilePage() {
   const [searchParams] = useSearchParams();
   const msgParam = searchParams.get('msg');
@@ -93,6 +129,7 @@ export default function ProfilePage() {
   const quizResultType = quizRow?.resultType ?? null;
   const { data: lifetimeTotal = 0, isLoading: lifetimeLoading } = useLifetimeCoffeeCount();
   const { data: profileStats, isLoading: profileStatsLoading } = useCoffeeProfileStats();
+  const { data: topCafeRows = [], isLoading: topCafesLoading } = useTopCafes();
   const { data: vouchers = [], isLoading: vouchersLoading } = useMyVouchers();
   const { data: voucherTopPercent, isLoading: voucherTopLoading } = useMyVoucherTopPercent();
   const navigate = useNavigate();
@@ -266,7 +303,12 @@ export default function ProfilePage() {
     const frogSubtitle = quizResultType
       ? FROG_NAMES[quizResultType].toLowerCase()
       : 'find your frog';
-    const topPlaces = profileStats?.topPlaces ?? [];
+    const topCafeItems = topCafeRows.slice(0, 3).map((r) => ({
+      label: r.org_name,
+      points: r.points,
+      orgId: r.org_id,
+    }));
+
     const topDrinks = profileStats?.topDrinks ?? [];
     const voucherCount = vouchers.length;
 
@@ -377,7 +419,17 @@ export default function ProfilePage() {
 
           {/* Stats card */}
           <div className={`${profileCardClass} shadow-sm`}>
-            <p className="text-sm font-medium">In total, you drank</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium">In total, you drank</p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 shrink-0 px-2 text-xs font-semibold text-primary hover:bg-primary/10"
+                onClick={() => navigate('/loyalty/cafes')}
+              >
+                See all
+              </Button>
+            </div>
             <div className="mt-1 flex min-h-[4.5rem] items-center justify-between gap-2">
               <span className="text-5xl font-bold tabular-nums">
                 {lifetimeLoading ? '…' : lifetimeTotal}
@@ -394,7 +446,9 @@ export default function ProfilePage() {
                   Top cafes
                 </p>
                 <ol className="mt-2 space-y-1.5">
-                  {listRankedWithCounts(topPlaces, profileStatsLoading)}
+                  {listTopCafesRows(topCafeItems, topCafesLoading || profileStatsLoading, (id) =>
+                    navigate(`/loyalty/orgs/${id}`),
+                  )}
                 </ol>
               </div>
               <div>
