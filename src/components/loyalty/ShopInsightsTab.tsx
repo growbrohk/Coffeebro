@@ -89,6 +89,9 @@ export function ShopInsightsTab({
       <p className="text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
         {label}
       </p>
+      <p className="text-center text-xs text-muted-foreground">
+        Your receipt scans at this café for the selected month.
+      </p>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading insights…</p>

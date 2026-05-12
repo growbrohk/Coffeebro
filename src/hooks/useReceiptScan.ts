@@ -56,6 +56,7 @@ export function useReceiptScan() {
       await qc.invalidateQueries({ queryKey: ["coffee-profile-stats"] });
       await qc.invalidateQueries({ queryKey: ["loyalty-balance"] });
       await qc.invalidateQueries({ queryKey: ["lifetime-coffee-count"] });
+      await qc.invalidateQueries({ queryKey: ["shop-receipt-logs"] });
     },
   });
 }
