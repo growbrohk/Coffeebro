@@ -36,17 +36,22 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  // Gemini 3.1 Flash-Lite: fastest + cheapest series for structured data extraction.
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.1-flash-lite-preview-06-17";
+  // Gemini 3.1 Flash-Lite GA: structured receipt extraction (see ai.google.dev model list).
+  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.1-flash-lite";
 
   if (!geminiKey) {
     return json({ error: "SERVER_CONFIG", message: "GEMINI_API_KEY not set" }, 500);
+  }
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+    return json({ error: "SERVER_CONFIG", message: "SUPABASE_URL, ANON_KEY, or SERVICE_ROLE_KEY not set" }, 500);
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
+  const admin = createClient(supabaseUrl, serviceRoleKey);
 
   const {
     data: { user },
@@ -81,7 +86,7 @@ Deno.serve(async (req) => {
     return json({ error: "FILE_TOO_LARGE", message: "Max 5MB" }, 400);
   }
 
-  const { data: orgRow, error: orgErr } = await supabase
+  const { data: orgRow, error: orgErr } = await admin
     .from("orgs")
     .select("id, org_name")
     .eq("id", orgId)
@@ -128,7 +133,6 @@ If uncertain about total_cents, estimate from line items. Currency is typically 
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.2,
-        thinking_config: { thinking_budget: 0 },
       },
     }),
   });
