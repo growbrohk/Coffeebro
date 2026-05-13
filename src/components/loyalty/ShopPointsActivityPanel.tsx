@@ -1,8 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useLoyaltyActivityFeed, type LoyaltyActivityRow } from "@/hooks/useLoyaltyPoints";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,7 +43,6 @@ function activitySectionLabel(row: LoyaltyActivityRow): string {
   return new Date(row.occurred_at).toLocaleDateString(undefined, { dateStyle: "full" });
 }
 
-/** List line under title: receipt purchase date vs redeem time. */
 function listRowSubtitle(row: LoyaltyActivityRow): string {
   if (row.kind === "catalog_redeem") {
     return `Redeemed · ${formatTime(row.occurred_at)}`;
@@ -90,27 +85,16 @@ function ReceiptLineItems({ items }: { items: unknown }) {
   );
 }
 
-export default function ShopPointsActivityPage() {
-  const { orgId } = useParams<{ orgId: string }>();
-  const navigate = useNavigate();
+type ShopPointsActivityPanelProps = {
+  orgId: string;
+  /** When set, shows a muted line under the header area (standalone page). */
+  subheading?: string;
+};
+
+export function ShopPointsActivityPanel({ orgId, subheading }: ShopPointsActivityPanelProps) {
   const { data: rows = [], isLoading } = useLoyaltyActivityFeed(orgId);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<LoyaltyActivityRow | null>(null);
-
-  const { data: org } = useQuery({
-    queryKey: ["org-name", orgId],
-    queryFn: async () => {
-      if (!orgId) return null;
-      const { data, error } = await supabase
-        .from("orgs")
-        .select("org_name")
-        .eq("id", orgId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!orgId,
-  });
 
   const grouped = useMemo(() => {
     const map = new Map<string, LoyaltyActivityRow[]>();
@@ -123,33 +107,13 @@ export default function ShopPointsActivityPage() {
     return map;
   }, [rows]);
 
-  if (!orgId) {
-    return (
-      <div className="min-h-screen bg-background px-4 py-8">
-        <p className="text-center text-muted-foreground">Missing café.</p>
-      </div>
-    );
-  }
-
-  const orgName = org?.org_name ?? "Café";
-
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
-        <button
-          type="button"
-          onClick={() => navigate(`/loyalty/orgs/${orgId}`)}
-          className="absolute left-0 p-2"
-          aria-label="Back"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </button>
-        <h1 className="font-heading text-xl font-bold tracking-normal">Points history</h1>
-      </div>
-
-      <div className="px-4 py-4">
-        <p className="text-sm text-muted-foreground">{orgName}</p>
-      </div>
+    <>
+      {subheading ? (
+        <div className="px-4 py-4">
+          <p className="text-sm text-muted-foreground">{subheading}</p>
+        </div>
+      ) : null}
 
       <div className="px-4">
         {isLoading ? (
@@ -209,65 +173,65 @@ export default function ShopPointsActivityPage() {
             const rd = parseCoffeeDate(selected.detail_json?.coffee_date);
             const rawCoffeeDate = selected.detail_json?.coffee_date;
             return (
-            <div className="mt-4 space-y-3 text-sm">
-              <p className="text-lg font-semibold tabular-nums">
-                {typeof selected.detail_json?.receipt_amount_cents === "number"
-                  ? HKD(selected.detail_json.receipt_amount_cents)
-                  : "—"}
-              </p>
-              {typeof selected.detail_json?.place === "string" && selected.detail_json.place ? (
-                <p>
-                  <span className="text-muted-foreground">Place</span>
-                  <br />
-                  {selected.detail_json.place}
-                </p>
-              ) : null}
-              {(typeof selected.detail_json?.org_location === "string" &&
-                selected.detail_json.org_location) ||
-              (typeof selected.detail_json?.org_district === "string" &&
-                selected.detail_json.org_district) ? (
-                <p>
-                  <span className="text-muted-foreground">Address</span>
-                  <br />
-                  {[selected.detail_json.org_location, selected.detail_json.org_district]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              ) : null}
-              {typeof selected.detail_json?.order_no === "string" &&
-              selected.detail_json.order_no.trim() ? (
-                <p>
-                  <span className="text-muted-foreground">Order</span>
-                  <br />
-                  {selected.detail_json.order_no}
-                </p>
-              ) : null}
-              <p>
-                <span className="text-muted-foreground">Receipt date</span>
-                <br />
-                {rd
-                  ? rd.toLocaleDateString(undefined, { dateStyle: "long" })
-                  : rawCoffeeDate != null && String(rawCoffeeDate).trim() !== ""
-                    ? String(rawCoffeeDate)
+              <div className="mt-4 space-y-3 text-sm">
+                <p className="text-lg font-semibold tabular-nums">
+                  {typeof selected.detail_json?.receipt_amount_cents === "number"
+                    ? HKD(selected.detail_json.receipt_amount_cents)
                     : "—"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Logged at</span>
-                <br />
-                {formatTime(
-                  typeof selected.detail_json?.created_at === "string"
-                    ? selected.detail_json.created_at
-                    : selected.occurred_at,
-                )}
-              </p>
-              <div>
-                <span className="text-muted-foreground">Items</span>
-                <ReceiptLineItems items={selected.detail_json?.receipt_line_items} />
+                </p>
+                {typeof selected.detail_json?.place === "string" && selected.detail_json.place ? (
+                  <p>
+                    <span className="text-muted-foreground">Place</span>
+                    <br />
+                    {selected.detail_json.place}
+                  </p>
+                ) : null}
+                {(typeof selected.detail_json?.org_location === "string" &&
+                  selected.detail_json.org_location) ||
+                (typeof selected.detail_json?.org_district === "string" &&
+                  selected.detail_json.org_district) ? (
+                  <p>
+                    <span className="text-muted-foreground">Address</span>
+                    <br />
+                    {[selected.detail_json.org_location, selected.detail_json.org_district]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                ) : null}
+                {typeof selected.detail_json?.order_no === "string" &&
+                selected.detail_json.order_no.trim() ? (
+                  <p>
+                    <span className="text-muted-foreground">Order</span>
+                    <br />
+                    {selected.detail_json.order_no}
+                  </p>
+                ) : null}
+                <p>
+                  <span className="text-muted-foreground">Receipt date</span>
+                  <br />
+                  {rd
+                    ? rd.toLocaleDateString(undefined, { dateStyle: "long" })
+                    : rawCoffeeDate != null && String(rawCoffeeDate).trim() !== ""
+                      ? String(rawCoffeeDate)
+                      : "—"}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Logged at</span>
+                  <br />
+                  {formatTime(
+                    typeof selected.detail_json?.created_at === "string"
+                      ? selected.detail_json.created_at
+                      : selected.occurred_at,
+                  )}
+                </p>
+                <div>
+                  <span className="text-muted-foreground">Items</span>
+                  <ReceiptLineItems items={selected.detail_json?.receipt_line_items} />
+                </div>
+                <p className="pt-2 text-xs text-muted-foreground">
+                  +{selected.delta} points from this receipt
+                </p>
               </div>
-              <p className="pt-2 text-xs text-muted-foreground">
-                +{selected.delta} points from this receipt
-              </p>
-            </div>
             );
           })()}
           {selected && selected.kind === "catalog_redeem" && (
@@ -295,6 +259,6 @@ export default function ShopPointsActivityPage() {
           </Button>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

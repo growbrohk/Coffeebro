@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import ExplorePage from "./pages/ExplorePage";
@@ -32,11 +32,16 @@ import CampaignClaimSuccessPage from "./pages/CampaignClaimSuccessPage";
 import OrgPublicPage from "./pages/OrgPublicPage";
 import AllMyCafesPage from "./pages/loyalty/AllMyCafesPage";
 import ShopFanDashboardPage from "./pages/loyalty/ShopFanDashboardPage";
-import ShopPointsActivityPage from "./pages/loyalty/ShopPointsActivityPage";
 import ShopLoyaltyManagerPage from "./pages/host/ShopLoyaltyManagerPage";
 import VoucherStudioPage from "./pages/host/VoucherStudioPage";
 
 const queryClient = new QueryClient();
+
+function LoyaltyActivityToDashboard() {
+  const { orgId } = useParams<{ orgId: string }>();
+  if (!orgId) return <Navigate to="/loyalty/cafes" replace />;
+  return <Navigate to={`/loyalty/orgs/${orgId}`} replace />;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -66,7 +71,7 @@ const App = () => (
               <Route path="/campaigns/:campaignId/claim/success" element={<CampaignClaimSuccessPage />} />
               <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
               <Route path="/loyalty/cafes" element={<AllMyCafesPage />} />
-              <Route path="/loyalty/orgs/:orgId/activity" element={<ShopPointsActivityPage />} />
+              <Route path="/loyalty/orgs/:orgId/activity" element={<LoyaltyActivityToDashboard />} />
               <Route path="/loyalty/orgs/:orgId" element={<ShopFanDashboardPage />} />
               <Route path="/host/org/:orgId/loyalty" element={<ShopLoyaltyManagerPage />} />
               <Route path="/host/org/:orgId/loyalty/vouchers" element={<VoucherStudioPage />} />

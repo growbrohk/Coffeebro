@@ -1,17 +1,22 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, History } from "lucide-react";
+import { ArrowLeft, LineChart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ShopInsightsTab } from "@/components/loyalty/ShopInsightsTab";
 import { ShopRewardsTab } from "@/components/loyalty/ShopRewardsTab";
+import { ShopPointsActivityPanel } from "@/components/loyalty/ShopPointsActivityPanel";
 import { useLoyaltyBalance } from "@/hooks/useLoyaltyPoints";
+
+type FanTab = "activity" | "rewards" | "insights";
 
 export default function ShopFanDashboardPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { data: balance = 0, isLoading: balLoading } = useLoyaltyBalance(orgId);
+  const [tab, setTab] = useState<FanTab>("activity");
 
   const goBack = () => {
     if (!orgId) return;
@@ -69,28 +74,33 @@ export default function ShopFanDashboardPage() {
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant={tab === "insights" ? "default" : "secondary"}
             size="sm"
             className="gap-2 shrink-0"
-            onClick={() => navigate(`/loyalty/orgs/${orgId}/activity`)}
+            aria-pressed={tab === "insights"}
+            aria-label="Insights"
+            onClick={() => setTab("insights")}
           >
-            <History className="h-4 w-4" />
-            Activity
+            <LineChart className="h-4 w-4" />
+            Insights
           </Button>
         </div>
       </div>
 
       <div className="px-4 py-4">
-        <Tabs defaultValue="insights" className="w-full">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as FanTab)} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="rewards">Rewards</TabsTrigger>
           </TabsList>
-          <TabsContent value="insights" className="mt-4">
-            <ShopInsightsTab orgId={orgId} orgName={name} />
+          <TabsContent value="activity" className="mt-4">
+            <ShopPointsActivityPanel orgId={orgId} />
           </TabsContent>
           <TabsContent value="rewards" className="mt-4">
             <ShopRewardsTab orgId={orgId} />
+          </TabsContent>
+          <TabsContent value="insights" className="mt-4">
+            <ShopInsightsTab orgId={orgId} orgName={name} />
           </TabsContent>
         </Tabs>
       </div>
