@@ -69,7 +69,7 @@ export default function ShopLoyaltyManagerPage() {
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(`/org/${orgId}/menu`)}
           className="absolute left-0 p-2"
           aria-label="Back"
         >
