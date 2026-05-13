@@ -28,6 +28,39 @@ function formatTime(iso: string | undefined) {
   }
 }
 
+/** Purchase date on the receipt (OCR), not scan time. */
+function parseCoffeeDate(value: unknown): Date | null {
+  if (value == null) return null;
+  const s = String(value).trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(`${s}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function activitySectionLabel(row: LoyaltyActivityRow): string {
+  if (row.kind === "receipt_scan") {
+    const receiptDay = parseCoffeeDate(row.detail_json?.coffee_date);
+    if (receiptDay) {
+      return receiptDay.toLocaleDateString(undefined, { dateStyle: "full" });
+    }
+  }
+  return new Date(row.occurred_at).toLocaleDateString(undefined, { dateStyle: "full" });
+}
+
+/** List line under title: receipt purchase date vs redeem time. */
+function listRowSubtitle(row: LoyaltyActivityRow): string {
+  if (row.kind === "catalog_redeem") {
+    return `Redeemed · ${formatTime(row.occurred_at)}`;
+  }
+  const receiptDay = parseCoffeeDate(row.detail_json?.coffee_date);
+  if (receiptDay) {
+    return `Receipt · ${receiptDay.toLocaleDateString(undefined, {
+      dateStyle: "medium",
+    })}`;
+  }
+  return `Receipt · ${formatTime(row.occurred_at)}`;
+}
+
 function ReceiptLineItems({ items }: { items: unknown }) {
   if (!items) return null;
   let parsed: { name?: string; qty?: number; unit_price_cents?: number }[] = [];
@@ -82,8 +115,7 @@ export default function ShopPointsActivityPage() {
   const grouped = useMemo(() => {
     const map = new Map<string, LoyaltyActivityRow[]>();
     for (const r of rows) {
-      const d = new Date(r.occurred_at);
-      const label = d.toLocaleDateString(undefined, { dateStyle: "full" });
+      const label = activitySectionLabel(r);
       const list = map.get(label) ?? [];
       list.push(r);
       map.set(label, list);
@@ -147,9 +179,7 @@ export default function ShopPointsActivityPage() {
                         >
                           <div className="min-w-0">
                             <p className="font-medium leading-snug">{row.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {earn ? "Receipt" : "Redeemed"} · {formatTime(row.occurred_at)}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{listRowSubtitle(row)}</p>
                           </div>
                           <span
                             className={cn(
@@ -175,7 +205,10 @@ export default function ShopPointsActivityPage() {
           <SheetHeader>
             <SheetTitle>{selected?.kind === "receipt_scan" ? "Receipt" : "Reward"}</SheetTitle>
           </SheetHeader>
-          {selected && selected.kind === "receipt_scan" && (
+          {selected && selected.kind === "receipt_scan" && (() => {
+            const rd = parseCoffeeDate(selected.detail_json?.coffee_date);
+            const rawCoffeeDate = selected.detail_json?.coffee_date;
+            return (
             <div className="mt-4 space-y-3 text-sm">
               <p className="text-lg font-semibold tabular-nums">
                 {typeof selected.detail_json?.receipt_amount_cents === "number"
@@ -210,7 +243,16 @@ export default function ShopPointsActivityPage() {
                 </p>
               ) : null}
               <p>
-                <span className="text-muted-foreground">Time</span>
+                <span className="text-muted-foreground">Receipt date</span>
+                <br />
+                {rd
+                  ? rd.toLocaleDateString(undefined, { dateStyle: "long" })
+                  : rawCoffeeDate != null && String(rawCoffeeDate).trim() !== ""
+                    ? String(rawCoffeeDate)
+                    : "—"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Logged at</span>
                 <br />
                 {formatTime(
                   typeof selected.detail_json?.created_at === "string"
@@ -218,13 +260,6 @@ export default function ShopPointsActivityPage() {
                     : selected.occurred_at,
                 )}
               </p>
-              {selected.detail_json?.coffee_date != null ? (
-                <p>
-                  <span className="text-muted-foreground">Visit date</span>
-                  <br />
-                  {String(selected.detail_json.coffee_date)}
-                </p>
-              ) : null}
               <div>
                 <span className="text-muted-foreground">Items</span>
                 <ReceiptLineItems items={selected.detail_json?.receipt_line_items} />
@@ -233,7 +268,8 @@ export default function ShopPointsActivityPage() {
                 +{selected.delta} points from this receipt
               </p>
             </div>
-          )}
+            );
+          })()}
           {selected && selected.kind === "catalog_redeem" && (
             <div className="mt-4 space-y-3 text-sm">
               <p className="font-medium">{selected.title}</p>

@@ -1,5 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, History } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { ShopInsightsTab } from "@/components/loyalty/ShopInsightsTab";
+import { ShopRewardsTab } from "@/components/loyalty/ShopRewardsTab";
+import { useLoyaltyBalance } from "@/hooks/useLoyaltyPoints";
 
 export default function ShopFanDashboardPage() {
   const { orgId } = useParams<{ orgId: string }>();
