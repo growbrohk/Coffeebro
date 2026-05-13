@@ -49,7 +49,7 @@ export function useReceiptScan() {
 
       return { ok: false as const, code: "UNKNOWN", message: "Unexpected response" };
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, variables) => {
       if (!result.ok) return;
       await qc.invalidateQueries({ queryKey: ["coffees"] });
       await qc.invalidateQueries({ queryKey: ["top-cafes"] });
@@ -57,6 +57,8 @@ export function useReceiptScan() {
       await qc.invalidateQueries({ queryKey: ["loyalty-balance"] });
       await qc.invalidateQueries({ queryKey: ["lifetime-coffee-count"] });
       await qc.invalidateQueries({ queryKey: ["shop-receipt-logs"] });
+      await qc.invalidateQueries({ queryKey: ["loyalty-activity", variables.orgId] });
+      await qc.invalidateQueries({ queryKey: ["loyalty-catalog-availability", variables.orgId] });
     },
   });
 }

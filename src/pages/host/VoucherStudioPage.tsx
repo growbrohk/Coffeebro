@@ -23,6 +23,7 @@ type CatalogRow = {
   active: boolean;
   menu_item_id: string | null;
   quantity_cap: number | null;
+  max_redemptions_per_user: number | null;
   sort_order: number;
 };
 
@@ -37,6 +38,7 @@ export default function VoucherStudioPage() {
   const [title, setTitle] = useState("");
   const [pointsCost, setPointsCost] = useState("50");
   const [quantityCap, setQuantityCap] = useState("");
+  const [maxPerCustomer, setMaxPerCustomer] = useState("");
   const [menuItemId, setMenuItemId] = useState<string | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
@@ -61,6 +63,7 @@ export default function VoucherStudioPage() {
     setTitle("");
     setPointsCost("50");
     setQuantityCap("");
+    setMaxPerCustomer("");
     setMenuItemId(null);
     setSheetOpen(true);
   };
@@ -70,6 +73,9 @@ export default function VoucherStudioPage() {
     setTitle(row.title);
     setPointsCost(String(row.points_cost));
     setQuantityCap(row.quantity_cap != null ? String(row.quantity_cap) : "");
+    setMaxPerCustomer(
+      row.max_redemptions_per_user != null ? String(row.max_redemptions_per_user) : "",
+    );
     setMenuItemId(row.menu_item_id);
     setSheetOpen(true);
   };
@@ -82,7 +88,11 @@ export default function VoucherStudioPage() {
       if (!Number.isFinite(pc) || pc < 1) throw new Error("Invalid points cost");
       const cap =
         quantityCap.trim() === "" ? null : parseInt(quantityCap, 10);
-      if (cap != null && (!Number.isFinite(cap) || cap < 1)) throw new Error("Invalid cap");
+      if (cap != null && (!Number.isFinite(cap) || cap < 1)) throw new Error("Invalid total cap");
+      const perUser =
+        maxPerCustomer.trim() === "" ? null : parseInt(maxPerCustomer, 10);
+      if (perUser != null && (!Number.isFinite(perUser) || perUser < 1))
+        throw new Error("Invalid max per customer");
 
       if (editing) {
         const { error } = await supabase
@@ -91,6 +101,7 @@ export default function VoucherStudioPage() {
             title: title.trim(),
             points_cost: pc,
             quantity_cap: cap,
+            max_redemptions_per_user: perUser,
             menu_item_id: menuItemId,
             updated_at: new Date().toISOString(),
           })
@@ -102,6 +113,7 @@ export default function VoucherStudioPage() {
           title: title.trim(),
           points_cost: pc,
           quantity_cap: cap,
+          max_redemptions_per_user: perUser,
           menu_item_id: menuItemId,
           active: true,
           sort_order: rows.length,
@@ -172,7 +184,10 @@ export default function VoucherStudioPage() {
                   <p className="text-sm text-muted-foreground">
                     {r.points_cost} pts
                     {!r.active ? " · hidden" : ""}
-                    {r.quantity_cap != null ? ` · cap ${r.quantity_cap}` : ""}
+                    {r.quantity_cap != null ? ` · total cap ${r.quantity_cap}` : ""}
+                    {r.max_redemptions_per_user != null
+                      ? ` · max ${r.max_redemptions_per_user}/customer`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -215,11 +230,26 @@ export default function VoucherStudioPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Quantity cap (optional)</Label>
+              <Label>Total redemptions cap (optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Max vouchers for this reward across <strong>all customers</strong>. Leave blank for unlimited.
+              </p>
               <Input
                 placeholder="Unlimited"
                 value={quantityCap}
                 onChange={(e) => setQuantityCap(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Max per customer (optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Max times each customer can redeem this reward (lifetime).
+              </p>
+              <Input
+                placeholder="Unlimited"
+                value={maxPerCustomer}
+                onChange={(e) => setMaxPerCustomer(e.target.value)}
                 className="h-11"
               />
             </div>

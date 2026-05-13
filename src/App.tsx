@@ -32,6 +32,7 @@ import CampaignClaimSuccessPage from "./pages/CampaignClaimSuccessPage";
 import OrgPublicPage from "./pages/OrgPublicPage";
 import AllMyCafesPage from "./pages/loyalty/AllMyCafesPage";
 import ShopFanDashboardPage from "./pages/loyalty/ShopFanDashboardPage";
+import ShopPointsActivityPage from "./pages/loyalty/ShopPointsActivityPage";
 import ShopLoyaltyManagerPage from "./pages/host/ShopLoyaltyManagerPage";
 import VoucherStudioPage from "./pages/host/VoucherStudioPage";
 
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/campaigns/:campaignId/claim/success" element={<CampaignClaimSuccessPage />} />
               <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
               <Route path="/loyalty/cafes" element={<AllMyCafesPage />} />
+              <Route path="/loyalty/orgs/:orgId/activity" element={<ShopPointsActivityPage />} />
               <Route path="/loyalty/orgs/:orgId" element={<ShopFanDashboardPage />} />
               <Route path="/host/org/:orgId/loyalty" element={<ShopLoyaltyManagerPage />} />
               <Route path="/host/org/:orgId/loyalty/vouchers" element={<VoucherStudioPage />} />

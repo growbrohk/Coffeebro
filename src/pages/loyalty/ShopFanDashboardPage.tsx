@@ -1,14 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShopInsightsTab } from "@/components/loyalty/ShopInsightsTab";
-import { ShopRewardsTab } from "@/components/loyalty/ShopRewardsTab";
+import { ArrowLeft, History } from "lucide-react";
 
 export default function ShopFanDashboardPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
+  const { data: balance = 0, isLoading: balLoading } = useLoyaltyBalance(orgId);
 
   const goBack = () => {
     if (!orgId) return;
@@ -52,6 +48,29 @@ export default function ShopFanDashboardPage() {
           <ArrowLeft className="h-6 w-6" />
         </button>
         <h1 className="font-heading text-xl font-bold tracking-normal">{name}</h1>
+      </div>
+
+      <div className="px-4 pt-4">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-gradient-to-r from-primary/20 to-background p-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Your points
+            </p>
+            <p className="mt-0.5 font-heading text-3xl font-bold tabular-nums text-primary">
+              {balLoading ? "…" : balance}
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={() => navigate(`/loyalty/orgs/${orgId}/activity`)}
+          >
+            <History className="h-4 w-4" />
+            Activity
+          </Button>
+        </div>
       </div>
 
       <div className="px-4 py-4">

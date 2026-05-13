@@ -700,6 +700,7 @@ export type Database = {
           points_cost: number
           active: boolean
           quantity_cap: number | null
+          max_redemptions_per_user: number | null
           sort_order: number
           created_at: string
           updated_at: string
@@ -712,6 +713,7 @@ export type Database = {
           points_cost: number
           active?: boolean
           quantity_cap?: number | null
+          max_redemptions_per_user?: number | null
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -724,6 +726,7 @@ export type Database = {
           points_cost?: number
           active?: boolean
           quantity_cap?: number | null
+          max_redemptions_per_user?: number | null
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -964,6 +967,24 @@ export type Database = {
       redeem_catalog_item: {
         Args: { p_catalog_id: string }
         Returns: Json
+      }
+      get_loyalty_activity_feed: {
+        Args: { p_org_id: string; p_limit?: number }
+        Returns: {
+          kind: string
+          occurred_at: string
+          delta: number
+          title: string
+          detail_json: Json
+          ledger_id: string
+        }[]
+      }
+      get_loyalty_catalog_availability: {
+        Args: { p_org_id: string }
+        Returns: {
+          catalog_id: string
+          minted_all: number
+        }[]
       }
       upsert_shop_loyalty_settings: {
         Args: { p_org_id: string; p_cents_per_point: number }
