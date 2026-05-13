@@ -10,6 +10,10 @@ export default function ShopFanDashboardPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
 
+  const goBack = () => {
+    if (!orgId) return;
+    navigate(`/org/${orgId}/menu`);
+  };
   const { data: org } = useQuery({
     queryKey: ["org-name", orgId],
     queryFn: async () => {
@@ -41,7 +45,7 @@ export default function ShopFanDashboardPage() {
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="absolute left-0 p-2"
           aria-label="Back"
         >
