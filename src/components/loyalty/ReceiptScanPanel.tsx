@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useReceiptScan } from "@/hooks/useReceiptScan";
 import { useToast } from "@/hooks/use-toast";
+import { compressReceiptImage } from "@/lib/compressReceiptImage";
 import { Loader2, Camera } from "lucide-react";
 
 export function ReceiptScanPanel({
@@ -16,8 +17,30 @@ export function ReceiptScanPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const scan = useReceiptScan();
   const { toast } = useToast();
+
+  const handleFileChange = async (raw: File | null) => {
+    if (preview) URL.revokeObjectURL(preview);
+    if (!raw) {
+      setFile(null);
+      setPreview(null);
+      return;
+    }
+
+    setPreparing(true);
+    setFile(null);
+    setPreview(null);
+    try {
+      const compressed = await compressReceiptImage(raw);
+      setFile(compressed);
+      setPreview(URL.createObjectURL(compressed));
+    } finally {
+      setPreparing(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="space-y-4 rounded-2xl bg-white/10 p-4 text-primary-foreground">
@@ -31,11 +54,9 @@ export function ReceiptScanPanel({
           accept="image/jpeg,image/png,image/webp"
           capture="environment"
           className="hidden"
+          disabled={preparing}
           onChange={(e) => {
-            const f = e.target.files?.[0] ?? null;
-            setFile(f);
-            if (preview) URL.revokeObjectURL(preview);
-            setPreview(f ? URL.createObjectURL(f) : null);
+            void handleFileChange(e.target.files?.[0] ?? null);
           }}
         />
         <div className="space-y-2">
@@ -43,10 +64,20 @@ export function ReceiptScanPanel({
             type="button"
             variant="secondary"
             className="w-full gap-2 rounded-full"
+            disabled={preparing}
             onClick={() => inputRef.current?.click()}
           >
-            <Camera className="h-4 w-4" />
-            {file ? "Change photo" : "Take / choose photo"}
+            {preparing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Preparing photo…
+              </>
+            ) : (
+              <>
+                <Camera className="h-4 w-4" />
+                {file ? "Change photo" : "Take / choose photo"}
+              </>
+            )}
           </Button>
           {file && !preview && (
             <span className="block truncate text-xs">{file.name}</span>
@@ -63,7 +94,7 @@ export function ReceiptScanPanel({
       <Button
         type="button"
         className="w-full bg-primary-foreground font-semibold text-primary hover:bg-primary-foreground/90"
-        disabled={!file || scan.isPending}
+        disabled={!file || preparing || scan.isPending}
         onClick={async () => {
           if (!file) return;
           try {
