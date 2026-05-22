@@ -70,10 +70,9 @@ export function CoffeeDetailsSheet({
   prefill,
   lockCoffeeShop = false,
 }: CoffeeDetailsSheetProps) {
-  const [locationKind, setLocationKind] = useState<LocationKind>('home');
+  const [locationKind, setLocationKind] = useState<LocationKind>('org');
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [placeOtherFree, setPlaceOtherFree] = useState('');
-  const [orgComboOpen, setOrgComboOpen] = useState(false);
   const [orgSearch, setOrgSearch] = useState('');
 
   const [coffeeType, setCoffeeType] = useState<string | null>(null);
@@ -291,11 +290,10 @@ export function CoffeeDetailsSheet({
   };
 
   const resetForm = () => {
-    setLocationKind('home');
+    setLocationKind('org');
     setSelectedOrgId(null);
     setPlaceOtherFree('');
     setOrgSearch('');
-    setOrgComboOpen(false);
     resetCoffeeFields();
     setOrgMenuComboOpen(false);
     setTastingNotes('');
@@ -428,69 +426,62 @@ export function CoffeeDetailsSheet({
                         <span className="truncate">{orgDisplayName || '…'}</span>
                       </div>
                     ) : (
-                      <Popover open={orgComboOpen} onOpenChange={setOrgComboOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={orgComboOpen}
-                            className={cn(
-                              'w-full justify-between rounded-full border-0 font-normal shadow-none',
-                              inputOnOrange,
-                            )}
-                            disabled={discoveryLoading}
-                          >
-                            {discoveryLoading
-                              ? 'Loading venues...'
-                              : selectedOrg
-                                ? selectedOrg.org_name
-                                : 'Search venues...'}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                          <Command shouldFilter={false}>
-                            <CommandInput
-                              placeholder="Search venues..."
-                              value={orgSearch}
-                              onValueChange={setOrgSearch}
-                            />
-                            <CommandList>
-                              <CommandEmpty>No venue found.</CommandEmpty>
-                              <CommandGroup>
-                                {filteredOrgs.map((o) => (
-                                  <CommandItem
-                                    key={o.id}
-                                    value={o.id}
-                                    onSelect={() => {
+                      <>
+                        <Input
+                          placeholder="Search venues..."
+                          value={orgSearch}
+                          onChange={(e) => setOrgSearch(e.target.value)}
+                          className={inputOnOrange}
+                          disabled={discoveryLoading}
+                          autoComplete="off"
+                        />
+                        <div
+                          className={cn(
+                            'max-h-52 overflow-y-auto rounded-2xl bg-white text-foreground shadow-sm',
+                            discoveryLoading && 'opacity-70',
+                          )}
+                        >
+                          {discoveryLoading ? (
+                            <p className="px-4 py-3 text-sm text-muted-foreground">Loading venues...</p>
+                          ) : filteredOrgs.length === 0 ? (
+                            <p className="px-4 py-3 text-sm text-muted-foreground">No venue found.</p>
+                          ) : (
+                            <ul className="p-1">
+                              {filteredOrgs.map((o) => (
+                                <li key={o.id}>
+                                  <button
+                                    type="button"
+                                    className={cn(
+                                      'flex w-full items-start gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
+                                      selectedOrgId === o.id ? 'bg-muted' : 'hover:bg-muted/60',
+                                    )}
+                                    onClick={() => {
                                       setSelectedOrgId(o.id);
                                       resetCoffeeFields();
-                                      setOrgComboOpen(false);
                                       setOrgSearch('');
                                     }}
                                   >
                                     <Check
                                       className={cn(
-                                        'mr-2 h-4 w-4',
+                                        'mt-0.5 h-4 w-4 shrink-0',
                                         selectedOrgId === o.id ? 'opacity-100' : 'opacity-0',
                                       )}
                                     />
-                                    <span className="flex flex-col gap-0.5">
-                                      <span>{o.org_name}</span>
+                                    <span className="flex min-w-0 flex-col gap-0.5">
+                                      <span className="font-medium">{o.org_name}</span>
                                       {(o.location || o.district) && (
                                         <span className="text-xs text-muted-foreground">
                                           {[o.district, o.location].filter(Boolean).join(' · ')}
                                         </span>
                                       )}
                                     </span>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
