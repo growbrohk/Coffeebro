@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ImageIcon, MapPin, Trash2 } from 'lucide-react';
+import { ArrowLeft, ImageIcon, MapPin, Search, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs, type Org } from '@/hooks/useOrgs';
@@ -165,6 +165,7 @@ export default function AdminOrgsPage() {
     queryClient.invalidateQueries({ queryKey: ['org-staff-assignments'] });
   };
 
+  const [orgSearchQuery, setOrgSearchQuery] = useState('');
   const [activeOrgId, setActiveOrgId] = useState<string | null | 'new' | 'idle'>('idle');
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
@@ -288,6 +289,18 @@ export default function AdminOrgsPage() {
     base.sort((a, b) => a.localeCompare(b));
     return base;
   }, [draft.district, draft.mtr_station]);
+
+  const filteredOrgs = useMemo(() => {
+    const q = orgSearchQuery.trim().toLowerCase();
+    if (!q) return orgs;
+    return orgs.filter(
+      (o) =>
+        (o.org_name ?? '').toLowerCase().includes(q) ||
+        (o.mtr_station ?? '').toLowerCase().includes(q) ||
+        (o.district ?? '').toLowerCase().includes(q) ||
+        (o.location ?? '').toLowerCase().includes(q)
+    );
+  }, [orgs, orgSearchQuery]);
 
   const mapCoordHint = useMemo(() => {
     const lat = parseCoord(draft.latStr);
@@ -704,7 +717,7 @@ export default function AdminOrgsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="flex min-h-screen flex-col bg-background pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
         <button type="button" onClick={() => navigate('/settings')} className="absolute left-0 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
@@ -712,21 +725,35 @@ export default function AdminOrgsPage() {
         <h1 className="font-heading text-2xl font-bold tracking-normal">Organizations</h1>
       </div>
 
-      <div className="container max-w-lg space-y-6 px-4 py-6">
-        <div className="space-y-2">
+      <div className="container flex max-w-lg flex-1 flex-col space-y-6 px-4 py-6">
+        <div className="flex min-h-0 flex-1 flex-col space-y-2">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">All organizations</h2>
             <Button type="button" size="sm" onClick={handleNewOrg}>
               New organization
             </Button>
           </div>
+          <div className="relative flex items-center gap-2 rounded-full border border-border/60 bg-muted/50 px-3 py-2.5">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={2} aria-hidden />
+            <input
+              type="search"
+              value={orgSearchQuery}
+              onChange={(e) => setOrgSearchQuery(e.target.value)}
+              placeholder="Search organizations…"
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              autoComplete="off"
+              aria-label="Search organizations"
+            />
+          </div>
           {orgsLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : orgs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No organizations yet.</p>
+          ) : filteredOrgs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No organizations match your search.</p>
           ) : (
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
-              {orgs.map((o) => (
+            <ul className="min-h-[calc(100dvh-15rem)] flex-1 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+              {filteredOrgs.map((o) => (
                 <li key={o.id} className="flex items-center gap-2 rounded-lg p-1 hover:bg-muted/50">
                   <button
                     type="button"
