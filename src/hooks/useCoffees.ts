@@ -212,6 +212,17 @@ export function useTodayCoffees() {
   });
 }
 
+/** Display label for a logged drink (calendar, detail dialog). */
+export function drinkLabelFromDailyCoffee(row: {
+  log_item: string | null;
+  log_item_other: string | null;
+}): string {
+  if (row.log_item === 'Other') {
+    return row.log_item_other?.trim() || 'Coffee';
+  }
+  return row.log_item?.trim() || 'Coffee';
+}
+
 function drinkLabelFromRow(row: {
   log_item: string | null;
   log_item_other: string | null;

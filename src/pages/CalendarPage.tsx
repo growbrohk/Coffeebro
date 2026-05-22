@@ -9,7 +9,9 @@ import {
   useMonthlyCoffees,
   useCalendarMonthCoffeeCount,
   useCoffeeStreak,
+  drinkLabelFromDailyCoffee,
 } from '@/hooks/useCoffees';
+import { CoffeeLogDetailDialog } from '@/components/CoffeeLogDetailDialog';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
 import { localYMD } from '@/lib/date';
@@ -45,13 +47,6 @@ function buildMonthWeeks(daysInMonth: number, firstDay: number): (number | null)
   return weeks;
 }
 
-function drinkLabel(row: DailyCoffeeRow): string {
-  if (row.log_item === 'Other') {
-    return row.log_item_other?.trim() || 'Coffee';
-  }
-  return row.log_item?.trim() || 'Coffee';
-}
-
 /** Third row of the grid when there are ≥3 weeks; otherwise last row. */
 function showMonthChevronsOnWeek(weekIndex: number, weekCount: number): boolean {
   if (weekCount <= 0) return false;
@@ -64,6 +59,7 @@ export default function CalendarPage() {
   const logCoffee = useLogCoffeeEntry();
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(() => new Date().getDate());
+  const [selectedEntry, setSelectedEntry] = useState<DailyCoffeeRow | null>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -259,10 +255,18 @@ export default function CalendarPage() {
                   hour12: false,
                 });
                 const tastingText = entry.tasting_notes?.trim();
+                const drink = drinkLabelFromDailyCoffee(entry);
+                const placeText = entry.place?.trim();
+                const detailLabel = placeText
+                  ? `View details for ${drink} at ${placeText}`
+                  : `View details for ${drink}`;
                 return (
-                  <div
+                  <button
                     key={entry.id}
-                    className="flex items-start gap-4 py-3 first:pt-0 last:pb-0"
+                    type="button"
+                    onClick={() => setSelectedEntry(entry)}
+                    aria-label={detailLabel}
+                    className="flex w-full cursor-pointer items-start gap-4 rounded-lg py-3 text-left transition-colors first:pt-0 last:pb-0 hover:bg-black/[0.03] active:bg-black/[0.05]"
                   >
                     <CoffeeCupIcon
                       fill={COFFEE_CUP_FILL_3}
@@ -276,14 +280,14 @@ export default function CalendarPage() {
                         {entry.log_type === 'voucher' ? (
                           <Ticket className="h-4 w-4 shrink-0 text-primary" aria-label="Voucher" />
                         ) : null}
-                        <span className="truncate">{drinkLabel(entry)}</span>
+                        <span className="truncate">{drink}</span>
                         {entry.log_type === 'voucher' ? (
                           <span className="shrink-0 text-xs font-normal text-muted-foreground">Voucher</span>
                         ) : null}
                       </p>
-                      {entry.place?.trim() ? (
+                      {placeText ? (
                         <p className="mt-0.5 truncate text-sm font-normal leading-snug text-muted-foreground">
-                          {entry.place.trim()}
+                          {placeText}
                         </p>
                       ) : null}
                       {tastingText ? (
@@ -292,7 +296,7 @@ export default function CalendarPage() {
                         </p>
                       ) : null}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -300,6 +304,13 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      <CoffeeLogDetailDialog
+        entry={selectedEntry}
+        open={selectedEntry != null}
+        onOpenChange={(open) => {
+          if (!open) setSelectedEntry(null);
+        }}
+      />
     </div>
   );
 }
