@@ -6,6 +6,13 @@ import { corsHeaders } from "../_shared/cors.ts";
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
+const DEFAULT_MODEL_FALLBACKS = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview-06-17",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+];
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -19,6 +26,105 @@ type ParsedReceipt = {
   total_cents: number;
   line_items?: { name?: string; qty?: number; unit_price_cents?: number }[];
 };
+
+function modelCandidates(): string[] {
+  const envModel = Deno.env.get("GEMINI_MODEL")?.trim();
+  const list = envModel ? [envModel, ...DEFAULT_MODEL_FALLBACKS] : DEFAULT_MODEL_FALLBACKS;
+  return [...new Set(list)];
+}
+
+function usesThinkingBudget(model: string): boolean {
+  return model.includes("flash-lite");
+}
+
+function parseReceiptJson(text: string): ParsedReceipt | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed) as ParsedReceipt;
+  } catch {
+    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced?.[1]) {
+      try {
+        return JSON.parse(fenced[1].trim()) as ParsedReceipt;
+      } catch {
+        return null;
+      }
+    }
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(trimmed.slice(start, end + 1)) as ParsedReceipt;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+async function callGemini(
+  geminiKey: string,
+  model: string,
+  mime: string,
+  b64: string,
+  prompt: string,
+): Promise<{ ok: true; text: string } | { ok: false; status: number; body: string }> {
+  const gemUrl =
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`;
+
+  const generationConfig: Record<string, unknown> = {
+    responseMimeType: "application/json",
+    temperature: 0.2,
+  };
+  if (usesThinkingBudget(model)) {
+    generationConfig.thinking_config = { thinking_budget: 0 };
+  }
+
+  const gemRes = await fetch(gemUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { inline_data: { mime_type: mime, data: b64 } },
+            { text: prompt },
+          ],
+        },
+      ],
+      generationConfig,
+    }),
+  });
+
+  if (!gemRes.ok) {
+    return { ok: false, status: gemRes.status, body: await gemRes.text() };
+  }
+
+  const gemJson = (await gemRes.json()) as {
+    candidates?: {
+      content?: { parts?: { text?: string }[] };
+      finishReason?: string;
+    }[];
+    promptFeedback?: { blockReason?: string };
+  };
+
+  const blockReason = gemJson.promptFeedback?.blockReason;
+  if (blockReason) {
+    return { ok: false, status: 400, body: `blocked:${blockReason}` };
+  }
+
+  const text =
+    gemJson.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  if (!text.trim()) {
+    const finish = gemJson.candidates?.[0]?.finishReason ?? "NO_TEXT";
+    return { ok: false, status: 400, body: `empty:${finish}` };
+  }
+
+  return { ok: true, text };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -38,8 +144,6 @@ Deno.serve(async (req) => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const geminiKey = Deno.env.get("GEMINI_API_KEY");
-  // Gemini 3.1 Flash-Lite GA: structured receipt extraction (see ai.google.dev model list).
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.1-flash-lite";
 
   if (!geminiKey) {
     return json({ error: "SERVER_CONFIG", message: "GEMINI_API_KEY not set" }, 500);
@@ -114,46 +218,33 @@ Deno.serve(async (req) => {
  "line_items": array of { "name": string, "qty": number, "unit_price_cents": integer } (optional).
 If uncertain about total_cents, estimate from line items. Currency is typically HKD for Hong Kong receipts.`;
 
-  const gemUrl =
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`;
+  const models = modelCandidates();
+  let parsed: ParsedReceipt | null = null;
+  let lastGeminiError = "";
 
-  const gemRes = await fetch(gemUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { inline_data: { mime_type: mime, data: b64 } },
-            { text: prompt },
-          ],
-        },
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.2,
-      },
-    }),
-  });
-
-  if (!gemRes.ok) {
-    const t = await gemRes.text();
-    console.error("Gemini error", gemRes.status, t);
-    return json({ error: "PARSE_FAILED", message: "Could not read receipt" }, 422);
+  for (const model of models) {
+    const result = await callGemini(geminiKey, model, mime, b64, prompt);
+    if (!result.ok) {
+      lastGeminiError = `${model}:${result.status}:${result.body.slice(0, 200)}`;
+      console.error("Gemini error", lastGeminiError);
+      // Retry on model-not-found / unsupported; stop on auth/quota if desired
+      if (result.status === 404 || result.status === 400) {
+        continue;
+      }
+      break;
+    }
+    parsed = parseReceiptJson(result.text);
+    if (parsed) {
+      console.log("Receipt parsed with model", model);
+      break;
+    }
+    lastGeminiError = `${model}:invalid_json`;
+    console.error("Gemini invalid JSON", model, result.text.slice(0, 200));
   }
 
-  const gemJson = (await gemRes.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text =
-    gemJson.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
-
-  let parsed: ParsedReceipt;
-  try {
-    parsed = JSON.parse(text) as ParsedReceipt;
-  } catch {
-    return json({ error: "PARSE_FAILED", message: "Invalid model JSON" }, 422);
+  if (!parsed) {
+    console.error("All Gemini models failed", lastGeminiError);
+    return json({ error: "PARSE_FAILED", message: "Could not read receipt" }, 422);
   }
 
   const orderNo = String(parsed.order_no ?? "unknown").trim().toLowerCase();

@@ -24,9 +24,11 @@ function scaledDimensions(width: number, height: number): { width: number; heigh
   };
 }
 
+const BITMAP_OPTIONS: ImageBitmapOptions = { imageOrientation: "from-image" };
+
 async function loadBitmap(file: File): Promise<ImageBitmap> {
   if (typeof createImageBitmap === "function") {
-    return createImageBitmap(file);
+    return createImageBitmap(file, BITMAP_OPTIONS);
   }
   const url = URL.createObjectURL(file);
   try {
@@ -36,7 +38,7 @@ async function loadBitmap(file: File): Promise<ImageBitmap> {
       el.onerror = () => reject(new Error("Image decode failed"));
       el.src = url;
     });
-    return createImageBitmap(img);
+    return createImageBitmap(img, BITMAP_OPTIONS);
   } finally {
     URL.revokeObjectURL(url);
   }

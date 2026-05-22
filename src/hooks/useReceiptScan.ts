@@ -22,20 +22,20 @@ export function useReceiptScan() {
         body: form,
       });
 
-      if (error) {
-        return {
-          ok: false as const,
-          code: "INVOKE_ERROR",
-          message: error.message ?? "Scan failed",
-        };
-      }
-
       if (data && typeof data === "object" && "error" in data) {
         const err = data as { error?: string; message?: string };
         return {
           ok: false as const,
           code: err.error ?? "ERROR",
           message: err.message ?? "Scan failed",
+        };
+      }
+
+      if (error) {
+        return {
+          ok: false as const,
+          code: "INVOKE_ERROR",
+          message: error.message ?? "Scan failed",
         };
       }
 
