@@ -2,11 +2,47 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMyVouchers } from '@/hooks/useMyVouchers';
+import {
+  getVoucherRedemptionDeadline,
+  isVoucherWalletActive,
+  useMyVouchers,
+  type MyVoucher,
+} from '@/hooks/useMyVouchers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
+
+function compareCreatedDesc(a: MyVoucher, b: MyVoucher): number {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
+function compareInactiveTieBreak(a: MyVoucher, b: MyVoucher): number {
+  const aRedeemed = a.redeemed_at ? new Date(a.redeemed_at).getTime() : 0;
+  const bRedeemed = b.redeemed_at ? new Date(b.redeemed_at).getTime() : 0;
+  if (aRedeemed !== bRedeemed) return bRedeemed - aRedeemed;
+  return compareCreatedDesc(a, b);
+}
+
+function compareDeadlineAsc(a: MyVoucher, b: MyVoucher): number {
+  const aDeadline = getVoucherRedemptionDeadline(a);
+  const bDeadline = getVoucherRedemptionDeadline(b);
+  if (aDeadline == null && bDeadline == null) return compareCreatedDesc(a, b);
+  if (aDeadline == null) return 1;
+  if (bDeadline == null) return -1;
+  if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+  return compareCreatedDesc(a, b);
+}
+
+function compareDeadlineDesc(a: MyVoucher, b: MyVoucher): number {
+  const aDeadline = getVoucherRedemptionDeadline(a);
+  const bDeadline = getVoucherRedemptionDeadline(b);
+  if (aDeadline == null && bDeadline == null) return compareInactiveTieBreak(a, b);
+  if (aDeadline == null) return 1;
+  if (bDeadline == null) return -1;
+  if (aDeadline !== bDeadline) return bDeadline - aDeadline;
+  return compareInactiveTieBreak(a, b);
+}
 
 export default function MyVouchersPage() {
   const navigate = useNavigate();
@@ -14,14 +50,15 @@ export default function MyVouchersPage() {
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: vouchers = [], isLoading } = useMyVouchers();
 
-  const sortedVouchers = useMemo(() => {
-    return [...vouchers].sort((a, b) => {
-      const aActive = a.status === 'active' ? 0 : 1;
-      const bActive = b.status === 'active' ? 0 : 1;
-      if (aActive !== bActive) return aActive - bActive;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [vouchers]);
+  const activeVouchers = useMemo(
+    () => vouchers.filter(isVoucherWalletActive).sort(compareDeadlineAsc),
+    [vouchers],
+  );
+
+  const inactiveVouchers = useMemo(
+    () => vouchers.filter((v) => !isVoucherWalletActive(v)).sort(compareDeadlineDesc),
+    [vouchers],
+  );
 
   const showHostScan = Boolean(user && !roleLoading && canHostEvent);
 
@@ -80,7 +117,7 @@ export default function MyVouchersPage() {
       {header}
 
       <div className="px-4 py-6">
-        {sortedVouchers.length === 0 ? (
+        {vouchers.length === 0 ? (
           <div className="mx-auto max-w-sm space-y-3 py-12 text-center">
             <Ticket className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">No vouchers yet.</p>
@@ -92,10 +129,27 @@ export default function MyVouchersPage() {
             </Button>
           </div>
         ) : (
-          <div className="mx-auto flex max-w-sm flex-col gap-3">
-            {sortedVouchers.map((v) => (
-              <WalletVoucherCard key={v.id} voucher={v} />
-            ))}
+          <div className="mx-auto max-w-sm">
+            {activeVouchers.length > 0 ? (
+              <section>
+                <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Active</h2>
+                <div className="flex flex-col gap-3">
+                  {activeVouchers.map((v) => (
+                    <WalletVoucherCard key={v.id} voucher={v} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {inactiveVouchers.length > 0 ? (
+              <section className={activeVouchers.length > 0 ? 'mt-8' : undefined}>
+                <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Expired/Used</h2>
+                <div className="flex flex-col gap-3">
+                  {inactiveVouchers.map((v) => (
+                    <WalletVoucherCard key={v.id} voucher={v} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         )}
       </div>

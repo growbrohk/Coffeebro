@@ -74,6 +74,42 @@ export function formatVoucherRedemptionPeriod(
   return "—";
 }
 
+function parseRedemptionDeadline(
+  expiresAt: string | null | undefined,
+  eventDate: string | null | undefined,
+): number | null {
+  if (expiresAt) {
+    const t = new Date(expiresAt).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+  if (eventDate) {
+    const t = new Date(eventDate + "T12:00:00").getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+  return null;
+}
+
+export function getVoucherRedemptionDeadline(v: MyVoucher): number | null {
+  return parseRedemptionDeadline(v.expires_at, v.event_date ?? null);
+}
+
+export function isVoucherWalletActive(v: MyVoucher): boolean {
+  if (v.status !== "active") return false;
+  const deadline = getVoucherRedemptionDeadline(v);
+  if (deadline == null) return true;
+  return deadline >= Date.now();
+}
+
+export function isVoucherWalletExpired(v: MyVoucher): boolean {
+  if (isVoucherWalletActive(v)) return false;
+  if (v.status === "expired") return true;
+  if (v.status === "active") {
+    const deadline = getVoucherRedemptionDeadline(v);
+    return deadline != null && deadline < Date.now();
+  }
+  return false;
+}
+
 export function useMyVouchers() {
   const { user } = useAuth();
 

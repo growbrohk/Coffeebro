@@ -5,7 +5,11 @@ import { QrCodeDialog } from '@/components/QrCodeDialog';
 import { VoucherDetailDialog } from '@/components/VoucherDetailDialog';
 import { cn } from '@/lib/utils';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
-import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
+import {
+  formatVoucherRedemptionPeriod,
+  isVoucherWalletActive,
+  isVoucherWalletExpired,
+} from '@/hooks/useMyVouchers';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 
 function inactiveLabel(status: MyVoucher['status']): string {
@@ -24,7 +28,8 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   const [qrOpen, setQrOpen] = useState(false);
   const { startLogCoffeeFromVoucher } = useLogCoffeeEntry();
 
-  const isActive = voucher.status === 'active';
+  const isActive = isVoucherWalletActive(voucher);
+  const isExpired = isVoucherWalletExpired(voucher);
   const isRedeemed = voucher.status === 'redeemed';
   const hasReview = Boolean(voucher.review);
   const redemption = formatVoucherRedemptionPeriod(voucher.expires_at, voucher.event_date ?? null);
@@ -47,7 +52,8 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
       <div
         className={cn(
           'tap-card flex gap-3 rounded-2xl bg-card p-4 shadow-soft transition-[transform,box-shadow] duration-200 ease-out',
-          !isActive && !isRedeemed && 'opacity-50',
+          isExpired && 'opacity-50',
+          !isActive && !isRedeemed && !isExpired && 'opacity-50',
           isRedeemed && 'opacity-80'
         )}
       >
@@ -99,6 +105,10 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
                 show QR
               </Button>
             </>
+          ) : isExpired ? (
+            <span className="text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              expired
+            </span>
           ) : isRedeemed ? (
             <>
               <span className="text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
