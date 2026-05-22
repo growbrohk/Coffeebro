@@ -15,6 +15,7 @@ import { CoffeeLogDetailDialog } from '@/components/CoffeeLogDetailDialog';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
 import { CalendarDayCell } from '@/components/CalendarDayCell';
 import { localYMD } from '@/lib/date';
+import { formatHkd, formatReceiptItemsSummary } from '@/lib/receiptDisplay';
 import type { Database } from '@/integrations/supabase/types';
 
 const MONTHS = [
@@ -255,11 +256,30 @@ export default function CalendarPage() {
                   hour12: false,
                 });
                 const tastingText = entry.tasting_notes?.trim();
+                const isReceipt = entry.log_type === 'receipt';
+                const receiptTotal =
+                  isReceipt && entry.receipt_amount_cents != null
+                    ? formatHkd(entry.receipt_amount_cents)
+                    : null;
+                const receiptItemsSummary = isReceipt
+                  ? formatReceiptItemsSummary(entry.receipt_line_items)
+                  : '';
                 const drink = drinkLabelFromDailyCoffee(entry);
                 const placeText = entry.place?.trim();
-                const detailLabel = placeText
-                  ? `View details for ${drink} at ${placeText}`
-                  : `View details for ${drink}`;
+                const rowTitle = isReceipt
+                  ? receiptItemsSummary || 'Receipt'
+                  : drink;
+                const detailLabel = isReceipt
+                  ? receiptItemsSummary && receiptTotal
+                    ? `View receipt details, ${receiptItemsSummary}, ${receiptTotal}`
+                    : receiptItemsSummary
+                      ? `View receipt details, ${receiptItemsSummary}`
+                      : receiptTotal
+                        ? `View receipt details, ${receiptTotal}`
+                        : 'View receipt details'
+                  : placeText
+                    ? `View details for ${drink} at ${placeText}`
+                    : `View details for ${drink}`;
                 return (
                   <button
                     key={entry.id}
@@ -280,14 +300,22 @@ export default function CalendarPage() {
                         {entry.log_type === 'voucher' ? (
                           <Ticket className="h-4 w-4 shrink-0 text-primary" aria-label="Voucher" />
                         ) : null}
-                        <span className="truncate">{drink}</span>
+                        <span className="truncate">{rowTitle}</span>
                         {entry.log_type === 'voucher' ? (
                           <span className="shrink-0 text-xs font-normal text-muted-foreground">Voucher</span>
+                        ) : null}
+                        {isReceipt ? (
+                          <span className="shrink-0 text-xs font-normal text-muted-foreground">Receipt</span>
                         ) : null}
                       </p>
                       {placeText ? (
                         <p className="mt-0.5 truncate text-sm font-normal leading-snug text-muted-foreground">
                           {placeText}
+                        </p>
+                      ) : null}
+                      {isReceipt && receiptTotal ? (
+                        <p className="mt-0.5 truncate text-sm font-normal tabular-nums leading-snug text-muted-foreground">
+                          {receiptTotal}
                         </p>
                       ) : null}
                       {tastingText ? (
