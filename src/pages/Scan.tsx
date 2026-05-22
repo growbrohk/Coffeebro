@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
-import { ArrowLeft, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, XCircle, Loader2 } from 'lucide-react';
+import { HostRedeemSuccessModal } from '@/components/HostRedeemSuccessModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -12,15 +13,8 @@ import { readCampaignDetailReturnTo } from '@/lib/campaignDetailReturnNav';
 import { toast } from '@/hooks/use-toast';
 import { voucherOfferLabel } from '@/lib/voucherOfferLabels';
 
-type ResultType = "success" | "error" | null;
+type ResultType = "error" | null;
 type ResultMessage = string | null;
-
-type RedeemSuccessDetail = {
-  orgName: string | null;
-  campaignTitle: string | null;
-  itemName: string | null;
-  offerType: string | null;
-};
 
 export default function ScanPage() {
   const navigate = useNavigate();
@@ -34,7 +28,14 @@ export default function ScanPage() {
     type: null,
     message: null,
   });
-  const [successDetail, setSuccessDetail] = useState<RedeemSuccessDetail | null>(null);
+  const [successDetail, setSuccessDetail] = useState<{
+    orgName: string | null;
+    campaignTitle: string | null;
+    itemName: string | null;
+    offerType: string | null;
+    voucherCode: string | null;
+    ownerId: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [cameraStatus, setCameraStatus] = useState<string>('Initializing camera...');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -116,15 +117,15 @@ export default function ScanPage() {
       }
       
       if (res.status === "OK") {
-        setResult({ type: "success", message: res.message || "Redeemed" });
         const rawOffer = res.offer_type != null ? String(res.offer_type).trim() : "";
         setSuccessDetail({
           orgName: res.org_name ?? null,
           campaignTitle: res.campaign_title ?? null,
           itemName: res.item_name ?? null,
           offerType: rawOffer ? voucherOfferLabel(rawOffer) : null,
+          voucherCode: res.voucher_code ?? trimmedCode,
+          ownerId: res.owner_id ?? null,
         });
-        toast({ title: 'Voucher redeemed' });
         if (lastCodeTimerRef.current != null) {
           clearTimeout(lastCodeTimerRef.current);
         }
@@ -261,22 +262,26 @@ export default function ScanPage() {
           </TabsContent>
         </Tabs>
 
-        {result.type && (
-          <Alert variant={result.type === "error" ? "destructive" : "default"}>
-            {result.type === "success" ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-            <AlertDescription className="space-y-1">
+        {result.type === "error" && (
+          <Alert variant="destructive">
+            <XCircle className="h-4 w-4" />
+            <AlertDescription>
               <span className="block font-medium">{result.message}</span>
-              {result.type === "success" && successDetail && (
-                <span className="block text-sm text-muted-foreground">
-                  {[successDetail.orgName, successDetail.campaignTitle, successDetail.itemName, successDetail.offerType]
-                    .filter(Boolean)
-                    .join(" · ") || "Voucher redeemed."}
-                </span>
-              )}
             </AlertDescription>
           </Alert>
         )}
       </div>
+
+      <HostRedeemSuccessModal
+        open={successDetail !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSuccessDetail(null);
+            setResult({ type: null, message: null });
+          }
+        }}
+        detail={successDetail}
+      />
     </div>
   );
 }
