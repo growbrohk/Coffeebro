@@ -34,7 +34,7 @@ export default function ScanPage() {
     itemName: string | null;
     offerType: string | null;
     voucherCode: string | null;
-    ownerId: string | null;
+    ownerUsername: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [cameraStatus, setCameraStatus] = useState<string>('Initializing camera...');
@@ -124,7 +124,7 @@ export default function ScanPage() {
           itemName: res.item_name ?? null,
           offerType: rawOffer ? voucherOfferLabel(rawOffer) : null,
           voucherCode: res.voucher_code ?? trimmedCode,
-          ownerId: res.owner_id ?? null,
+          ownerUsername: res.owner_username ?? null,
         });
         if (lastCodeTimerRef.current != null) {
           clearTimeout(lastCodeTimerRef.current);

@@ -14,7 +14,7 @@ export type HostRedeemSuccessDetail = {
   itemName: string | null;
   offerType: string | null;
   voucherCode: string | null;
-  ownerId: string | null;
+  ownerUsername: string | null;
 };
 
 interface HostRedeemSuccessModalProps {
@@ -56,10 +56,10 @@ export function HostRedeemSuccessModal({
                 <span className="font-mono font-semibold">{detail.voucherCode.trim()}</span>
               </p>
             ) : null}
-            {detail?.ownerId?.trim() ? (
+            {detail?.ownerUsername?.trim() ? (
               <p>
-                <span className="font-semibold text-muted-foreground">User ID: </span>
-                <span className="break-all font-mono text-xs">{detail.ownerId.trim()}</span>
+                <span className="font-semibold text-muted-foreground">Username: </span>
+                <span className="font-semibold">{detail.ownerUsername.trim()}</span>
               </p>
             ) : null}
           </div>

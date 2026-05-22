@@ -1175,6 +1175,7 @@ export type Database = {
           offer_type: string | null
           org_name: string | null
           owner_id: string | null
+          owner_username: string | null
           status: string
           voucher_code: string | null
           voucher_id: string | null
