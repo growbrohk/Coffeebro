@@ -1,10 +1,31 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type ReceiptScanResult =
   | { ok: true; points_awarded: number; new_balance: number }
   | { ok: false; code: string; message: string };
+
+type ScanReceiptErrorBody = { error?: string; message?: string };
+
+async function parseScanReceiptInvokeError(
+  error: unknown,
+): Promise<{ code: string; message: string } | null> {
+  if (!(error instanceof FunctionsHttpError)) return null;
+  try {
+    const body = (await error.context.json()) as ScanReceiptErrorBody;
+    if (body && typeof body === "object" && typeof body.error === "string") {
+      return {
+        code: body.error,
+        message: body.message ?? "Scan failed",
+      };
+    }
+  } catch {
+    // Response body was not JSON — fall through to generic invoke error.
+  }
+  return null;
+}
 
 export function useReceiptScan() {
   const { user, session } = useAuth();
@@ -32,6 +53,10 @@ export function useReceiptScan() {
       }
 
       if (error) {
+        const parsed = await parseScanReceiptInvokeError(error);
+        if (parsed) {
+          return { ok: false as const, ...parsed };
+        }
         return {
           ok: false as const,
           code: "INVOKE_ERROR",

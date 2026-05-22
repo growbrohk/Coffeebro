@@ -91,7 +91,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "revision": "3d80fe8882d96b79b78989faee062706"
   }, {
     "url": "index.html",
-    "revision": "21bf6cf95168c243e2e0aa31271085b5"
+    "revision": "bec13f38c07a2681cfec96b1cf6a527d"
   }, {
     "url": "favicon.png",
     "revision": "bded9006240c02849570f21f32689383"
@@ -195,7 +195,7 @@ define(['./workbox-ca84f546'], (function (workbox) { 'use strict';
     "url": "brand/app-mark.png",
     "revision": "9653e59371e12a7e2187c0a935d0d19c"
   }, {
-    "url": "assets/index-BVHXF5Ds.js",
+    "url": "assets/index-DZlNivYP.js",
     "revision": null
   }, {
     "url": "assets/index-2Nnoligo.css",
