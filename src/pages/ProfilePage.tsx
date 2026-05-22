@@ -33,6 +33,9 @@ function isTempProfileUsername(name: string) {
 const profileCardClass =
   'rounded-[1.35rem] border border-[#E8E2D9] bg-[#FAF7F2] p-5 text-[#2E1A14]';
 
+const profileCardCtaClass =
+  'h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90';
+
 function listRankedWithCounts(
   items: { label: string; count: number }[],
   loading: boolean,
@@ -356,7 +359,7 @@ export default function ProfilePage() {
                   </p>
                   <Button
                     type="button"
-                    className="h-5 shrink-0 px-2.5 py-0 text-sm font-semibold leading-none text-primary-foreground hover:bg-primary/90"
+                    className={profileCardCtaClass}
                     onClick={() => navigate('/q/result')}
                   >
                     view my result
@@ -374,7 +377,7 @@ export default function ProfilePage() {
                 <div className="mt-4 flex justify-end">
                   <Button
                     type="button"
-                    className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    className={profileCardCtaClass}
                     onClick={() => navigate('/q')}
                   >
                     take my quiz
@@ -409,7 +412,7 @@ export default function ProfilePage() {
               )}
               <Button
                 type="button"
-                className="h-9 shrink-0 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                className={profileCardCtaClass}
                 onClick={() => navigate('/leaderboard')}
               >
                 view leaderboard
