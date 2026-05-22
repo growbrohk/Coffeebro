@@ -1,13 +1,12 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { useReceiptScan } from "@/hooks/useReceiptScan";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Camera } from "lucide-react";
 
 export function ReceiptScanPanel({
   orgId,
-  orgName,
+  orgName: _orgName,
   onSuccess,
 }: {
   orgId: string;
@@ -23,11 +22,9 @@ export function ReceiptScanPanel({
   return (
     <div className="space-y-4 rounded-2xl bg-white/10 p-4 text-primary-foreground">
       <p className="text-sm font-medium leading-snug">
-        Log this visit by scanning your receipt at <strong>{orgName}</strong>. Points are added from the
-        receipt total.
+        Scan your receipt to log points &amp; items!
       </p>
       <div className="space-y-2">
-        <Label className="text-primary-foreground">Receipt photo</Label>
         <input
           ref={inputRef}
           type="file"
@@ -41,18 +38,18 @@ export function ReceiptScanPanel({
             setPreview(f ? URL.createObjectURL(f) : null);
           }}
         />
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="space-y-2">
           <Button
             type="button"
             variant="secondary"
-            className="gap-2 rounded-full"
+            className="w-full gap-2 rounded-full"
             onClick={() => inputRef.current?.click()}
           >
             <Camera className="h-4 w-4" />
             {file ? "Change photo" : "Take / choose photo"}
           </Button>
           {file && !preview && (
-            <span className="flex max-w-[200px] items-center truncate text-xs">{file.name}</span>
+            <span className="block truncate text-xs">{file.name}</span>
           )}
         </div>
         {preview && (
