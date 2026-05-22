@@ -6,7 +6,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+
+function parseReceiptMatchNames(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function formatReceiptMatchNames(names: string[] | null | undefined): string {
+  return (names ?? []).join(", ");
+}
 
 export default function ShopLoyaltyManagerPage() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -14,6 +33,7 @@ export default function ShopLoyaltyManagerPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [cents, setCents] = useState("100");
+  const [receiptNames, setReceiptNames] = useState("");
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["shop-loyalty-settings", orgId],
@@ -21,7 +41,7 @@ export default function ShopLoyaltyManagerPage() {
       if (!orgId) return null;
       const { data, error } = await supabase
         .from("shop_loyalty_settings")
-        .select("cents_per_point")
+        .select("cents_per_point, receipt_match_names")
         .eq("org_id", orgId)
         .maybeSingle();
       if (error) throw error;
@@ -34,6 +54,9 @@ export default function ShopLoyaltyManagerPage() {
     if (settings?.cents_per_point != null) {
       setCents(String(settings.cents_per_point));
     }
+    if (settings?.receipt_match_names != null) {
+      setReceiptNames(formatReceiptMatchNames(settings.receipt_match_names));
+    }
   }, [settings]);
 
   const save = useMutation({
@@ -44,6 +67,7 @@ export default function ShopLoyaltyManagerPage() {
       const { error } = await supabase.rpc("upsert_shop_loyalty_settings", {
         p_org_id: orgId,
         p_cents_per_point: n,
+        p_receipt_match_names: parseReceiptMatchNames(receiptNames),
       });
       if (error) throw error;
     },
@@ -98,6 +122,23 @@ export default function ShopLoyaltyManagerPage() {
           />
           <p className="text-xs text-muted-foreground">
             Example: <strong>100</strong> means $1.00 HKD spend → 1 point.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="receipt-names">Receipt names</Label>
+          <Textarea
+            id="receipt-names"
+            className="min-h-[88px] resize-y"
+            placeholder="BLUE BOTTLE COFFEE LTD, % ARABICA"
+            value={receiptNames}
+            onChange={(e) => setReceiptNames(e.target.value)}
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Names printed on your receipts. Add any that differ from your shop name (e.g. legal entity or
+            POS name). No sample receipt upload needed — we match the name on the customer&apos;s receipt
+            against these.
           </p>
         </div>
 

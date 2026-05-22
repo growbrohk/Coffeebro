@@ -782,18 +782,21 @@ export type Database = {
           org_id: string
           cents_per_point: number
           redemption_mode: string
+          receipt_match_names: string[]
           updated_at: string
         }
         Insert: {
           org_id: string
           cents_per_point?: number
           redemption_mode?: string
+          receipt_match_names?: string[]
           updated_at?: string
         }
         Update: {
           org_id?: string
           cents_per_point?: number
           redemption_mode?: string
+          receipt_match_names?: string[]
           updated_at?: string
         }
         Relationships: [
@@ -987,7 +990,7 @@ export type Database = {
         }[]
       }
       upsert_shop_loyalty_settings: {
-        Args: { p_org_id: string; p_cents_per_point: number }
+        Args: { p_org_id: string; p_cents_per_point: number; p_receipt_match_names?: string[] }
         Returns: undefined
       }
       compute_campaign_claim_amount_cents: {

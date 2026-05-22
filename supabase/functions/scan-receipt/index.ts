@@ -24,8 +24,64 @@ type ParsedReceipt = {
   order_no: string;
   purchase_date: string;
   total_cents: number;
+  merchant_name?: string | null;
+  merchant_match?: boolean;
   line_items?: { name?: string; qty?: number; unit_price_cents?: number }[];
 };
+
+type OrgRow = {
+  id: string;
+  org_name: string;
+  location: string | null;
+  district: string | null;
+  phone: string | null;
+};
+
+function buildMatchNames(orgRow: OrgRow, receiptMatchNames: string[] | null): string[] {
+  const candidates = [
+    orgRow.org_name,
+    ...(receiptMatchNames ?? []),
+    orgRow.location,
+    orgRow.district,
+    orgRow.phone,
+  ];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of candidates) {
+    if (typeof raw !== "string") continue;
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function buildReceiptPrompt(orgRow: OrgRow, matchNames: string[]): string {
+  const aliasLine = matchNames.length > 0 ? matchNames.join(", ") : orgRow.org_name;
+  const addressParts = [orgRow.location, orgRow.district].filter(Boolean).join(" · ");
+
+  return `You are parsing a café / restaurant receipt photo.
+
+The customer selected this café:
+- Display name: "${orgRow.org_name}"
+- Also known as: ${aliasLine}
+${addressParts ? `- Address hint: "${addressParts}"` : ""}
+
+Extract JSON ONLY with this shape:
+{"order_no": string (receipt or invoice number, or "UNKNOWN"),
+ "purchase_date": string (ISO date YYYY-MM-DD in local receipt context),
+ "total_cents": integer (total amount in minor units e.g. HKD cents — if only major units shown, multiply by 100),
+ "line_items": array of { "name": string, "qty": number, "unit_price_cents": integer } (optional),
+ "merchant_name": string | null (business name printed on the receipt header/footer),
+ "merchant_match": boolean}
+
+Set merchant_match to true ONLY if the receipt clearly belongs to the selected café above.
+Set merchant_match to false if the receipt is from another business, or if you cannot confidently confirm it is from this café.
+If uncertain about total_cents, estimate from line items. Currency is typically HKD for Hong Kong receipts.`;
+}
 
 function modelCandidates(): string[] {
   const envModel = Deno.env.get("GEMINI_MODEL")?.trim();
@@ -192,7 +248,7 @@ Deno.serve(async (req) => {
 
   const { data: orgRow, error: orgErr } = await admin
     .from("orgs")
-    .select("id, org_name")
+    .select("id, org_name, location, district, phone")
     .eq("id", orgId)
     .maybeSingle();
 
@@ -203,6 +259,15 @@ Deno.serve(async (req) => {
     return json({ error: "ORG_NOT_FOUND", message: "Shop not found" }, 404);
   }
 
+  const { data: loyaltyRow } = await admin
+    .from("shop_loyalty_settings")
+    .select("receipt_match_names")
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  const matchNames = buildMatchNames(orgRow as OrgRow, loyaltyRow?.receipt_match_names ?? null);
+  const prompt = buildReceiptPrompt(orgRow as OrgRow, matchNames);
+
   const buf = new Uint8Array(await image.arrayBuffer());
   let binary = "";
   const chunk = 0x8000;
@@ -210,13 +275,6 @@ Deno.serve(async (req) => {
     binary += String.fromCharCode.apply(null, Array.from(buf.subarray(i, i + chunk)));
   }
   const b64 = btoa(binary);
-
-  const prompt = `You are parsing a café / restaurant receipt photo. Extract JSON ONLY with this shape:
-{"order_no": string (receipt or invoice number, or "UNKNOWN"),
- "purchase_date": string (ISO date YYYY-MM-DD in local receipt context),
- "total_cents": integer (total amount in minor units e.g. HKD cents — if only major units shown, multiply by 100),
- "line_items": array of { "name": string, "qty": number, "unit_price_cents": integer } (optional).
-If uncertain about total_cents, estimate from line items. Currency is typically HKD for Hong Kong receipts.`;
 
   const models = modelCandidates();
   let parsed: ParsedReceipt | null = null;
@@ -247,12 +305,26 @@ If uncertain about total_cents, estimate from line items. Currency is typically 
     return json({ error: "PARSE_FAILED", message: "Could not read receipt" }, 422);
   }
 
+  if (parsed.merchant_match !== true) {
+    const merchantName = parsed.merchant_name?.trim();
+    console.log("Receipt rejected: wrong shop", {
+      orgId,
+      orgName: orgRow.org_name,
+      merchantName: merchantName ?? null,
+      merchantMatch: parsed.merchant_match ?? false,
+    });
+    return json({
+      error: "WRONG_SHOP",
+      message: "This receipt doesn't appear to be from this café.",
+    }, 422);
+  }
+
   const orderNo = String(parsed.order_no ?? "unknown").trim().toLowerCase();
   const dateStr =
     String(parsed.purchase_date ?? "").trim().slice(0, 10) ||
     new Date().toISOString().slice(0, 10);
   const totalCents = Math.max(0, Math.round(Number(parsed.total_cents ?? 0)));
-  const receiptKey = `${orgId}|${orderNo}|${dateStr}`;
+  const receiptKey = `${orderNo}|${dateStr}|${totalCents}`;
   const items = parsed.line_items ?? [];
 
   const coffeeDate = dateStr.match(/^\d{4}-\d{2}-\d{2}$/) ? dateStr : new Date().toISOString().slice(0, 10);

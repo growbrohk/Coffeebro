@@ -7,7 +7,7 @@ import { Loader2, Camera } from "lucide-react";
 
 export function ReceiptScanPanel({
   orgId,
-  orgName: _orgName,
+  orgName,
   onSuccess,
 }: {
   orgId: string;
@@ -107,12 +107,16 @@ export function ReceiptScanPanel({
               });
               onSuccess();
             } else {
+              const description =
+                res.code === "ALREADY_CLAIMED"
+                  ? "This receipt has already been claimed."
+                  : res.code === "WRONG_SHOP"
+                    ? `This receipt doesn't look like it's from ${orgName || "this café"}. Scan a receipt from this café.`
+                    : res.message;
               toast({
                 variant: "destructive",
                 title: "Scan failed",
-                description: res.code === "ALREADY_CLAIMED"
-                  ? "This receipt has already been claimed."
-                  : res.message,
+                description,
               });
             }
           } catch (e) {
