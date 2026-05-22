@@ -357,7 +357,8 @@ export function useMyVouchers() {
     },
     enabled: !!user,
     refetchOnWindowFocus: true,
-    staleTime: 30_000,
+    refetchOnMount: 'always',
+    staleTime: 5_000,
     retry: 1,
     retryDelay: (attempt) => 3000 * attempt,
   });

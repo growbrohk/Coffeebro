@@ -2,45 +2,40 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchVoucherLogPrefill, type VoucherLogPrefill } from '@/lib/fetchVoucherLogPrefill';
-import { toast } from '@/hooks/use-toast';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 
 type Props = {
-  onVoucherRedeemed: (prefill: VoucherLogPrefill) => void;
+  onVoucherRedeemedDetected: (voucherId: string) => void;
 };
 
-const TOASTED_CAP = 500;
-const INVALIDATE_DEBOUNCE_MS = 200;
-const PREFILL_RETRY_MS = 400;
+const PROMPTED_CAP = 500;
+const PROMPT_DEBOUNCE_MS = 2500;
+const POLL_INTERVAL_MS = 3000;
 
 /**
  * Subscribes to voucher rows for the current user; when status becomes redeemed,
- * toasts + optimistically flips the wallet card + opens the log-coffee flow.
+ * flips the wallet cache and shows the redeem prompt (Review opens log flow later).
  */
-export function useVoucherRedemptionNotifier({ onVoucherRedeemed }: Props) {
+export function useVoucherRedemptionNotifier({ onVoucherRedeemedDetected }: Props) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const toastedRef = useRef<Set<string>>(new Set());
-  const openedRef = useRef<{ id: string; at: number } | null>(null);
-  const invalidateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const promptedRef = useRef<Set<string>>(new Set());
+  const lastPromptRef = useRef<{ id: string; at: number } | null>(null);
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
 
-    toastedRef.current = new Set();
-    openedRef.current = null;
+    promptedRef.current = new Set();
+    lastPromptRef.current = null;
 
     const userId = user.id;
     const walletKey: ['vouchers', 'my', string] = ['vouchers', 'my', userId];
 
-    const scheduleInvalidate = () => {
-      if (invalidateTimerRef.current) return;
-      invalidateTimerRef.current = setTimeout(() => {
-        invalidateTimerRef.current = null;
-        void queryClient.invalidateQueries({ queryKey: walletKey });
-      }, INVALIDATE_DEBOUNCE_MS);
+    const refreshWallet = () => {
+      void queryClient.invalidateQueries({ queryKey: walletKey });
+      void queryClient.refetchQueries({ queryKey: walletKey, type: 'active' });
     };
 
     const optimisticFlipToRedeemed = (voucherId: string) => {
@@ -63,10 +58,10 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemed }: Props) {
       );
     };
 
-    const maybeOpen = async (voucherId: string) => {
+    const maybeShowPrompt = async (voucherId: string) => {
       const now = Date.now();
-      const last = openedRef.current;
-      if (last?.id === voucherId && now - last.at < 2500) return;
+      const last = lastPromptRef.current;
+      if (last?.id === voucherId && now - last.at < PROMPT_DEBOUNCE_MS) return;
 
       const { data: existing } = await supabase
         .from('daily_coffees')
@@ -76,23 +71,35 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemed }: Props) {
 
       if (existing) return;
 
-      let prefill = await fetchVoucherLogPrefill(voucherId);
-      if (!prefill) {
-        await new Promise((r) => setTimeout(r, PREFILL_RETRY_MS));
-        prefill = await fetchVoucherLogPrefill(voucherId);
-      }
+      lastPromptRef.current = { id: voucherId, at: Date.now() };
+      onVoucherRedeemedDetected(voucherId);
+    };
 
-      if (!prefill) {
-        toast({
-          title: 'Could not open review',
-          description: 'Please try again from your wallet.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    const handleRedeemed = (voucherId: string) => {
+      if (promptedRef.current.has(voucherId)) return;
 
-      openedRef.current = { id: voucherId, at: Date.now() };
-      onVoucherRedeemed(prefill);
+      if (promptedRef.current.size >= PROMPTED_CAP) {
+        promptedRef.current = new Set();
+      }
+      promptedRef.current.add(voucherId);
+
+      optimisticFlipToRedeemed(voucherId);
+      refreshWallet();
+      void maybeShowPrompt(voucherId);
+    };
+
+    const startPollFallback = () => {
+      if (pollTimerRef.current) return;
+      pollTimerRef.current = setInterval(() => {
+        refreshWallet();
+      }, POLL_INTERVAL_MS);
+    };
+
+    const stopPollFallback = () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
     };
 
     const channel = supabase
@@ -108,31 +115,22 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemed }: Props) {
         (payload) => {
           const row = payload.new as { id?: string; status?: string };
           if (row.status !== 'redeemed' || !row.id) return;
-          if (toastedRef.current.has(row.id)) return;
-
-          if (toastedRef.current.size >= TOASTED_CAP) {
-            toastedRef.current = new Set();
-          }
-          toastedRef.current.add(row.id);
-
-          toast({ title: 'Voucher redeemed' });
-
-          optimisticFlipToRedeemed(row.id);
-          scheduleInvalidate();
-
-          void maybeOpen(row.id);
+          handleRedeemed(row.id);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          stopPollFallback();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          startPollFallback();
+        }
+      });
 
     return () => {
-      if (invalidateTimerRef.current) {
-        clearTimeout(invalidateTimerRef.current);
-        invalidateTimerRef.current = null;
-      }
-      toastedRef.current = new Set();
-      openedRef.current = null;
+      stopPollFallback();
+      promptedRef.current = new Set();
+      lastPromptRef.current = null;
       void supabase.removeChannel(channel);
     };
-  }, [user?.id, onVoucherRedeemed, queryClient]);
+  }, [user?.id, onVoucherRedeemedDetected, queryClient]);
 }

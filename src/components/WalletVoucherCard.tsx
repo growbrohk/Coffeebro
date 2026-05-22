@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { QrCodeDialog } from '@/components/QrCodeDialog';
@@ -23,10 +25,28 @@ export interface WalletVoucherCardProps {
   voucher: MyVoucher;
 }
 
+const QR_POLL_MS = 3000;
+
 export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const { startLogCoffeeFromVoucher } = useLogCoffeeEntry();
+
+  useEffect(() => {
+    if (!qrOpen || !user?.id) return;
+
+    const walletKey = ['vouchers', 'my', user.id] as const;
+    const tick = () => {
+      void queryClient.invalidateQueries({ queryKey: walletKey });
+      void queryClient.refetchQueries({ queryKey: walletKey, type: 'active' });
+    };
+
+    tick();
+    const id = setInterval(tick, QR_POLL_MS);
+    return () => clearInterval(id);
+  }, [qrOpen, user?.id, queryClient]);
 
   const isActive = isVoucherWalletActive(voucher);
   const isExpired = isVoucherWalletExpired(voucher);

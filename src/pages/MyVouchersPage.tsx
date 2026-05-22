@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -46,9 +47,28 @@ function compareDeadlineDesc(a: MyVoucher, b: MyVoucher): number {
 
 export default function MyVouchersPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, loading } = useAuth();
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: vouchers = [], isLoading } = useMyVouchers();
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const walletKey = ['vouchers', 'my', user.id] as const;
+    const refetchWallet = () => {
+      void queryClient.invalidateQueries({ queryKey: walletKey });
+      void queryClient.refetchQueries({ queryKey: walletKey, type: 'active' });
+    };
+
+    refetchWallet();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refetchWallet();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [user?.id, queryClient]);
 
   const activeVouchers = useMemo(
     () => vouchers.filter(isVoucherWalletActive).sort(compareDeadlineAsc),

@@ -2,16 +2,23 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useAddCoffee, useTodayPercentage, type CoffeeDetails } from '@/hooks/useCoffees';
 import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
+import {
+  VoucherRedeemedPromptModal,
+  type VoucherRedeemedPromptDetail,
+} from '@/components/VoucherRedeemedPromptModal';
 import { useVoucherRedemptionNotifier } from '@/hooks/useVoucherRedemptionNotifier';
-
+import { fetchVoucherLogPrefill } from '@/lib/fetchVoucherLogPrefill';
+import { toast } from '@/hooks/use-toast';
 export type LogCoffeePrefill = {
   voucherId: string;
   orgId: string;
@@ -48,14 +55,28 @@ export function LogCoffeeEntryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const addCoffee = useAddCoffee();
+  const { data: myVouchers = [] } = useMyVouchers();
   const { data: percentage } = useTodayPercentage();
 
   const [prefill, setPrefill] = useState<LogCoffeePrefill | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
+  const [redeemPromptVoucherId, setRedeemPromptVoucherId] = useState<string | null>(null);
+  const [redeemPromptReviewLoading, setRedeemPromptReviewLoading] = useState(false);
   const queueRef = useRef<LogCoffeePrefill[]>([]);
   const detailsOpenRef = useRef(false);
   detailsOpenRef.current = detailsOpen;
+
+  const redeemPromptDetail = useMemo((): VoucherRedeemedPromptDetail | null => {
+    if (!redeemPromptVoucherId) return null;
+    const v = myVouchers.find((row) => row.id === redeemPromptVoucherId);
+    if (!v) return null;
+    return {
+      title: v.title ?? null,
+      orgName: v.org_name ?? null,
+      menuItemName: v.menu_item_name ?? null,
+    };
+  }, [redeemPromptVoucherId, myVouchers]);
 
   const flushQueue = useCallback(() => {
     const next = queueRef.current.shift();
@@ -84,7 +105,44 @@ export function LogCoffeeEntryProvider({ children }: { children: ReactNode }) {
     setDetailsOpen(true);
   }, [user]);
 
-  useVoucherRedemptionNotifier({ onVoucherRedeemed: startLogCoffeeFromVoucher });
+  const showRedeemPrompt = useCallback((voucherId: string) => {
+    setRedeemPromptVoucherId(voucherId);
+  }, []);
+
+  useVoucherRedemptionNotifier({ onVoucherRedeemedDetected: showRedeemPrompt });
+
+  const handleRedeemPromptOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setRedeemPromptVoucherId(null);
+      setRedeemPromptReviewLoading(false);
+    }
+  }, []);
+
+  const handleRedeemPromptReview = useCallback(async () => {
+    if (!redeemPromptVoucherId || redeemPromptReviewLoading) return;
+    setRedeemPromptReviewLoading(true);
+    const voucherId = redeemPromptVoucherId;
+
+    let prefill = await fetchVoucherLogPrefill(voucherId);
+    if (!prefill) {
+      await new Promise((r) => setTimeout(r, 400));
+      prefill = await fetchVoucherLogPrefill(voucherId);
+    }
+
+    setRedeemPromptReviewLoading(false);
+
+    if (!prefill) {
+      toast({
+        title: 'Could not open review',
+        description: 'Please try again from your wallet.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setRedeemPromptVoucherId(null);
+    startLogCoffeeFromVoucher(prefill);
+  }, [redeemPromptVoucherId, redeemPromptReviewLoading, startLogCoffeeFromVoucher]);
 
   const handleDetailsSave = useCallback(
     async (details: CoffeeDetails) => {
@@ -147,6 +205,13 @@ export function LogCoffeeEntryProvider({ children }: { children: ReactNode }) {
   return (
     <LogCoffeeEntryContext.Provider value={value}>
       {children}
+      <VoucherRedeemedPromptModal
+        open={redeemPromptVoucherId !== null}
+        onOpenChange={handleRedeemPromptOpenChange}
+        detail={redeemPromptDetail}
+        onReview={() => void handleRedeemPromptReview()}
+        reviewLoading={redeemPromptReviewLoading}
+      />
       <LogCoffeeEntryModals
         detailsSheetOpen={detailsOpen}
         onDetailsSheetOpenChange={handleDetailsOpenChange}
