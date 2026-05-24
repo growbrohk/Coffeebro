@@ -498,19 +498,6 @@ export default function ProfilePage() {
         )}
 
         <form onSubmit={handleSubmit} className="mx-auto max-w-sm space-y-4">
-          <div className="space-y-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 w-full border-[#2E1A14]/20 text-base font-semibold"
-              onClick={handleGoogleSignIn}
-              disabled={isSubmitting}
-            >
-              Continue with Google
-            </Button>
-            <p className="text-center text-xs font-medium text-muted-foreground">or</p>
-          </div>
-
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="username" className="text-sm font-semibold tracking-normal">
