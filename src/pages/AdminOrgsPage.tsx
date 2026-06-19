@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ImageIcon, MapPin, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ImageIcon, MapPin, Search, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs, type Org } from '@/hooks/useOrgs';
@@ -187,6 +187,8 @@ export default function AdminOrgsPage() {
   const [pendingOrgPreviewUrl, setPendingOrgPreviewUrl] = useState<string | null>(null);
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
   const pendingOrgObjectUrlRef = useRef<string | null>(null);
+  const orgListRef = useRef<HTMLUListElement>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
 
   const revokePendingOrgLogo = () => {
     if (pendingOrgLogoObjectUrlRef.current) {
@@ -301,6 +303,26 @@ export default function AdminOrgsPage() {
         (o.location ?? '').toLowerCase().includes(q)
     );
   }, [orgs, orgSearchQuery]);
+
+  const updateScrollHint = useCallback(() => {
+    const el = orgListRef.current;
+    if (!el) return;
+    const canScroll = el.scrollHeight > el.clientHeight + 1;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+    setHasMoreBelow(canScroll && !atBottom);
+  }, []);
+
+  useEffect(() => {
+    updateScrollHint();
+  }, [filteredOrgs, updateScrollHint]);
+
+  useEffect(() => {
+    const el = orgListRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(updateScrollHint);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [filteredOrgs, updateScrollHint]);
 
   const mapCoordHint = useMemo(() => {
     const lat = parseCoord(draft.latStr);
@@ -752,46 +774,63 @@ export default function AdminOrgsPage() {
           ) : filteredOrgs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No organizations match your search.</p>
           ) : (
-            <ul className="min-h-[calc(100dvh-15rem)] flex-1 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
-              {filteredOrgs.map((o) => (
-                <li key={o.id} className="flex items-center gap-2 rounded-lg p-1 hover:bg-muted/50">
-                  <button
-                    type="button"
-                    onClick={() => handleSelectOrg(o.id)}
-                    className={`flex min-w-0 flex-1 items-start gap-3 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors ${
-                      activeOrgId === o.id ? 'bg-muted' : ''
-                    }`}
-                  >
-                    {o.logo_url || o.preview_photo_url ? (
-                      <img
-                        src={(o.logo_url || o.preview_photo_url) as string}
-                        alt=""
-                        className="mt-0.5 h-10 w-10 shrink-0 rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/50">
-                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      {o.org_name}
-                      {o.mtr_station ? (
-                        <span className="block text-xs font-normal text-muted-foreground">{o.mtr_station}</span>
-                      ) : null}
-                    </span>
-                  </button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0 text-xs"
-                    onClick={() => navigate(`/org/${o.id}/menu`)}
-                  >
-                    Menu
-                  </Button>
-                </li>
-              ))}
-            </ul>
+            <div className="relative">
+              <ul
+                ref={orgListRef}
+                onScroll={updateScrollHint}
+                className="max-h-[calc(4*4.5rem+0.75rem)] space-y-1 overflow-y-auto rounded-xl border border-border p-2"
+              >
+                {filteredOrgs.map((o) => (
+                  <li key={o.id} className="flex items-center gap-2 rounded-lg p-1 hover:bg-muted/50">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectOrg(o.id)}
+                      className={`flex min-w-0 flex-1 items-start gap-3 rounded-md px-2 py-2 text-left text-sm font-medium transition-colors ${
+                        activeOrgId === o.id ? 'bg-muted' : ''
+                      }`}
+                    >
+                      {o.logo_url || o.preview_photo_url ? (
+                        <img
+                          src={(o.logo_url || o.preview_photo_url) as string}
+                          alt=""
+                          className="mt-0.5 h-10 w-10 shrink-0 rounded-md object-cover"
+                        />
+                      ) : (
+                        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-muted/50">
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="min-w-0 flex-1">
+                        {o.org_name}
+                        {o.mtr_station ? (
+                          <span className="block text-xs font-normal text-muted-foreground">{o.mtr_station}</span>
+                        ) : null}
+                      </span>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="shrink-0 text-xs"
+                      onClick={() => navigate(`/org/${o.id}/menu`)}
+                    >
+                      Menu
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              {hasMoreBelow ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center justify-end rounded-b-xl bg-gradient-to-t from-background via-background/90 to-transparent pb-2 pt-8"
+                  aria-hidden
+                >
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <ChevronDown className="h-4 w-4 animate-bounce" />
+                    Scroll for more
+                  </span>
+                </div>
+              ) : null}
+            </div>
           )}
         </div>
 
