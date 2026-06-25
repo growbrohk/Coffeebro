@@ -59,6 +59,11 @@ export function formatPackageDistricts(districts: string[]): string {
   return districts.join(', ');
 }
 
+export function formatPackageMtrStations(mtrStations: string[]): string {
+  if (mtrStations.length === 0) return '';
+  return mtrStations.join(', ');
+}
+
 export function formatTastingPrice(cents: number): string {
   return `$${Math.round(cents / 100)}`;
 }

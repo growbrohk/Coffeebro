@@ -13,7 +13,6 @@ import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
 import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
 import { tastingPackageToCarouselItem } from "@/lib/tastingPackageToCarouselItem";
-import { HK_DISTRICTS } from "@/data/hkDistricts";
 
 export default function ExplorePage() {
   const navigate = useNavigate();
@@ -69,24 +68,15 @@ export default function ExplorePage() {
     });
   }, [discoveryItems, searchQuery]);
 
-  const tastingByDistrict = useMemo(() => {
+  const tastingCarouselItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    const filtered = tastingPackages.filter((pkg) => {
-      if (!q) return true;
-      const hay = [pkg.title, ...pkg.districts, pkg.description].filter(Boolean).join(" ").toLowerCase();
-      return hay.includes(q);
-    });
-
-    const groups: { district: string; items: CampaignMapItem[] }[] = [];
-    for (const district of HK_DISTRICTS) {
-      const pkgs = filtered.filter((p) => p.districts.includes(district));
-      if (pkgs.length === 0) continue;
-      groups.push({
-        district,
-        items: pkgs.map(tastingPackageToCarouselItem),
-      });
-    }
-    return groups;
+    return tastingPackages
+      .filter((pkg) => {
+        if (!q) return true;
+        const hay = [pkg.title, ...pkg.districts, pkg.description].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      })
+      .map(tastingPackageToCarouselItem);
   }, [tastingPackages, searchQuery]);
 
   const loading = campaignsLoading || discoveryOrgsLoading || tastingLoading;
@@ -118,25 +108,20 @@ export default function ExplorePage() {
               <h2 className="text-lg font-bold leading-snug tracking-normal text-foreground">
                 Tasting packages
               </h2>
-              {tastingByDistrict.length === 0 ? (
+              {tastingCarouselItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching tasting packages.</p>
               ) : (
-                tastingByDistrict.map(({ district, items }) => (
-                  <div key={district} className="flex flex-col gap-2">
-                    <h3 className="text-sm font-semibold text-muted-foreground">{district}</h3>
-                    <VoucherCarouselRow
-                      items={items}
-                      variant="tasting_package"
-                      onCta={(t) => {
-                        if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
-                      }}
-                      onCardPress={(t) => {
-                        if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
-                      }}
-                      className="pl-0 pr-0"
-                    />
-                  </div>
-                ))
+                <VoucherCarouselRow
+                  items={tastingCarouselItems}
+                  variant="tasting_package"
+                  onCta={(t) => {
+                    if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
+                  }}
+                  onCardPress={(t) => {
+                    if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
+                  }}
+                  className="pl-0 pr-0"
+                />
               )}
             </section>
 

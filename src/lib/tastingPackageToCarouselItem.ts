@@ -1,6 +1,10 @@
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import type { TastingPackage } from "@/types/tastingPackage";
-import { formatTastingPrice, formatPackageDistricts } from "@/types/tastingPackage";
+import {
+  formatTastingPrice,
+  formatPackageDistricts,
+  formatPackageMtrStations,
+} from "@/types/tastingPackage";
 
 export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapItem {
   const singleCount = pkg.shops.filter((s) => s.tier === "single").length;
@@ -10,6 +14,8 @@ export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapIt
     ?? pkg.cover_image_url;
 
   const districtLabel = formatPackageDistricts(pkg.districts);
+  const locationLabel =
+    formatPackageMtrStations(pkg.mtr_stations) || districtLabel;
 
   return {
     id: pkg.id,
@@ -19,7 +25,7 @@ export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapIt
     description: pkg.description,
     lat: null,
     lng: null,
-    address: districtLabel,
+    address: locationLabel,
     sort_order: 0,
     clue_image: pkg.cover_image_url ?? coverOrg ?? null,
     scanned: false,
