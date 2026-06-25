@@ -36,7 +36,7 @@ export default function HuntMapPage() {
 
   const [selectedTreasure, setSelectedTreasure] = useState<CampaignMapItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [pillar, setPillar] = useState<PillarId>("hunt_grab");
+  const [pillar, setPillar] = useState<PillarId>("tasting_package");
   const [voucherSheetDismissed, setVoucherSheetDismissed] = useState(false);
   const [tastingPackageSheetDismissed, setTastingPackageSheetDismissed] = useState(false);
   const [selectedTastingPackageId, setSelectedTastingPackageId] = useState<string | null>(null);
@@ -45,6 +45,7 @@ export default function HuntMapPage() {
   const [refitNonce, setRefitNonce] = useState(0);
   const [locating, setLocating] = useState(false);
   const prevSelectedTreasureRef = useRef<CampaignMapItem | null>(null);
+  const pillarInitializedRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -168,6 +169,42 @@ export default function HuntMapPage() {
   );
 
   const loading = campaignsLoading || discoveryLoading || claimedLoading || tastingLoading;
+
+  const selectPillar = useCallback((next: PillarId) => {
+    pillarInitializedRef.current = true;
+    setRefitNonce((n) => n + 1);
+    setPillar(next);
+  }, []);
+
+  const handleSelectTastingPackage = useCallback((packageId: string) => {
+    setSelectedTastingPackageId(packageId);
+    setRefitNonce((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    if (loading || pillarInitializedRef.current) return;
+
+    const hasTasting = tastingPackages.length > 0;
+    const hasHuntGrab = campaignItems.some(
+      (t) => t.pinKind === "hunt" || t.pinKind === "grab",
+    );
+    const hasCoffeeShop =
+      campaignItems.some((t) => t.pinKind === "coffee_shop") ||
+      discoveryItems.length > 0;
+
+    let next: PillarId = "tasting_package";
+    if (hasTasting) {
+      next = "tasting_package";
+    } else if (hasHuntGrab) {
+      next = "hunt_grab";
+    } else if (hasCoffeeShop) {
+      next = "coffee_shop";
+    }
+
+    pillarInitializedRef.current = true;
+    setPillar(next);
+    setRefitNonce((n) => n + 1);
+  }, [loading, tastingPackages, campaignItems, discoveryItems]);
 
   const hasLocation =
     selectedTreasure &&
@@ -368,10 +405,23 @@ export default function HuntMapPage() {
               <div className="flex w-max min-w-0 items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setRefitNonce((n) => n + 1);
-                    setPillar("hunt_grab");
-                  }}
+                  onClick={() => selectPillar("tasting_package")}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                    pillar === "tasting_package"
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-card text-foreground",
+                  )}
+                >
+                  <Wine
+                    className={cn("h-5 w-5", pillar === "tasting_package" && "text-background")}
+                    strokeWidth={2}
+                  />
+                  tasting packages
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectPillar("hunt_grab")}
                   className={cn(
                     "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
                     pillar === "hunt_grab"
@@ -389,10 +439,7 @@ export default function HuntMapPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setRefitNonce((n) => n + 1);
-                    setPillar("coffee_shop");
-                  }}
+                  onClick={() => selectPillar("coffee_shop")}
                   className={cn(
                     "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
                     pillar === "coffee_shop"
@@ -406,25 +453,6 @@ export default function HuntMapPage() {
                     className={cn("h-5 w-5 object-contain", pillar === "coffee_shop" && "brightness-0 invert")}
                   />
                   coffee shops
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRefitNonce((n) => n + 1);
-                    setPillar("tasting_package");
-                  }}
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
-                    pillar === "tasting_package"
-                      ? "bg-foreground text-background"
-                      : "border border-border bg-card text-foreground",
-                  )}
-                >
-                  <Wine
-                    className={cn("h-5 w-5", pillar === "tasting_package" && "text-background")}
-                    strokeWidth={2}
-                  />
-                  tasting packages
                 </button>
               </div>
             </div>
@@ -452,10 +480,7 @@ export default function HuntMapPage() {
                   <button
                     key={pkg.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedTastingPackageId(pkg.id);
-                      setRefitNonce((n) => n + 1);
-                    }}
+                    onClick={() => handleSelectTastingPackage(pkg.id)}
                     className={cn(
                       "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                       activeTastingPackage?.id === pkg.id
@@ -497,16 +522,13 @@ export default function HuntMapPage() {
           selectedPackageId={activeTastingPackage?.id ?? null}
           onClose={() => setTastingPackageSheetDismissed(true)}
           onSelectPackage={(t) => {
-            if (t.tasting_package_id) setSelectedTastingPackageId(t.tasting_package_id);
+            if (t.tasting_package_id) handleSelectTastingPackage(t.tasting_package_id);
           }}
           onCta={(t) => {
             if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
           }}
           onCardPress={(t) => {
-            if (t.tasting_package_id) {
-              setSelectedTastingPackageId(t.tasting_package_id);
-              navigate(`/tasting-packages/${t.tasting_package_id}`);
-            }
+            if (t.tasting_package_id) handleSelectTastingPackage(t.tasting_package_id);
           }}
         />
       ) : null}

@@ -78,7 +78,7 @@ function iconForPinKind(kind: HuntMapPinKind, scanned: boolean): L.DivIcon {
 }
 
 /** Show org names at street-ish zoom; keep ≤ typical fitBounds result so labels aren’t stuck off until zoom. */
-const LABEL_MIN_ZOOM = 13;
+const LABEL_MIN_ZOOM = 12;
 
 function shouldShowOrgLabel(t: CampaignMapItem, zoom: number): boolean {
   return Boolean(t.orgName?.trim()) && !t.scanned && zoom >= LABEL_MIN_ZOOM;
