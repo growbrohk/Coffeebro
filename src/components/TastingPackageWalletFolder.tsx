@@ -1,9 +1,58 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
-import { isVoucherWalletActive } from '@/hooks/useMyVouchers';
+import { getVoucherRedemptionDeadline, isVoucherWalletActive } from '@/hooks/useMyVouchers';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import { cn } from '@/lib/utils';
+
+function compareCreatedDesc(a: MyVoucher, b: MyVoucher): number {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
+function compareInactiveTieBreak(a: MyVoucher, b: MyVoucher): number {
+  const aRedeemed = a.redeemed_at ? new Date(a.redeemed_at).getTime() : 0;
+  const bRedeemed = b.redeemed_at ? new Date(b.redeemed_at).getTime() : 0;
+  if (aRedeemed !== bRedeemed) return bRedeemed - aRedeemed;
+  return compareCreatedDesc(a, b);
+}
+
+function compareDeadlineAsc(a: MyVoucher, b: MyVoucher): number {
+  const aDeadline = getVoucherRedemptionDeadline(a);
+  const bDeadline = getVoucherRedemptionDeadline(b);
+  if (aDeadline == null && bDeadline == null) return compareCreatedDesc(a, b);
+  if (aDeadline == null) return 1;
+  if (bDeadline == null) return -1;
+  if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+  return compareCreatedDesc(a, b);
+}
+
+function compareDeadlineDesc(a: MyVoucher, b: MyVoucher): number {
+  const aDeadline = getVoucherRedemptionDeadline(a);
+  const bDeadline = getVoucherRedemptionDeadline(b);
+  if (aDeadline == null && bDeadline == null) return compareInactiveTieBreak(a, b);
+  if (aDeadline == null) return 1;
+  if (bDeadline == null) return -1;
+  if (aDeadline !== bDeadline) return bDeadline - aDeadline;
+  return compareInactiveTieBreak(a, b);
+}
+
+function inactiveStatusOrder(v: MyVoucher): number {
+  if (v.status === 'redeemed') return 0;
+  if (v.status === 'expired') return 1;
+  return 2;
+}
+
+function compareFolderVouchers(a: MyVoucher, b: MyVoucher): number {
+  const aActive = isVoucherWalletActive(a);
+  const bActive = isVoucherWalletActive(b);
+  if (aActive !== bActive) return aActive ? -1 : 1;
+  if (!aActive) {
+    const statusDiff = inactiveStatusOrder(a) - inactiveStatusOrder(b);
+    if (statusDiff !== 0) return statusDiff;
+    return compareInactiveTieBreak(a, b);
+  }
+  return compareDeadlineAsc(a, b);
+}
 
 export type TastingPackageFolder = {
   purchaseId: string;
@@ -43,6 +92,34 @@ export function groupTastingPackageFolders(vouchers: MyVoucher[]): {
   }
 
   return { folders, standalone };
+}
+
+export type PartitionedWalletLists = {
+  activeFolders: TastingPackageFolder[];
+  inactiveFolders: TastingPackageFolder[];
+  activeStandalone: MyVoucher[];
+  inactiveStandalone: MyVoucher[];
+};
+
+export function partitionWalletLists(vouchers: MyVoucher[]): PartitionedWalletLists {
+  const { folders, standalone } = groupTastingPackageFolders(vouchers);
+
+  const activeFolders: TastingPackageFolder[] = [];
+  const inactiveFolders: TastingPackageFolder[] = [];
+
+  for (const folder of folders) {
+    const sorted = { ...folder, vouchers: [...folder.vouchers].sort(compareFolderVouchers) };
+    if (sorted.vouchers.some(isVoucherWalletActive)) {
+      activeFolders.push(sorted);
+    } else {
+      inactiveFolders.push(sorted);
+    }
+  }
+
+  const activeStandalone = standalone.filter(isVoucherWalletActive).sort(compareDeadlineAsc);
+  const inactiveStandalone = standalone.filter((v) => !isVoucherWalletActive(v)).sort(compareDeadlineDesc);
+
+  return { activeFolders, inactiveFolders, activeStandalone, inactiveStandalone };
 }
 
 interface TastingPackageWalletFolderProps {

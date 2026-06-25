@@ -3,51 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  getVoucherRedemptionDeadline,
-  isVoucherWalletActive,
-  useMyVouchers,
-  type MyVoucher,
-} from '@/hooks/useMyVouchers';
+import { useMyVouchers, type MyVoucher } from '@/hooks/useMyVouchers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import {
   TastingPackageWalletFolder,
-  groupTastingPackageFolders,
+  partitionWalletLists,
+  type TastingPackageFolder,
 } from '@/components/TastingPackageWalletFolder';
 import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
-
-function compareCreatedDesc(a: MyVoucher, b: MyVoucher): number {
-  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-}
-
-function compareInactiveTieBreak(a: MyVoucher, b: MyVoucher): number {
-  const aRedeemed = a.redeemed_at ? new Date(a.redeemed_at).getTime() : 0;
-  const bRedeemed = b.redeemed_at ? new Date(b.redeemed_at).getTime() : 0;
-  if (aRedeemed !== bRedeemed) return bRedeemed - aRedeemed;
-  return compareCreatedDesc(a, b);
-}
-
-function compareDeadlineAsc(a: MyVoucher, b: MyVoucher): number {
-  const aDeadline = getVoucherRedemptionDeadline(a);
-  const bDeadline = getVoucherRedemptionDeadline(b);
-  if (aDeadline == null && bDeadline == null) return compareCreatedDesc(a, b);
-  if (aDeadline == null) return 1;
-  if (bDeadline == null) return -1;
-  if (aDeadline !== bDeadline) return aDeadline - bDeadline;
-  return compareCreatedDesc(a, b);
-}
-
-function compareDeadlineDesc(a: MyVoucher, b: MyVoucher): number {
-  const aDeadline = getVoucherRedemptionDeadline(a);
-  const bDeadline = getVoucherRedemptionDeadline(b);
-  if (aDeadline == null && bDeadline == null) return compareInactiveTieBreak(a, b);
-  if (aDeadline == null) return 1;
-  if (bDeadline == null) return -1;
-  if (aDeadline !== bDeadline) return bDeadline - aDeadline;
-  return compareInactiveTieBreak(a, b);
-}
 
 export default function MyVouchersPage() {
   const navigate = useNavigate();
@@ -74,30 +39,15 @@ export default function MyVouchersPage() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [user?.id, queryClient]);
 
-  const activeVouchers = useMemo(
-    () => vouchers.filter(isVoucherWalletActive).sort(compareDeadlineAsc),
+  const { activeFolders, inactiveFolders, activeStandalone, inactiveStandalone } = useMemo(
+    () => partitionWalletLists(vouchers),
     [vouchers],
   );
 
-  const inactiveVouchers = useMemo(
-    () => vouchers.filter((v) => !isVoucherWalletActive(v)).sort(compareDeadlineDesc),
-    [vouchers],
-  );
+  const hasActive = activeFolders.length > 0 || activeStandalone.length > 0;
+  const hasInactive = inactiveFolders.length > 0 || inactiveStandalone.length > 0;
 
-  const activeGrouped = useMemo(
-    () => groupTastingPackageFolders(activeVouchers),
-    [activeVouchers],
-  );
-
-  const inactiveGrouped = useMemo(
-    () => groupTastingPackageFolders(inactiveVouchers),
-    [inactiveVouchers],
-  );
-
-  const renderWalletList = (
-    folders: ReturnType<typeof groupTastingPackageFolders>['folders'],
-    standalone: MyVoucher[],
-  ) => (
+  const renderWalletList = (folders: TastingPackageFolder[], standalone: MyVoucher[]) => (
     <div className="flex flex-col gap-3">
       {folders.map((folder) => (
         <TastingPackageWalletFolder key={folder.purchaseId} folder={folder} />
@@ -178,16 +128,16 @@ export default function MyVouchersPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-sm">
-            {activeVouchers.length > 0 ? (
+            {hasActive ? (
               <section>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Active</h2>
-                {renderWalletList(activeGrouped.folders, activeGrouped.standalone)}
+                {renderWalletList(activeFolders, activeStandalone)}
               </section>
             ) : null}
-            {inactiveVouchers.length > 0 ? (
-              <section className={activeVouchers.length > 0 ? 'mt-8' : undefined}>
+            {hasInactive ? (
+              <section className={hasActive ? 'mt-8' : undefined}>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Expired/Used</h2>
-                {renderWalletList(inactiveGrouped.folders, inactiveGrouped.standalone)}
+                {renderWalletList(inactiveFolders, inactiveStandalone)}
               </section>
             ) : null}
           </div>
