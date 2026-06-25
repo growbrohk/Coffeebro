@@ -120,15 +120,6 @@ export default function HostOrgsPage() {
                     ) : null}
                   </div>
                   <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => navigate(`/host/org/${o.id}/tasting`)}
-                      >
-                        Tasting ops
-                      </Button>
                       {canEdit ? (
                         <>
                           <Button

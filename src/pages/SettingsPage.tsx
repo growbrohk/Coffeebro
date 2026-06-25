@@ -102,9 +102,14 @@ export default function SettingsPage() {
         )}
 
         {isStaffUser && !isSuperAdmin && orgs.length > 0 && (
-          <Button type="button" variant="default" className="w-full" onClick={() => navigate('/host/orgs')}>
-            My organizations
-          </Button>
+          <>
+            <Button type="button" variant="default" className="w-full" onClick={() => navigate('/host/tasting-tracking')}>
+              Tasting tracking
+            </Button>
+            <Button type="button" variant="default" className="w-full" onClick={() => navigate('/host/orgs')}>
+              My organizations
+            </Button>
+          </>
         )}
 
         <Button

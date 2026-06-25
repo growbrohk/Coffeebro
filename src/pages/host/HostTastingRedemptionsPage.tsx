@@ -65,7 +65,11 @@ export default function HostTastingRedemptionsPage() {
     return (
       <div className="min-h-screen bg-background px-4 py-8">
         <p className="text-center text-muted-foreground">Host access required.</p>
-        <Button className="mx-auto mt-4 block" variant="outline" onClick={() => navigate('/host/orgs')}>
+        <Button
+          className="mx-auto mt-4 block"
+          variant="outline"
+          onClick={() => navigate('/host/tasting-tracking')}
+        >
           Back
         </Button>
       </div>
@@ -78,7 +82,9 @@ export default function HostTastingRedemptionsPage() {
         <div className="relative flex items-center justify-center px-4 py-4">
           <button
             type="button"
-            onClick={() => navigate(`/host/org/${orgId}/tasting`)}
+            onClick={() =>
+              navigate(orgId ? `/host/tasting-tracking?orgId=${encodeURIComponent(orgId)}` : '/host/tasting-tracking')
+            }
             className="absolute left-0 p-2"
             aria-label="Back"
           >

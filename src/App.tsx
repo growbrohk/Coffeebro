@@ -43,6 +43,7 @@ import AdminTastingRedemptionsPage from "./pages/admin/tasting-tracking/AdminTas
 import AdminTastingShopSummaryPage from "./pages/admin/tasting-tracking/AdminTastingShopSummaryPage";
 import HostTastingDashboardPage from "./pages/host/HostTastingDashboardPage";
 import HostTastingRedemptionsPage from "./pages/host/HostTastingRedemptionsPage";
+import HostTastingTrackingPage from "./pages/host/HostTastingTrackingPage";
 import TastingPackageDetailPage from "./pages/TastingPackageDetailPage";
 import TastingPackageCheckoutPage from "./pages/TastingPackageCheckoutPage";
 import TastingPackagePurchaseSuccessPage from "./pages/TastingPackagePurchaseSuccessPage";
@@ -87,6 +88,7 @@ const App = () => (
               <Route path="/loyalty/orgs/:orgId" element={<ShopFanDashboardPage />} />
               <Route path="/host/org/:orgId/loyalty" element={<ShopLoyaltyManagerPage />} />
               <Route path="/host/org/:orgId/loyalty/vouchers" element={<VoucherStudioPage />} />
+              <Route path="/host/tasting-tracking" element={<HostTastingTrackingPage />} />
               <Route path="/host/org/:orgId/tasting" element={<HostTastingDashboardPage />} />
               <Route path="/host/org/:orgId/redemptions" element={<HostTastingRedemptionsPage />} />
               <Route path="/orgs/:orgId" element={<OrgPublicPage />} />
