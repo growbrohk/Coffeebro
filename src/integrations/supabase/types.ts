@@ -809,6 +809,191 @@ export type Database = {
           },
         ]
       }
+      tasting_package_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          package_shop_id: string
+          portion_index: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          package_shop_id: string
+          portion_index?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          package_shop_id?: string
+          portion_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasting_package_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasting_package_items_package_shop_id_fkey"
+            columns: ["package_shop_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_package_shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasting_package_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          mint_error: string | null
+          minted_vouchers_json: Json
+          package_id: string
+          status: string
+          stripe_checkout_expires_at: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id: string | null
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          mint_error?: string | null
+          minted_vouchers_json?: Json
+          package_id: string
+          status?: string
+          stripe_checkout_expires_at?: string | null
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id?: string | null
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          mint_error?: string | null
+          minted_vouchers_json?: Json
+          package_id?: string
+          status?: string
+          stripe_checkout_expires_at?: string | null
+          stripe_checkout_session_id?: string
+          stripe_payment_intent_id?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasting_package_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasting_package_shops: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          package_id: string
+          sort_order: number
+          tier: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          package_id: string
+          sort_order?: number
+          tier: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          package_id?: string
+          sort_order?: number
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasting_package_shops_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasting_package_shops_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasting_packages: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          district: string
+          duo_price_cents: number
+          id: string
+          redeem_valid_days: number
+          single_price_cents: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          district: string
+          duo_price_cents?: number
+          id?: string
+          redeem_valid_days?: number
+          single_price_cents?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          district?: string
+          duo_price_cents?: number
+          id?: string
+          redeem_valid_days?: number
+          single_price_cents?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vouchers: {
         Row: {
           campaign_id: string | null
@@ -817,12 +1002,15 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          loyalty_catalog_id: string | null
+          menu_item_id: string | null
           org_id: string
           owner_id: string
           redeemed_at: string | null
           redeemed_by: string | null
           status: string
-          loyalty_catalog_id: string | null
+          tasting_package_item_id: string | null
+          tasting_package_purchase_id: string | null
         }
         Insert: {
           campaign_id?: string | null
@@ -831,12 +1019,15 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          loyalty_catalog_id?: string | null
+          menu_item_id?: string | null
           org_id: string
           owner_id: string
           redeemed_at?: string | null
           redeemed_by?: string | null
           status?: string
-          loyalty_catalog_id?: string | null
+          tasting_package_item_id?: string | null
+          tasting_package_purchase_id?: string | null
         }
         Update: {
           campaign_id?: string | null
@@ -845,12 +1036,15 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          loyalty_catalog_id?: string | null
+          menu_item_id?: string | null
           org_id?: string
           owner_id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
           status?: string
-          loyalty_catalog_id?: string | null
+          tasting_package_item_id?: string | null
+          tasting_package_purchase_id?: string | null
         }
         Relationships: [
           {
@@ -879,6 +1073,27 @@ export type Database = {
             columns: ["loyalty_catalog_id"]
             isOneToOne: false
             referencedRelation: "vouchers_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_tasting_package_item_id_fkey"
+            columns: ["tasting_package_item_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_package_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_tasting_package_purchase_id_fkey"
+            columns: ["tasting_package_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_package_purchases"
             referencedColumns: ["id"]
           },
         ]

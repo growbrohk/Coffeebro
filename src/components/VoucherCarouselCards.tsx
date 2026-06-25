@@ -36,7 +36,7 @@ export function voucherCarouselTitle(items: CampaignMapItem[]): string {
 const cardWidthClass =
   'w-[calc((min(430px,100vw-1.5rem)-1.5rem-1rem)/2.25)] shrink-0 snap-start';
 
-export type VoucherCarouselVariant = 'voucher' | 'cafe';
+export type VoucherCarouselVariant = 'voucher' | 'cafe' | 'tasting_package';
 
 interface VoucherCarouselCardProps {
   treasure: CampaignMapItem;
@@ -72,8 +72,9 @@ export function VoucherCarouselCard({
   const orgLine = treasure.orgName?.trim() || treasure.name;
   const locationLine = treasure.address?.trim() || null;
   const isGrab = isGrabCampaignCard(treasure);
-  const isCoffeeShop = treasure.pinKind === "coffee_shop" && !isGrab;
-  const ctaLabel = isGrab ? 'grab now' : isCoffeeShop ? 'open' : 'hunt now';
+  const isCoffeeShop = treasure.pinKind === "coffee_shop" && !isGrab && variant !== 'tasting_package';
+  const isTastingPackage = variant === 'tasting_package';
+  const ctaLabel = isTastingPackage ? 'view package' : isGrab ? 'grab now' : isCoffeeShop ? 'open' : 'hunt now';
   const cafeTitle = orgLine;
   const cafeLocation = locationLine;
   const badgeText = campaignImageBadgeText(treasure);
@@ -85,7 +86,7 @@ export function VoucherCarouselCard({
       className={cn(
         cardWidthClass,
         'flex flex-col',
-        variant === 'voucher'
+        variant === 'voucher' || variant === 'tasting_package'
           ? 'overflow-visible rounded-t-3xl rounded-b-2xl bg-muted/40 shadow-soft'
           : 'overflow-hidden rounded-2xl border border-border/40 bg-muted/25 shadow-none',
         onCardPress && 'tap-card cursor-pointer'
@@ -114,13 +115,13 @@ export function VoucherCarouselCard({
             <ImageIcon className="h-6 w-6 text-muted-foreground/35" strokeWidth={1.25} />
           </div>
         )}
-        {variant === 'voucher' ? (
+        {variant === 'voucher' || variant === 'tasting_package' ? (
           <div className="absolute right-2 top-2 max-w-[min(92%,12rem)]">
             <p
               className="truncate rounded-full bg-foreground px-2 py-0.5 text-center text-[10px] font-semibold leading-tight text-background shadow-sm"
               title={badgeText}
             >
-              {badgeText}
+              {isTastingPackage ? (treasure.offerTitle ?? 'Tasting') : badgeText}
             </p>
           </div>
         ) : null}
@@ -139,6 +140,34 @@ export function VoucherCarouselCard({
               {cafeLocation}
             </p>
           ) : null}
+        </div>
+      ) : variant === 'tasting_package' ? (
+        <div className={cn('flex min-w-0 flex-1 flex-col rounded-b-2xl bg-muted/40')}>
+          <VoucherTicketDivider bodyClass={campaignBodyClass} />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 px-3 pb-3 pt-1">
+            <div className="min-w-0 text-sm font-bold leading-snug text-foreground line-clamp-2" title={treasure.name}>
+              {treasure.name}
+            </div>
+            {locationLine ? (
+              <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{locationLine}</p>
+            ) : null}
+            {treasure.offerDescription ? (
+              <p className="text-[11px] leading-snug text-muted-foreground">{treasure.offerDescription}</p>
+            ) : null}
+            <div className="mt-auto flex justify-start pt-1">
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 rounded-full px-4 text-xs font-semibold"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCta(treasure);
+                }}
+              >
+                {ctaLabel}
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className={cn('flex min-w-0 flex-1 flex-col rounded-b-2xl bg-muted/40')}>

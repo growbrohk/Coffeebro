@@ -54,6 +54,74 @@ Deno.serve(async (req) => {
             ? sess.payment_intent.id
             : null;
 
+      const { data: tastingRow, error: tastingFindErr } = await admin
+        .from('tasting_package_purchases')
+        .select('*')
+        .eq('stripe_checkout_session_id', sessionId)
+        .maybeSingle();
+
+      if (tastingFindErr) {
+        console.error(tastingFindErr);
+        return new Response(JSON.stringify({ error: tastingFindErr.message }), { status: 500 });
+      }
+
+      if (tastingRow) {
+        if (tastingRow.status === 'minted') {
+          return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (tastingRow.status === 'failed' || tastingRow.status === 'refunded') {
+          return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+
+        if (tastingRow.status === 'pending') {
+          const { error: upErr } = await admin
+            .from('tasting_package_purchases')
+            .update({
+              status: 'paid',
+              stripe_payment_intent_id: pi,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tastingRow.id);
+
+          if (upErr) {
+            console.error(upErr);
+            return new Response(JSON.stringify({ error: upErr.message }), { status: 500 });
+          }
+        } else if (tastingRow.status === 'paid' && pi && !tastingRow.stripe_payment_intent_id) {
+          await admin
+            .from('tasting_package_purchases')
+            .update({ stripe_payment_intent_id: pi, updated_at: new Date().toISOString() })
+            .eq('id', tastingRow.id);
+        }
+
+        const { error: finErr } = await admin.rpc('finalize_tasting_package_after_checkout', {
+          p_checkout_session_id: sessionId,
+        });
+
+        if (finErr) {
+          console.error('finalize_tasting_package_after_checkout', finErr);
+          const msg = finErr.message ?? 'MINT_FAILED';
+          if (pi) {
+            try {
+              await stripe.refunds.create({ payment_intent: pi });
+            } catch (rErr) {
+              console.error('refund failed', rErr);
+            }
+          }
+          await admin
+            .from('tasting_package_purchases')
+            .update({
+              status: 'failed',
+              mint_error: msg,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', tastingRow.id);
+        }
+
+        return new Response(JSON.stringify({ received: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+
       const { data: row, error: findErr } = await admin
         .from('campaign_claim_payments')
         .select('*')
@@ -135,6 +203,10 @@ Deno.serve(async (req) => {
       if (pi) {
         await admin
           .from('campaign_claim_payments')
+          .update({ status: 'refunded', updated_at: new Date().toISOString() })
+          .eq('stripe_payment_intent_id', pi);
+        await admin
+          .from('tasting_package_purchases')
           .update({ status: 'refunded', updated_at: new Date().toISOString() })
           .eq('stripe_payment_intent_id', pi);
       }

@@ -33,4 +33,6 @@ export type CampaignMapItem = {
   cafeDetailTreasureId?: string | null;
   calendarOfferId?: string | null;
   eventDate?: string | null;
+  /** Tasting package id when this map/carousel item represents a package or its shop pin. */
+  tasting_package_id?: string;
 };

@@ -89,6 +89,12 @@ export default function SettingsPage() {
           </Button>
         )}
 
+        {isSuperAdmin && (
+          <Button type="button" variant="default" className="w-full" onClick={() => navigate('/admin/tasting-packages')}>
+            New Tasting Package
+          </Button>
+        )}
+
         {isStaffUser && !isSuperAdmin && orgs.length > 0 && (
           <Button type="button" variant="default" className="w-full" onClick={() => navigate('/host/orgs')}>
             My organizations

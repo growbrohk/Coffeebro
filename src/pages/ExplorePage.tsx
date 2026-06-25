@@ -8,9 +8,12 @@ import { mergePoolRowsIntoCampaignMapItems } from "@/lib/campaignVoucherPoolsMer
 import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { usePublishedCampaignVoucherPools } from "@/hooks/usePublishedCampaignVoucherPools";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
+import { usePublishedTastingPackages } from "@/hooks/usePublishedTastingPackages";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { VoucherCarouselRow } from "@/components/VoucherCarouselCards";
 import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
+import { tastingPackageToCarouselItem } from "@/lib/tastingPackageToCarouselItem";
+import { HK_DISTRICTS } from "@/data/hkDistricts";
 
 export default function ExplorePage() {
   const navigate = useNavigate();
@@ -19,6 +22,7 @@ export default function ExplorePage() {
   const { data: campaigns = [], isLoading: campaignsLoading } = usePublishedCampaigns();
   const { data: claimedIds = new Set<string>() } = useMyClaimedCampaignIds();
   const { data: discoveryOrgs = [], isPending: discoveryOrgsLoading } = useDiscoveryOrgs();
+  const { data: tastingPackages = [], isLoading: tastingLoading } = usePublishedTastingPackages();
 
   const baseCampaignItems: CampaignMapItem[] = useMemo(() => {
     const out: CampaignMapItem[] = [];
@@ -65,7 +69,27 @@ export default function ExplorePage() {
     });
   }, [discoveryItems, searchQuery]);
 
-  const loading = campaignsLoading || discoveryOrgsLoading;
+  const tastingByDistrict = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = tastingPackages.filter((pkg) => {
+      if (!q) return true;
+      const hay = [pkg.title, pkg.district, pkg.description].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+
+    const groups: { district: string; items: CampaignMapItem[] }[] = [];
+    for (const district of HK_DISTRICTS) {
+      const pkgs = filtered.filter((p) => p.district === district);
+      if (pkgs.length === 0) continue;
+      groups.push({
+        district,
+        items: pkgs.map(tastingPackageToCarouselItem),
+      });
+    }
+    return groups;
+  }, [tastingPackages, searchQuery]);
+
+  const loading = campaignsLoading || discoveryOrgsLoading || tastingLoading;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -90,6 +114,32 @@ export default function ExplorePage() {
           <p className="text-center text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold leading-snug tracking-normal text-foreground">
+                Tasting packages
+              </h2>
+              {tastingByDistrict.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No matching tasting packages.</p>
+              ) : (
+                tastingByDistrict.map(({ district, items }) => (
+                  <div key={district} className="flex flex-col gap-2">
+                    <h3 className="text-sm font-semibold text-muted-foreground">{district}</h3>
+                    <VoucherCarouselRow
+                      items={items}
+                      variant="tasting_package"
+                      onCta={(t) => {
+                        if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
+                      }}
+                      onCardPress={(t) => {
+                        if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
+                      }}
+                      className="pl-0 pr-0"
+                    />
+                  </div>
+                ))
+              )}
+            </section>
+
             <section className="flex flex-col gap-3">
               <h2 className="text-lg font-bold leading-snug tracking-normal text-foreground">
                 Current campaign

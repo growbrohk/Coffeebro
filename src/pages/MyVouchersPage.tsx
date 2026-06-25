@@ -11,6 +11,10 @@ import {
 } from '@/hooks/useMyVouchers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
+import {
+  TastingPackageWalletFolder,
+  groupTastingPackageFolders,
+} from '@/components/TastingPackageWalletFolder';
 import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
 
@@ -78,6 +82,30 @@ export default function MyVouchersPage() {
   const inactiveVouchers = useMemo(
     () => vouchers.filter((v) => !isVoucherWalletActive(v)).sort(compareDeadlineDesc),
     [vouchers],
+  );
+
+  const activeGrouped = useMemo(
+    () => groupTastingPackageFolders(activeVouchers),
+    [activeVouchers],
+  );
+
+  const inactiveGrouped = useMemo(
+    () => groupTastingPackageFolders(inactiveVouchers),
+    [inactiveVouchers],
+  );
+
+  const renderWalletList = (
+    folders: ReturnType<typeof groupTastingPackageFolders>['folders'],
+    standalone: MyVoucher[],
+  ) => (
+    <div className="flex flex-col gap-3">
+      {folders.map((folder) => (
+        <TastingPackageWalletFolder key={folder.purchaseId} folder={folder} />
+      ))}
+      {standalone.map((v) => (
+        <WalletVoucherCard key={v.id} voucher={v} />
+      ))}
+    </div>
   );
 
   const showHostScan = Boolean(user && !roleLoading && canHostEvent);
@@ -153,21 +181,13 @@ export default function MyVouchersPage() {
             {activeVouchers.length > 0 ? (
               <section>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Active</h2>
-                <div className="flex flex-col gap-3">
-                  {activeVouchers.map((v) => (
-                    <WalletVoucherCard key={v.id} voucher={v} />
-                  ))}
-                </div>
+                {renderWalletList(activeGrouped.folders, activeGrouped.standalone)}
               </section>
             ) : null}
             {inactiveVouchers.length > 0 ? (
               <section className={activeVouchers.length > 0 ? 'mt-8' : undefined}>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Expired/Used</h2>
-                <div className="flex flex-col gap-3">
-                  {inactiveVouchers.map((v) => (
-                    <WalletVoucherCard key={v.id} voucher={v} />
-                  ))}
-                </div>
+                {renderWalletList(inactiveGrouped.folders, inactiveGrouped.standalone)}
               </section>
             ) : null}
           </div>

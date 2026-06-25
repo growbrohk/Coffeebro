@@ -4,6 +4,12 @@ import { Button } from "@/components/ui/button";
 import { HuntMap } from "@/components/HuntMap";
 import { TreasurePopupCard } from "@/components/TreasurePopupCard";
 import { HuntMapVoucherCarouselSheet } from "@/components/HuntMapVoucherCarouselSheet";
+import { TastingPackageMapCarouselSheet } from "@/components/TastingPackageMapCarouselSheet";
+import { usePublishedTastingPackages } from "@/hooks/usePublishedTastingPackages";
+import {
+  tastingPackageShopsToMapItems,
+  tastingPackageToCarouselItem,
+} from "@/lib/tastingPackageToCarouselItem";
 import { useGeolocation, haversineDistance } from "@/hooks/useGeolocation";
 import { useDiscoveryOrgs } from "@/hooks/useDiscoveryOrgs";
 import { discoveryOrgToCafeTreasure } from "@/lib/discoveryOrgToMapTreasure";
@@ -13,7 +19,7 @@ import { usePublishedCampaigns } from "@/hooks/usePublishedCampaigns";
 import { usePublishedCampaignVoucherPools } from "@/hooks/usePublishedCampaignVoucherPools";
 import { useMyClaimedCampaignIds } from "@/hooks/useMyClaimedCampaigns";
 import type { CampaignMapItem } from "@/types/campaignMapItem";
-import { Loader2, LocateFixed, Search } from "lucide-react";
+import { Loader2, LocateFixed, Search, Wine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { huntMapVoucherCarouselItems } from "@/lib/huntMapVoucherCarouselItems";
@@ -22,7 +28,7 @@ import coffeeShopPin from "@/assets/coffee-shop-pin.svg";
 import huntPinGrab from "@/assets/hunt-pin-grab.svg";
 import huntPinStar from "@/assets/hunt-pin-star.svg";
 
-type PillarId = "hunt_grab" | "coffee_shop";
+type PillarId = "hunt_grab" | "coffee_shop" | "tasting_package";
 
 export default function HuntMapPage() {
   const { huntId } = useParams<{ huntId: string }>();
@@ -32,6 +38,8 @@ export default function HuntMapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [pillar, setPillar] = useState<PillarId>("hunt_grab");
   const [voucherSheetDismissed, setVoucherSheetDismissed] = useState(false);
+  const [tastingPackageSheetDismissed, setTastingPackageSheetDismissed] = useState(false);
+  const [selectedTastingPackageId, setSelectedTastingPackageId] = useState<string | null>(null);
   const [userPin, setUserPin] = useState<{ lat: number; lng: number } | null>(null);
   const [locateFlyNonce, setLocateFlyNonce] = useState(0);
   const [refitNonce, setRefitNonce] = useState(0);
@@ -49,6 +57,7 @@ export default function HuntMapPage() {
     usePublishedCampaigns();
   const { data: claimedIds = new Set<string>(), isLoading: claimedLoading } = useMyClaimedCampaignIds();
   const { data: discoveryOrgs = [], isLoading: discoveryLoading } = useDiscoveryOrgs();
+  const { data: tastingPackages = [], isLoading: tastingLoading } = usePublishedTastingPackages();
   const { position: userPosition } = useGeolocation();
 
   const baseCampaignItems = useMemo(() => {
@@ -86,11 +95,12 @@ export default function HuntMapPage() {
   );
 
   const filteredCampaigns = useMemo(() => {
+    if (pillar === "tasting_package") return [];
     const q = searchQuery.trim().toLowerCase();
     return campaignItems.filter((t) => {
       if (pillar === "hunt_grab") {
         if (t.pinKind !== "grab" && t.pinKind !== "hunt") return false;
-      } else if (t.pinKind !== "coffee_shop") {
+      } else if (pillar === "coffee_shop" && t.pinKind !== "coffee_shop") {
         return false;
       }
       if (!q) return true;
@@ -112,17 +122,52 @@ export default function HuntMapPage() {
     });
   }, [discoveryItems, searchQuery, pillar]);
 
-  const mapTreasures = useMemo(
-    () => [...filteredCampaigns, ...filteredDiscovery],
-    [filteredCampaigns, filteredDiscovery],
-  );
+  const tastingCarouselItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return tastingPackages
+      .filter((pkg) => {
+        if (!q) return true;
+        const hay = [pkg.title, pkg.district, pkg.description].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      })
+      .map(tastingPackageToCarouselItem);
+  }, [tastingPackages, searchQuery]);
+
+  const activeTastingPackage = useMemo(() => {
+    if (tastingPackages.length === 0) return null;
+    if (selectedTastingPackageId) {
+      return tastingPackages.find((p) => p.id === selectedTastingPackageId) ?? tastingPackages[0];
+    }
+    return tastingPackages[0];
+  }, [tastingPackages, selectedTastingPackageId]);
+
+  useEffect(() => {
+    if (tastingPackages.length > 0 && !selectedTastingPackageId) {
+      setSelectedTastingPackageId(tastingPackages[0].id);
+    }
+  }, [tastingPackages, selectedTastingPackageId]);
+
+  const filteredTastingShops = useMemo(() => {
+    if (pillar !== "tasting_package" || !activeTastingPackage) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return tastingPackageShopsToMapItems(activeTastingPackage).filter((t) => {
+      if (!q) return true;
+      const hay = [t.name, t.address, t.orgName, t.campaignTitle].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [pillar, activeTastingPackage, searchQuery]);
+
+  const mapTreasures = useMemo(() => {
+    if (pillar === "tasting_package") return filteredTastingShops;
+    return [...filteredCampaigns, ...filteredDiscovery];
+  }, [pillar, filteredTastingShops, filteredCampaigns, filteredDiscovery]);
 
   const voucherTreasures = useMemo(
     () => huntMapVoucherCarouselItems(campaignItems, searchQuery),
     [campaignItems, searchQuery],
   );
 
-  const loading = campaignsLoading || discoveryLoading || claimedLoading;
+  const loading = campaignsLoading || discoveryLoading || claimedLoading || tastingLoading;
 
   const hasLocation =
     selectedTreasure &&
@@ -164,6 +209,11 @@ export default function HuntMapPage() {
 
   const handleDetailsClick = () => {
     if (!selectedTreasure) return;
+    if (selectedTreasure.tasting_package_id) {
+      navigate(`/tasting-packages/${selectedTreasure.tasting_package_id}`);
+      setSelectedTreasure(null);
+      return;
+    }
     if (selectedTreasure.pinKind === "coffee_shop" && selectedTreasure.org_id) {
       navigate(`/orgs/${selectedTreasure.org_id}`);
       setSelectedTreasure(null);
@@ -240,6 +290,7 @@ export default function HuntMapPage() {
     const prev = prevSelectedTreasureRef.current;
     if (prev !== null && selectedTreasure === null) {
       setVoucherSheetDismissed(false);
+      setTastingPackageSheetDismissed(false);
     }
     prevSelectedTreasureRef.current = selectedTreasure;
   }, [selectedTreasure]);
@@ -250,12 +301,18 @@ export default function HuntMapPage() {
     voucherTreasures.length > 0 &&
     selectedTreasure === null;
 
+  const tastingCarouselOpen =
+    pillar === "tasting_package" &&
+    !tastingPackageSheetDismissed &&
+    tastingCarouselItems.length > 0 &&
+    selectedTreasure === null;
+
   const mapOverlayPadding = useMemo(
     () => ({
-      top: 140,
-      bottom: voucherCarouselOpen ? 280 : 96,
+      top: pillar === "tasting_package" && activeTastingPackage ? 180 : 140,
+      bottom: voucherCarouselOpen || tastingCarouselOpen ? 280 : 96,
     }),
-    [voucherCarouselOpen],
+    [voucherCarouselOpen, tastingCarouselOpen, pillar, activeTastingPackage],
   );
 
   const mapChrome = (
@@ -350,6 +407,25 @@ export default function HuntMapPage() {
                   />
                   coffee shops
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRefitNonce((n) => n + 1);
+                    setPillar("tasting_package");
+                  }}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
+                    pillar === "tasting_package"
+                      ? "bg-foreground text-background"
+                      : "border border-border bg-card text-foreground",
+                  )}
+                >
+                  <Wine
+                    className={cn("h-5 w-5", pillar === "tasting_package" && "text-background")}
+                    strokeWidth={2}
+                  />
+                  tasting packages
+                </button>
               </div>
             </div>
             <button
@@ -369,6 +445,30 @@ export default function HuntMapPage() {
               )}
             </button>
           </div>
+          {pillar === "tasting_package" && tastingPackages.length > 0 ? (
+            <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex w-max min-w-0 items-center gap-2 pb-0.5">
+                {tastingPackages.map((pkg) => (
+                  <button
+                    key={pkg.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTastingPackageId(pkg.id);
+                      setRefitNonce((n) => n + 1);
+                    }}
+                    className={cn(
+                      "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                      activeTastingPackage?.id === pkg.id
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-foreground",
+                    )}
+                  >
+                    {pkg.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -390,6 +490,24 @@ export default function HuntMapPage() {
           onClose={() => setVoucherSheetDismissed(true)}
           onCta={(t) => void handleCampaignCta(t)}
           onCardPress={(t) => void handleCampaignCta(t)}
+        />
+      ) : pillar === "tasting_package" && !tastingPackageSheetDismissed && tastingCarouselItems.length > 0 ? (
+        <TastingPackageMapCarouselSheet
+          items={tastingCarouselItems}
+          selectedPackageId={activeTastingPackage?.id ?? null}
+          onClose={() => setTastingPackageSheetDismissed(true)}
+          onSelectPackage={(t) => {
+            if (t.tasting_package_id) setSelectedTastingPackageId(t.tasting_package_id);
+          }}
+          onCta={(t) => {
+            if (t.tasting_package_id) navigate(`/tasting-packages/${t.tasting_package_id}`);
+          }}
+          onCardPress={(t) => {
+            if (t.tasting_package_id) {
+              setSelectedTastingPackageId(t.tasting_package_id);
+              navigate(`/tasting-packages/${t.tasting_package_id}`);
+            }
+          }}
         />
       ) : null}
     </div>

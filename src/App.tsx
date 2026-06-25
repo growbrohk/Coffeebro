@@ -34,6 +34,11 @@ import AllMyCafesPage from "./pages/loyalty/AllMyCafesPage";
 import ShopFanDashboardPage from "./pages/loyalty/ShopFanDashboardPage";
 import ShopLoyaltyManagerPage from "./pages/host/ShopLoyaltyManagerPage";
 import VoucherStudioPage from "./pages/host/VoucherStudioPage";
+import AdminTastingPackagesPage from "./pages/AdminTastingPackagesPage";
+import AdminTastingPackageEditorPage from "./pages/AdminTastingPackageEditorPage";
+import TastingPackageDetailPage from "./pages/TastingPackageDetailPage";
+import TastingPackageCheckoutPage from "./pages/TastingPackageCheckoutPage";
+import TastingPackagePurchaseSuccessPage from "./pages/TastingPackagePurchaseSuccessPage";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +84,12 @@ const App = () => (
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/admin/orgs" element={<AdminOrgsPage />} />
+              <Route path="/admin/tasting-packages" element={<AdminTastingPackagesPage />} />
+              <Route path="/admin/tasting-packages/new" element={<AdminTastingPackageEditorPage />} />
+              <Route path="/admin/tasting-packages/:id" element={<AdminTastingPackageEditorPage />} />
+              <Route path="/tasting-packages/:id/checkout" element={<TastingPackageCheckoutPage />} />
+              <Route path="/tasting-packages/:id/purchase/success" element={<TastingPackagePurchaseSuccessPage />} />
+              <Route path="/tasting-packages/:id" element={<TastingPackageDetailPage />} />
               <Route path="/host/orgs" element={<HostOrgsPage />} />
               <Route path="/host/org/:orgId" element={<HostOrgEditPage />} />
               <Route path="/org/:orgId/menu" element={<OrgMenuPage />} />

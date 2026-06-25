@@ -45,6 +45,11 @@ export interface MyVoucher {
   org_shop_type?: string | null;
   /** Present for redeemed vouchers with an associated daily_coffees review row. */
   review?: MyVoucherReview | null;
+  /** Tasting package purchase folder grouping. */
+  tasting_package_purchase_id?: string | null;
+  tasting_package_id?: string | null;
+  tasting_package_title?: string | null;
+  tasting_package_tier?: string | null;
 }
 
 export function formatVoucherRedemptionPeriod(
@@ -130,8 +135,23 @@ export function useMyVouchers() {
           expires_at,
           campaign_id,
           loyalty_catalog_id,
+          tasting_package_purchase_id,
+          tasting_package_item_id,
+          menu_item_id,
           org_id,
           orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type ),
+          menu_items ( id, item_name ),
+          tasting_package_items (
+            id,
+            portion_index,
+            menu_items ( id, item_name )
+          ),
+          tasting_package_purchases (
+            id,
+            tier,
+            package_id,
+            tasting_packages ( id, title )
+          ),
           vouchers_catalog ( title, menu_item_id, menu_items ( id, item_name ) ),
           campaign_vouchers (
             offer_type,
@@ -154,6 +174,90 @@ export function useMyVouchers() {
       if (error) throw error;
 
       const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
+        const tastingPurchaseRaw = v.tasting_package_purchases;
+        const tastingPurchase = (Array.isArray(tastingPurchaseRaw)
+          ? tastingPurchaseRaw[0]
+          : tastingPurchaseRaw) as
+          | {
+              id: string;
+              tier: string;
+              package_id: string;
+              tasting_packages: { id: string; title: string } | { id: string; title: string }[] | null;
+            }
+          | null
+          | undefined;
+
+        if (v.tasting_package_purchase_id && tastingPurchase) {
+          const rawPkg = tastingPurchase.tasting_packages;
+          const pkg = Array.isArray(rawPkg) ? rawPkg[0] : rawPkg;
+          const orgsRow = v.orgs as {
+            org_name: string;
+            logo_url?: string | null;
+            lat: number | null;
+            lng: number | null;
+            location: string | null;
+            google_maps_url: string | null;
+            shop_type?: string | null;
+          } | null;
+
+          const rawTpi = v.tasting_package_items;
+          const tpi = (Array.isArray(rawTpi) ? rawTpi[0] : rawTpi) as
+            | { menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null }
+            | null
+            | undefined;
+          const rawMenuFromTpi = tpi?.menu_items;
+          const menuFromTpi = Array.isArray(rawMenuFromTpi) ? rawMenuFromTpi[0] : rawMenuFromTpi;
+
+          const rawMenuDirect = v.menu_items;
+          const menuDirect = Array.isArray(rawMenuDirect) ? rawMenuDirect[0] : rawMenuDirect;
+          const menu = menuFromTpi ?? menuDirect;
+
+          const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
+            walletRedeemLocation(
+              orgsRow
+                ? {
+                    shop_type: orgsRow.shop_type ?? null,
+                    lat: orgsRow.lat ?? null,
+                    lng: orgsRow.lng ?? null,
+                    location: orgsRow.location ?? null,
+                    google_maps_url: orgsRow.google_maps_url ?? null,
+                  }
+                : null,
+              null,
+            );
+
+          const tierLabel = tastingPurchase.tier === 'duo' ? 'Duo' : 'Single';
+
+          return {
+            id: v.id as string,
+            code: v.code as string,
+            status: v.status as MyVoucher["status"],
+            created_at: v.created_at as string,
+            redeemed_at: (v.redeemed_at as string | null) ?? null,
+            expires_at: (v.expires_at as string | null) ?? null,
+            title: menu?.item_name?.trim() ?? 'Tasting drink',
+            org_id: v.org_id as string,
+            org_name: orgsRow?.org_name,
+            org_logo_url: orgsRow?.logo_url ?? null,
+            offer_type: 'Tasting',
+            description: `${pkg?.title ?? 'Tasting package'} (${tierLabel})`,
+            location: locationTrimmed,
+            event_date: null,
+            thumbnail_url: null,
+            menu_item_id: menu?.id ?? null,
+            menu_item_name: menu?.item_name?.trim() ?? null,
+            campaign_details: pkg?.title ?? null,
+            redeem_directions_url: redeemDirectionsUrl,
+            pickup_spot_label: pickup_spot_label ?? null,
+            org_shop_type: orgsRow?.shop_type ?? null,
+            review: null,
+            tasting_package_purchase_id: v.tasting_package_purchase_id as string,
+            tasting_package_id: tastingPurchase.package_id,
+            tasting_package_title: pkg?.title ?? null,
+            tasting_package_tier: tastingPurchase.tier,
+          };
+        }
+
         const rawLoyalty = v.vouchers_catalog;
         const loyaltyRow = (Array.isArray(rawLoyalty) ? rawLoyalty[0] : rawLoyalty) as
           | {

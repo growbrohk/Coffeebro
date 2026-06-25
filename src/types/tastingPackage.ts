@@ -1,0 +1,57 @@
+import type { Tables } from "@/integrations/supabase/types";
+
+export type TastingPackageTier = "single" | "duo";
+
+export type TastingPackageRow = Tables<"tasting_packages">;
+export type TastingPackageShopRow = Tables<"tasting_package_shops">;
+export type TastingPackageItemRow = Tables<"tasting_package_items">;
+
+export type TastingPackageMenuItem = {
+  id: string;
+  item_name: string;
+  portion_index: number;
+};
+
+export type TastingPackageShop = {
+  id: string;
+  org_id: string;
+  tier: TastingPackageTier;
+  sort_order: number;
+  org_name: string | null;
+  org_logo_url: string | null;
+  org_preview_photo_url: string | null;
+  lat: number | null;
+  lng: number | null;
+  location: string | null;
+  items: TastingPackageMenuItem[];
+};
+
+export type TastingPackage = TastingPackageRow & {
+  shops: TastingPackageShop[];
+};
+
+export type TastingPackageShopDraft = {
+  clientId: string;
+  org_id: string;
+  org_name?: string;
+  menu_item_ids: string[];
+};
+
+export type TastingPackageEditorDraft = {
+  title: string;
+  description: string;
+  district: string;
+  cover_image_url: string;
+  status: "draft" | "published";
+  singleShops: TastingPackageShopDraft[];
+  duoShops: TastingPackageShopDraft[];
+};
+
+export const TASTING_SINGLE_MAX_SHOPS = 5;
+export const TASTING_DUO_MAX_SHOPS = 7;
+export const TASTING_SINGLE_PORTIONS = 1;
+export const TASTING_DUO_PORTIONS = 2;
+
+export function formatTastingPrice(cents: number): string {
+  return `$${Math.round(cents / 100)}`;
+}
