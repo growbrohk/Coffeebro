@@ -129,6 +129,28 @@ function draftFromOrg(org: Org): Draft {
   };
 }
 
+function gapFillDiscoveryFromOrg(
+  draft: Pick<Draft, 'hk_area' | 'district' | 'mtr_station'>,
+  org: Pick<Org, 'hk_area' | 'district' | 'mtr_station'>,
+): Partial<Pick<Draft, 'hk_area' | 'district' | 'mtr_station'>> {
+  return {
+    ...(!draft.mtr_station && org.mtr_station ? { mtr_station: org.mtr_station } : {}),
+    ...(!draft.district && org.district ? { district: org.district } : {}),
+    ...(!draft.hk_area && org.hk_area ? { hk_area: org.hk_area } : {}),
+  };
+}
+
+function discoveryDraftFromSavedRow(
+  row: { hk_area: string | null; district: string | null; mtr_station: string | null },
+  isOnline: boolean,
+): Pick<Draft, 'hk_area' | 'district' | 'mtr_station'> {
+  return {
+    hk_area: isOnline ? '' : (row.hk_area ?? ''),
+    district: isOnline ? '' : (row.district ?? ''),
+    mtr_station: isOnline ? '' : (row.mtr_station ?? ''),
+  };
+}
+
 async function uploadOrgPreviewToStorage(orgId: string, file: File): Promise<string> {
   const path = `org-preview/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
@@ -154,7 +176,7 @@ async function uploadOrgLogoToStorage(orgId: string, file: File): Promise<string
 export default function AdminOrgsPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
+  const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [], isLoading: orgsLoading } = useOrgs();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -188,6 +210,7 @@ export default function AdminOrgsPage() {
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
   const pendingOrgObjectUrlRef = useRef<string | null>(null);
   const orgListRef = useRef<HTMLUListElement>(null);
+  const draftLoadedForOrgIdRef = useRef<string | null | 'new' | 'idle'>(null);
   const [hasMoreBelow, setHasMoreBelow] = useState(false);
 
   const revokePendingOrgLogo = () => {
@@ -343,11 +366,25 @@ export default function AdminOrgsPage() {
 
   useEffect(() => {
     if (activeOrgId === 'idle' || activeOrgId === 'new') {
-      setDraft(emptyDraft());
+      if (draftLoadedForOrgIdRef.current !== activeOrgId) {
+        setDraft(emptyDraft());
+        draftLoadedForOrgIdRef.current = activeOrgId;
+      }
       return;
     }
     const org = orgs.find((o) => o.id === activeOrgId);
-    if (org) setDraft(draftFromOrg(org));
+    if (!org) return;
+
+    if (draftLoadedForOrgIdRef.current === activeOrgId) {
+      setDraft((d) => {
+        const patch = gapFillDiscoveryFromOrg(d, org);
+        return Object.keys(patch).length > 0 ? { ...d, ...patch } : d;
+      });
+      return;
+    }
+
+    setDraft(draftFromOrg(org));
+    draftLoadedForOrgIdRef.current = activeOrgId;
   }, [activeOrgId, orgs]);
 
   const previewMapsUrl = mapsPreviewUrl(
@@ -462,7 +499,17 @@ export default function AdminOrgsPage() {
   };
 
   const handleSelectOrg = (id: string) => {
+    draftLoadedForOrgIdRef.current = id;
+    const org = orgs.find((o) => o.id === id);
+    if (org) setDraft(draftFromOrg(org));
     setActiveOrgId(id);
+  };
+
+  const mergeOrgInOrgsCache = (orgId: string, patch: Partial<Org>) => {
+    queryClient.setQueryData<Org[]>(
+      ['orgs', user?.id, isSuperAdmin, isStaffUser],
+      (prev) => prev?.map((o) => (o.id === orgId ? { ...o, ...patch } : o)) ?? prev,
+    );
   };
 
   const handleNewOrg = () => {
@@ -685,6 +732,9 @@ export default function AdminOrgsPage() {
         if (orgLogoFileRef.current) orgLogoFileRef.current.value = '';
         if (finalLogoUrl) patchDraft({ logo_url: finalLogoUrl });
 
+        patchDraft(discoveryDraftFromSavedRow(row, isOnline));
+        mergeOrgInOrgsCache(orgId, row);
+        draftLoadedForOrgIdRef.current = orgId;
         toast({ title: 'Organization created' });
         refreshOrgRelatedQueries();
         setActiveOrgId(orgId);
@@ -723,6 +773,8 @@ export default function AdminOrgsPage() {
           if (hostErr) throw hostErr;
         }
 
+        patchDraft(discoveryDraftFromSavedRow(row, isOnline));
+        mergeOrgInOrgsCache(orgId, row);
         toast({ title: 'Organization updated' });
         refreshOrgRelatedQueries();
       }
@@ -1206,6 +1258,7 @@ export default function AdminOrgsPage() {
               <div className="space-y-2">
                 <Label htmlFor="mtr">MTR station</Label>
                 <Select
+                  key={`mtr-${activeOrgId}-${draft.mtr_station || '__none__'}`}
                   disabled={!draft.district}
                   value={draft.mtr_station ? draft.mtr_station : '__none__'}
                   onValueChange={(v) => patchDraft({ mtr_station: v === '__none__' ? '' : v })}

@@ -131,6 +131,28 @@ function draftFromOrg(org: Org): Draft {
   };
 }
 
+function gapFillDiscoveryFromOrg(
+  draft: Pick<Draft, 'hk_area' | 'district' | 'mtr_station'>,
+  org: Pick<Org, 'hk_area' | 'district' | 'mtr_station'>,
+): Partial<Pick<Draft, 'hk_area' | 'district' | 'mtr_station'>> {
+  return {
+    ...(!draft.mtr_station && org.mtr_station ? { mtr_station: org.mtr_station } : {}),
+    ...(!draft.district && org.district ? { district: org.district } : {}),
+    ...(!draft.hk_area && org.hk_area ? { hk_area: org.hk_area } : {}),
+  };
+}
+
+function discoveryDraftFromSavedRow(
+  row: { hk_area: string | null; district: string | null; mtr_station: string | null },
+  isOnline: boolean,
+): Pick<Draft, 'hk_area' | 'district' | 'mtr_station'> {
+  return {
+    hk_area: isOnline ? '' : (row.hk_area ?? ''),
+    district: isOnline ? '' : (row.district ?? ''),
+    mtr_station: isOnline ? '' : (row.mtr_station ?? ''),
+  };
+}
+
 async function uploadOrgPreviewToStorage(orgId: string, file: File): Promise<string> {
   const path = `org-preview/${orgId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
   const { error } = await supabase.storage.from('treasure-images').upload(path, file, {
@@ -170,6 +192,7 @@ export default function HostOrgEditPage() {
   const [previewPhotoMode, setPreviewPhotoMode] = useState<'link' | 'upload'>('link');
   const [previewPhotoUploading, setPreviewPhotoUploading] = useState(false);
   const orgPreviewFileRef = useRef<HTMLInputElement>(null);
+  const draftLoadedForOrgIdRef = useRef<string | null>(null);
   const [staffAddSearch, setStaffAddSearch] = useState('');
   const [debouncedStaffQ, setDebouncedStaffQ] = useState('');
   const [staffAddRole, setStaffAddRole] = useState<'host' | 'manager' | 'barista'>('host');
@@ -252,8 +275,19 @@ export default function HostOrgEditPage() {
   });
 
   useEffect(() => {
-    if (org) setDraft(draftFromOrg(org));
-  }, [org]);
+    if (!orgId || !org) return;
+
+    if (draftLoadedForOrgIdRef.current === orgId) {
+      setDraft((d) => {
+        const patch = gapFillDiscoveryFromOrg(d, org);
+        return Object.keys(patch).length > 0 ? { ...d, ...patch } : d;
+      });
+      return;
+    }
+
+    setDraft(draftFromOrg(org));
+    draftLoadedForOrgIdRef.current = orgId;
+  }, [orgId, org]);
 
   const patchDraft = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -399,6 +433,10 @@ export default function HostOrgEditPage() {
     try {
       const { error } = await supabase.from('orgs').update(row).eq('id', orgId);
       if (error) throw error;
+      patchDraft(discoveryDraftFromSavedRow(row, isOnline));
+      queryClient.setQueryData<Org>(['host-org-edit', orgId], (prev) =>
+        prev ? { ...prev, ...row } : prev,
+      );
       toast({ title: 'Saved' });
       queryClient.invalidateQueries({ queryKey: ['orgs'] });
       queryClient.invalidateQueries({ queryKey: ['discovery-orgs'] });
@@ -902,6 +940,7 @@ export default function HostOrgEditPage() {
             <div className="space-y-2">
               <Label htmlFor="mtr">MTR station</Label>
               <Select
+                key={`mtr-${orgId}-${draft.mtr_station || '__none__'}`}
                 disabled={disabled || !draft.district}
                 value={draft.mtr_station ? draft.mtr_station : '__none__'}
                 onValueChange={(v) => patchDraft({ mtr_station: v === '__none__' ? '' : v })}
