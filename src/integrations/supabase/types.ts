@@ -959,6 +959,7 @@ export type Database = {
           duo_price_cents: number
           hk_areas: string[]
           id: string
+          is_active: boolean
           mtr_stations: string[]
           redeem_valid_days: number
           single_price_cents: number
@@ -975,6 +976,7 @@ export type Database = {
           duo_price_cents?: number
           hk_areas?: string[]
           id?: string
+          is_active?: boolean
           mtr_stations?: string[]
           redeem_valid_days?: number
           single_price_cents?: number
@@ -991,6 +993,7 @@ export type Database = {
           duo_price_cents?: number
           hk_areas?: string[]
           id?: string
+          is_active?: boolean
           mtr_stations?: string[]
           redeem_valid_days?: number
           single_price_cents?: number

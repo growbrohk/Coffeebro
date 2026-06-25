@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   Popover,
   PopoverContent,
@@ -64,6 +65,7 @@ function emptyDraft(): TastingPackageEditorDraft {
     mtr_stations: [],
     cover_image_url: '',
     status: 'draft',
+    is_active: true,
     singleShops: [],
     duoShops: [],
   };
@@ -237,6 +239,7 @@ export default function AdminTastingPackageEditorPage() {
       mtr_stations: existing.mtr_stations ?? [],
       cover_image_url: existing.cover_image_url ?? '',
       status: existing.status as 'draft' | 'published',
+      is_active: existing.is_active ?? true,
       singleShops: [],
       duoShops: [],
     });
@@ -516,7 +519,13 @@ export default function AdminTastingPackageEditorPage() {
           <Label>Status</Label>
           <Select
             value={draft.status}
-            onValueChange={(v) => setDraft((d) => ({ ...d, status: v as 'draft' | 'published' }))}
+            onValueChange={(v) =>
+              setDraft((d) => ({
+                ...d,
+                status: v as 'draft' | 'published',
+                is_active: v === 'published' ? d.is_active : false,
+              }))
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -526,6 +535,23 @@ export default function AdminTastingPackageEditorPage() {
               <SelectItem value="published">Published</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 p-4">
+          <div className="space-y-1">
+            <Label htmlFor="is-active">Show in app</Label>
+            <p className="text-xs text-muted-foreground">
+              {draft.status === 'draft'
+                ? 'Publish the package before it can appear in Explore and the map.'
+                : 'Turn off to hide from users without reverting to draft.'}
+            </p>
+          </div>
+          <Switch
+            id="is-active"
+            checked={draft.is_active}
+            disabled={draft.status === 'draft'}
+            onCheckedChange={(checked) => setDraft((d) => ({ ...d, is_active: checked }))}
+          />
         </div>
 
         <section className="space-y-3">

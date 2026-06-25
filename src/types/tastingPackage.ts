@@ -45,6 +45,7 @@ export type TastingPackageEditorDraft = {
   mtr_stations: string[];
   cover_image_url: string;
   status: "draft" | "published";
+  is_active: boolean;
   singleShops: TastingPackageShopDraft[];
   duoShops: TastingPackageShopDraft[];
 };

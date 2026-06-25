@@ -68,13 +68,13 @@ Deno.serve(async (req) => {
 
   const { data: pkg, error: pkgErr } = await admin
     .from('tasting_packages')
-    .select('id, title, status, single_price_cents, duo_price_cents')
+    .select('id, title, status, is_active, single_price_cents, duo_price_cents')
     .eq('id', packageId)
     .maybeSingle();
 
   if (pkgErr) return json({ error: pkgErr.message }, 400);
-  if (!pkg || pkg.status !== 'published') {
-    return json({ error: 'PACKAGE_NOT_PUBLISHED', code: 'PACKAGE_NOT_PUBLISHED' }, 400);
+  if (!pkg || pkg.status !== 'published' || !pkg.is_active) {
+    return json({ error: 'PACKAGE_NOT_AVAILABLE', code: 'PACKAGE_NOT_AVAILABLE' }, 400);
   }
 
   const { count: shopCount, error: shopErr } = await admin

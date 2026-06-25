@@ -155,6 +155,7 @@ export function useTastingPackageMutations() {
         mtr_stations: draft.mtr_stations,
         cover_image_url: draft.cover_image_url.trim() || null,
         status: draft.status,
+        is_active: draft.is_active,
       };
 
       let id = packageId;
@@ -186,6 +187,24 @@ export function useTastingPackageMutations() {
         .single();
       if (loadErr) throw loadErr;
       return fresh;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["tasting-packages"] });
+      void queryClient.invalidateQueries({ queryKey: publishedTastingPackagesQueryKey });
+    },
+  });
+}
+
+export function useToggleTastingPackageActive() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ packageId, isActive }: { packageId: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from("tasting_packages")
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq("id", packageId);
+      if (error) throw error;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["tasting-packages"] });

@@ -68,6 +68,7 @@ function mapPackageRow(row: Record<string, unknown>): TastingPackage {
     mtr_stations: (row.mtr_stations as string[]) ?? [],
     cover_image_url: (row.cover_image_url as string) ?? null,
     status: row.status as string,
+    is_active: (row.is_active as boolean | undefined) ?? true,
     single_price_cents: row.single_price_cents as number,
     duo_price_cents: row.duo_price_cents as number,
     redeem_valid_days: row.redeem_valid_days as number,
@@ -88,6 +89,7 @@ export function usePublishedTastingPackages() {
         .from("tasting_packages")
         .select(PACKAGE_SELECT)
         .eq("status", "published")
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
