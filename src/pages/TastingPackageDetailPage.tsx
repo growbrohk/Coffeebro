@@ -100,7 +100,7 @@ export default function TastingPackageDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-48">
       <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-4 py-4">
         <button type="button" onClick={() => navigate(-1)} className="mr-2 p-2" aria-label="Back">
           <ArrowLeft className="h-6 w-6" />
@@ -126,7 +126,7 @@ export default function TastingPackageDetailPage() {
         <TierSection title="Duo includes" priceCents={pkg.duo_price_cents} shops={duoShops} />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-sm">
+      <div className="fixed bottom-[calc(var(--tab-nav-track-height)+env(safe-area-inset-bottom,0px))] left-1/2 z-[45] w-full max-w-[430px] -translate-x-1/2 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/90 pb-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         <div className="mx-auto flex max-w-lg flex-col gap-2">
           {singleShops.length > 0 ? (
             ownedTiers.has('single') ? (
