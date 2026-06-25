@@ -10,7 +10,7 @@ export function formatTastingDuoDisplay(names: [string, string]): TastingDuoDisp
   const drink2 = b || "Drink 2";
 
   if (a.toLowerCase() === b.toLowerCase() && a.length > 0) {
-    return { compact: `${a} × 2` };
+    return { compact: `2 × ${a}` };
   }
 
   return {
