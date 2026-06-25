@@ -53,7 +53,9 @@ export function tastingPackageShopsToMapItems(
   for (const shop of pkg.shops) {
     if (seen.has(shop.org_id)) continue;
     seen.add(shop.org_id);
-    if (shop.lat == null || shop.lng == null) continue;
+    const lat = shop.lat != null ? Number(shop.lat) : null;
+    const lng = shop.lng != null ? Number(shop.lng) : null;
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
     out.push({
       id: `tasting-${pkg.id}-${shop.org_id}`,
@@ -61,8 +63,8 @@ export function tastingPackageShopsToMapItems(
       qr_code_id: shop.org_id,
       name: shop.org_name ?? "Coffee shop",
       description: null,
-      lat: shop.lat,
-      lng: shop.lng,
+      lat,
+      lng,
       address: shop.location,
       sort_order: shop.sort_order,
       clue_image: shop.org_preview_photo_url ?? shop.org_logo_url ?? null,
