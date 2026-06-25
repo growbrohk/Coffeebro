@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Gift, Loader2 } from 'lucide-react';
+import { AlertCircle, Gift, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,7 +11,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useMyVouchers } from '@/hooks/useMyVouchers';
-import { publishedTastingPackagesQueryKey } from '@/hooks/usePublishedTastingPackages';
+import {
+  publishedTastingPackagesQueryKey,
+  useTastingPackagePurchaseBySession,
+} from '@/hooks/usePublishedTastingPackages';
 
 export default function TastingPackagePurchaseSuccessPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,36 +22,45 @@ export default function TastingPackagePurchaseSuccessPage() {
   const sessionId = searchParams.get('session_id');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: vouchers = [], isLoading, refetch } = useMyVouchers();
-  const [timedOut, setTimedOut] = useState(false);
+  const { data: vouchers = [], refetch: refetchVouchers } = useMyVouchers();
+  const {
+    data: purchase,
+    refetch: refetchPurchase,
+    isLoading: purchaseLoading,
+  } = useTastingPackagePurchaseBySession(sessionId);
 
   useEffect(() => {
     void queryClient.invalidateQueries({ queryKey: ['vouchers', 'my'] });
     void queryClient.invalidateQueries({ queryKey: publishedTastingPackagesQueryKey });
     void queryClient.invalidateQueries({ queryKey: ['tasting-package-purchases'] });
+    void queryClient.invalidateQueries({ queryKey: ['tasting-package-purchase', 'session'] });
   }, [queryClient]);
 
-  useEffect(() => {
-    if (!sessionId || !id) return;
-
-    const started = Date.now();
-    const iv = window.setInterval(() => {
-      void refetch();
-      if (Date.now() - started > 12_000) {
-        setTimedOut(true);
-        window.clearInterval(iv);
-      }
-    }, 1500);
-
-    return () => window.clearInterval(iv);
-  }, [sessionId, id, refetch]);
-
   const tastingVouchers = useMemo(
-    () => vouchers.filter((v) => v.tasting_package_id === id),
-    [vouchers, id],
+    () =>
+      vouchers.filter(
+        (v) =>
+          v.tasting_package_id === id ||
+          (purchase?.id && v.tasting_package_purchase_id === purchase.id),
+      ),
+    [vouchers, id, purchase?.id],
   );
 
-  const successOpen = tastingVouchers.length > 0;
+  const mintFailed = purchase?.status === 'failed';
+  const mintSucceeded = purchase?.status === 'minted' || tastingVouchers.length > 0;
+  const stillPending =
+    Boolean(sessionId) &&
+    !purchaseLoading &&
+    purchase != null &&
+    (purchase.status === 'pending' || purchase.status === 'paid') &&
+    !mintSucceeded;
+
+  const successOpen = mintSucceeded && tastingVouchers.length > 0;
+
+  const handleRefresh = () => {
+    void refetchPurchase();
+    void refetchVouchers();
+  };
 
   if (!id) {
     return (
@@ -76,7 +88,7 @@ export default function TastingPackagePurchaseSuccessPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 pb-24">
-      {!successOpen && !timedOut ? (
+      {stillPending ? (
         <div className="flex flex-col items-center gap-3 text-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
           <p className="text-sm font-semibold text-foreground">Minting your tasting vouchers…</p>
@@ -84,14 +96,29 @@ export default function TastingPackagePurchaseSuccessPage() {
         </div>
       ) : null}
 
-      {timedOut && !successOpen ? (
+      {mintFailed ? (
         <div className="max-w-sm space-y-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            Still processing. Open your wallet in a moment — if nothing appears, contact support with your
-            payment receipt.
+          <AlertCircle className="mx-auto h-10 w-10 text-destructive" />
+          <p className="text-sm font-semibold text-foreground">Could not add vouchers to your wallet</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {purchase?.mint_error?.trim() ||
+              'Something went wrong after payment. Contact support with your payment receipt.'}
           </p>
-          <Button className="w-full" onClick={() => void refetch()} disabled={isLoading}>
-            Refresh wallet
+          <Button className="w-full" onClick={() => void handleRefresh()}>
+            Try again
+          </Button>
+          <Button variant="outline" className="w-full" asChild>
+            <Link to="/vouchers">Open wallet</Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {!stillPending && !mintFailed && !successOpen ? (
+        <div className="max-w-sm space-y-4 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Checking your wallet…</p>
+          <Button className="w-full" onClick={() => void handleRefresh()}>
+            Refresh
           </Button>
           <Button variant="outline" className="w-full" asChild>
             <Link to="/vouchers">Go to wallet</Link>

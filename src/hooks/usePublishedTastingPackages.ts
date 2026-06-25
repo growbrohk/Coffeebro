@@ -139,13 +139,40 @@ export function useMyTastingPackagePurchases() {
 
       const { data, error } = await supabase
         .from("tasting_package_purchases")
-        .select("id, package_id, tier, status, tasting_packages ( id, title )")
+        .select("id, package_id, tier, status, mint_error, tasting_packages ( id, title )")
         .eq("user_id", user.id)
-        .in("status", ["pending", "paid", "minted"]);
+        .in("status", ["pending", "paid", "minted", "failed"]);
 
       if (error) throw error;
       return data ?? [];
     },
     enabled: Boolean(user),
+  });
+}
+
+export function useTastingPackagePurchaseBySession(sessionId: string | null | undefined) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["tasting-package-purchase", "session", user?.id, sessionId],
+    queryFn: async () => {
+      if (!user || !sessionId) return null;
+
+      const { data, error } = await supabase
+        .from("tasting_package_purchases")
+        .select("id, package_id, tier, status, mint_error, tasting_packages ( id, title )")
+        .eq("stripe_checkout_session_id", sessionId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: Boolean(user && sessionId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "minted" || status === "failed") return false;
+      return 1500;
+    },
   });
 }

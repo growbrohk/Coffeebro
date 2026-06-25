@@ -187,9 +187,13 @@ export function useMyVouchers() {
           | null
           | undefined;
 
-        if (v.tasting_package_purchase_id && tastingPurchase) {
-          const rawPkg = tastingPurchase.tasting_packages;
-          const pkg = Array.isArray(rawPkg) ? rawPkg[0] : rawPkg;
+        if (v.tasting_package_purchase_id) {
+          const rawPkg = tastingPurchase?.tasting_packages;
+          const pkg = rawPkg
+            ? Array.isArray(rawPkg)
+              ? rawPkg[0]
+              : rawPkg
+            : null;
           const orgsRow = v.orgs as {
             org_name: string;
             logo_url?: string | null;
@@ -226,7 +230,9 @@ export function useMyVouchers() {
               null,
             );
 
-          const tierLabel = tastingPurchase.tier === 'duo' ? 'Duo' : 'Single';
+          const tier = tastingPurchase?.tier ?? 'single';
+          const tierLabel = tier === 'duo' ? 'Duo' : 'Single';
+          const packageTitle = pkg?.title ?? 'Tasting package';
 
           return {
             id: v.id as string,
@@ -240,21 +246,21 @@ export function useMyVouchers() {
             org_name: orgsRow?.org_name,
             org_logo_url: orgsRow?.logo_url ?? null,
             offer_type: 'Tasting',
-            description: `${pkg?.title ?? 'Tasting package'} (${tierLabel})`,
+            description: `${packageTitle} (${tierLabel})`,
             location: locationTrimmed,
             event_date: null,
             thumbnail_url: null,
             menu_item_id: menu?.id ?? null,
             menu_item_name: menu?.item_name?.trim() ?? null,
-            campaign_details: pkg?.title ?? null,
+            campaign_details: packageTitle,
             redeem_directions_url: redeemDirectionsUrl,
             pickup_spot_label: pickup_spot_label ?? null,
             org_shop_type: orgsRow?.shop_type ?? null,
             review: null,
             tasting_package_purchase_id: v.tasting_package_purchase_id as string,
-            tasting_package_id: tastingPurchase.package_id,
-            tasting_package_title: pkg?.title ?? null,
-            tasting_package_tier: tastingPurchase.tier,
+            tasting_package_id: tastingPurchase?.package_id ?? pkg?.id ?? null,
+            tasting_package_title: packageTitle,
+            tasting_package_tier: tier,
           };
         }
 
