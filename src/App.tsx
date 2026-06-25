@@ -36,6 +36,13 @@ import ShopLoyaltyManagerPage from "./pages/host/ShopLoyaltyManagerPage";
 import VoucherStudioPage from "./pages/host/VoucherStudioPage";
 import AdminTastingPackagesPage from "./pages/AdminTastingPackagesPage";
 import AdminTastingPackageEditorPage from "./pages/AdminTastingPackageEditorPage";
+import AdminTastingTrackingDashboardPage from "./pages/admin/tasting-tracking/AdminTastingTrackingDashboardPage";
+import AdminTastingPackageDetailPage from "./pages/admin/tasting-tracking/AdminTastingPackageDetailPage";
+import AdminTastingPurchaseDetailPage from "./pages/admin/tasting-tracking/AdminTastingPurchaseDetailPage";
+import AdminTastingRedemptionsPage from "./pages/admin/tasting-tracking/AdminTastingRedemptionsPage";
+import AdminTastingShopSummaryPage from "./pages/admin/tasting-tracking/AdminTastingShopSummaryPage";
+import HostTastingDashboardPage from "./pages/host/HostTastingDashboardPage";
+import HostTastingRedemptionsPage from "./pages/host/HostTastingRedemptionsPage";
 import TastingPackageDetailPage from "./pages/TastingPackageDetailPage";
 import TastingPackageCheckoutPage from "./pages/TastingPackageCheckoutPage";
 import TastingPackagePurchaseSuccessPage from "./pages/TastingPackagePurchaseSuccessPage";
@@ -80,6 +87,8 @@ const App = () => (
               <Route path="/loyalty/orgs/:orgId" element={<ShopFanDashboardPage />} />
               <Route path="/host/org/:orgId/loyalty" element={<ShopLoyaltyManagerPage />} />
               <Route path="/host/org/:orgId/loyalty/vouchers" element={<VoucherStudioPage />} />
+              <Route path="/host/org/:orgId/tasting" element={<HostTastingDashboardPage />} />
+              <Route path="/host/org/:orgId/redemptions" element={<HostTastingRedemptionsPage />} />
               <Route path="/orgs/:orgId" element={<OrgPublicPage />} />
               <Route path="/vouchers" element={<MyVouchersPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
@@ -87,6 +96,17 @@ const App = () => (
               <Route path="/admin/tasting-packages" element={<AdminTastingPackagesPage />} />
               <Route path="/admin/tasting-packages/new" element={<AdminTastingPackageEditorPage />} />
               <Route path="/admin/tasting-packages/:id" element={<AdminTastingPackageEditorPage />} />
+              <Route path="/admin/tasting-tracking" element={<AdminTastingTrackingDashboardPage />} />
+              <Route
+                path="/admin/tasting-tracking/packages/:packageId"
+                element={<AdminTastingPackageDetailPage />}
+              />
+              <Route
+                path="/admin/tasting-tracking/purchases/:purchaseId"
+                element={<AdminTastingPurchaseDetailPage />}
+              />
+              <Route path="/admin/tasting-tracking/redemptions" element={<AdminTastingRedemptionsPage />} />
+              <Route path="/admin/tasting-tracking/shops" element={<AdminTastingShopSummaryPage />} />
               <Route path="/tasting-packages/:id/checkout" element={<TastingPackageCheckoutPage />} />
               <Route path="/tasting-packages/:id/purchase/success" element={<TastingPackagePurchaseSuccessPage />} />
               <Route path="/tasting-packages/:id" element={<TastingPackageDetailPage />} />

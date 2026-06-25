@@ -1380,6 +1380,47 @@ export type Database = {
           store_id: string
         }[]
       }
+      get_host_tasting_dashboard: {
+        Args: { p_org_id: string; p_package_id?: string | null }
+        Returns: {
+          expected_vouchers: number
+          item_name: string
+          org_id: string
+          org_name: string
+          package_id: string
+          package_title: string
+          redeemed: number
+          remaining: number
+          tier: string
+        }[]
+      }
+      get_tasting_package_tracking_summary: {
+        Args: { p_package_id: string; p_tier?: string | null }
+        Returns: {
+          is_active: boolean
+          package_id: string
+          package_status: string
+          package_title: string
+          redemption_rate: number
+          revenue_cents: number
+          sold: number
+          vouchers_created: number
+          vouchers_per_purchase: number | null
+          vouchers_redeemed: number
+          vouchers_unredeemed: number
+        }[]
+      }
+      get_tasting_tracking_dashboard: {
+        Args: { p_package_id?: string | null }
+        Returns: {
+          packages_sold: number
+          redemption_rate: number
+          total_revenue_cents: number
+          vouchers_created: number
+          vouchers_redeemed: number
+          vouchers_unredeemed: number
+        }[]
+      }
       get_today_coffee_percentage: { Args: never; Returns: number }
       get_today_run_percentage: { Args: never; Returns: number }
       get_total_users: { Args: never; Returns: number }
@@ -1451,6 +1492,112 @@ export type Database = {
           redeemed_at: string | null
           status: string
           voucher_id: string
+        }[]
+      }
+      list_host_tasting_redemptions: {
+        Args: {
+          p_date_from?: string | null
+          p_date_to?: string | null
+          p_org_id: string
+          p_package_id?: string | null
+        }
+        Returns: {
+          buyer_name: string
+          item_name: string
+          package_title: string
+          redeemed_at: string
+          status: string
+          tier: string
+          voucher_id: string
+        }[]
+      }
+      list_tasting_package_sales: {
+        Args: { p_package_id?: string | null }
+        Returns: {
+          package_id: string
+          package_title: string
+          redemption_rate: number
+          revenue_cents: number
+          sold: number
+          tier: string
+          vouchers_created: number
+          vouchers_redeemed: number
+        }[]
+      }
+      list_tasting_purchase_vouchers: {
+        Args: { p_purchase_id: string }
+        Returns: {
+          item_name: string
+          redeemed_at: string | null
+          redeemed_by_name: string | null
+          shop_name: string
+          status: string
+          voucher_code: string
+          voucher_id: string
+        }[]
+      }
+      list_tasting_purchases: {
+        Args: { p_filters?: Json }
+        Returns: {
+          amount_cents: number
+          buyer_email: string | null
+          buyer_id: string
+          buyer_name: string
+          created_at: string
+          package_id: string
+          package_title: string
+          payment_status: string
+          purchase_id: string
+          purchase_status: string
+          redeemed_count: number
+          tier: string
+          voucher_count: number
+        }[]
+      }
+      list_tasting_redemptions: {
+        Args: { p_filters?: Json }
+        Returns: {
+          buyer_email: string | null
+          buyer_id: string
+          buyer_name: string
+          created_at: string
+          item_name: string
+          menu_item_id: string | null
+          org_id: string
+          package_id: string
+          package_title: string
+          redeemed_at: string | null
+          scanned_by_name: string | null
+          shop_name: string
+          status: string
+          tier: string
+          voucher_code: string
+          voucher_id: string
+        }[]
+      }
+      list_tasting_shop_items: {
+        Args: {
+          p_org_id: string
+          p_package_id: string
+          p_tier?: string | null
+        }
+        Returns: {
+          issued: number
+          item_name: string
+          menu_item_id: string
+          redeemed: number
+          remaining: number
+        }[]
+      }
+      list_tasting_shop_summary: {
+        Args: { p_package_id: string; p_tier?: string | null }
+        Returns: {
+          assigned_vouchers: number
+          org_id: string
+          redemption_rate: number
+          redeemed: number
+          shop_name: string
+          unredeemed: number
         }[]
       }
       log_coffee_for_voucher: {

@@ -119,29 +119,40 @@ export default function HostOrgsPage() {
                       <p className="text-xs text-muted-foreground">Role: {roleLabel}</p>
                     ) : null}
                   </div>
-                  {canEdit ? (
-                    <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
+                  <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
                       <Button
                         type="button"
                         variant="secondary"
                         size="sm"
                         className="gap-1"
-                        onClick={() => navigate(`/org/${o.id}/menu`)}
+                        onClick={() => navigate(`/host/org/${o.id}/tasting`)}
                       >
-                        Menu &amp; campaigns
+                        Tasting ops
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => navigate(`/host/org/${o.id}`)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </Button>
+                      {canEdit ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => navigate(`/org/${o.id}/menu`)}
+                          >
+                            Menu &amp; campaigns
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => navigate(`/host/org/${o.id}`)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                          </Button>
+                        </>
+                      ) : null}
                     </div>
-                  ) : null}
                 </li>
               );
             })}
