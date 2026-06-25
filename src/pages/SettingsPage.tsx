@@ -91,7 +91,7 @@ export default function SettingsPage() {
 
         {isSuperAdmin && (
           <Button type="button" variant="default" className="w-full" onClick={() => navigate('/admin/tasting-packages')}>
-            New Tasting Package
+            Tasting Package
           </Button>
         )}
 
