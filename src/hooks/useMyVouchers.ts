@@ -214,7 +214,7 @@ export function useMyVouchers() {
 
           const rawMenuDirect = v.menu_items;
           const menuDirect = Array.isArray(rawMenuDirect) ? rawMenuDirect[0] : rawMenuDirect;
-          const menu = menuFromTpi ?? menuDirect;
+          const menu = menuDirect ?? menuFromTpi;
 
           const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
             walletRedeemLocation(

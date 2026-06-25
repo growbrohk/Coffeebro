@@ -48,6 +48,7 @@ import {
   TASTING_SINGLE_PORTIONS,
 } from '@/types/tastingPackage';
 import { cn } from '@/lib/utils';
+import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
 import { supabase } from '@/integrations/supabase/client';
 
 function newClientId() {
@@ -215,10 +216,19 @@ export default function AdminTastingPackageEditorPage() {
 
   const [draft, setDraft] = useState<TastingPackageEditorDraft>(emptyDraft);
   const [uploading, setUploading] = useState(false);
+  const [shopsLoaded, setShopsLoaded] = useState(isNew);
 
   useEffect(() => {
-    if (!existing || isNew) return;
+    if (isNew) {
+      setShopsLoaded(true);
+      return;
+    }
+    if (!existing) {
+      setShopsLoaded(false);
+      return;
+    }
 
+    setShopsLoaded(false);
     setDraft({
       title: existing.title,
       description: existing.description ?? '',
@@ -232,29 +242,39 @@ export default function AdminTastingPackageEditorPage() {
     });
 
     void (async () => {
-      const { data } = await supabase
-        .from('tasting_package_shops')
-        .select('id, tier, org_id, tasting_package_items ( menu_item_id, portion_index )')
-        .eq('package_id', existing.id);
-      if (!data) return;
+      try {
+        const { data, error } = await supabase
+          .from('tasting_package_shops')
+          .select('id, tier, org_id, tasting_package_items ( menu_item_id, portion_index )')
+          .eq('package_id', existing.id);
+        if (error) throw error;
+        if (!data) return;
 
-      const singleShops: TastingPackageShopDraft[] = [];
-      const duoShops: TastingPackageShopDraft[] = [];
+        const singleShops: TastingPackageShopDraft[] = [];
+        const duoShops: TastingPackageShopDraft[] = [];
 
-      for (const row of data) {
-        const rawItems = row.tasting_package_items;
-        const items = (Array.isArray(rawItems) ? rawItems : []) as { menu_item_id: string; portion_index: number }[];
-        const menuIds = items.sort((a, b) => a.portion_index - b.portion_index).map((it) => it.menu_item_id);
-        const shopDraft: TastingPackageShopDraft = {
-          clientId: row.id,
-          org_id: row.org_id,
-          menu_item_ids: menuIds,
-        };
-        if (row.tier === 'single') singleShops.push(shopDraft);
-        else duoShops.push(shopDraft);
+        for (const row of data) {
+          const rawItems = row.tasting_package_items;
+          const items = (Array.isArray(rawItems) ? rawItems : []) as {
+            menu_item_id: string;
+            portion_index: number;
+          }[];
+          const menuIds = items
+            .sort((a, b) => a.portion_index - b.portion_index)
+            .map((it) => it.menu_item_id);
+          const shopDraft: TastingPackageShopDraft = {
+            clientId: row.id,
+            org_id: row.org_id,
+            menu_item_ids: menuIds,
+          };
+          if (row.tier === 'single') singleShops.push(shopDraft);
+          else duoShops.push(shopDraft);
+        }
+
+        setDraft((d) => ({ ...d, singleShops, duoShops }));
+      } finally {
+        setShopsLoaded(true);
       }
-
-      setDraft((d) => ({ ...d, singleShops, duoShops }));
     })();
   }, [existing, isNew]);
 
@@ -373,7 +393,7 @@ export default function AdminTastingPackageEditorPage() {
     } catch (e: unknown) {
       toast({
         title: 'Save failed',
-        description: e instanceof Error ? e.message : 'Unknown error',
+        description: getAdminTastingPackageSaveErrorMessage(e),
         variant: 'destructive',
       });
     }
@@ -391,7 +411,7 @@ export default function AdminTastingPackageEditorPage() {
     } catch (e: unknown) {
       toast({
         title: 'Upload failed',
-        description: e instanceof Error ? e.message : 'Unknown error',
+        description: getErrorMessage(e),
         variant: 'destructive',
       });
     } finally {
@@ -588,9 +608,14 @@ export default function AdminTastingPackageEditorPage() {
           ))}
         </section>
 
-        <Button type="button" className="w-full" onClick={() => void handleSave()} disabled={saveMutation.isPending}>
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => void handleSave()}
+          disabled={saveMutation.isPending || (!isNew && !shopsLoaded)}
+        >
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save package
+          {!isNew && !shopsLoaded ? 'Loading shops…' : 'Save package'}
         </Button>
 
         {!isNew && id ? (

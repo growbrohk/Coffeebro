@@ -10,11 +10,89 @@ export type SaveTastingPackagePayload = {
   createdBy?: string;
 };
 
+async function shopHasVouchers(shopId: string): Promise<boolean> {
+  const { data: items, error: itemsErr } = await supabase
+    .from("tasting_package_items")
+    .select("id")
+    .eq("package_shop_id", shopId);
+  if (itemsErr) throw itemsErr;
+
+  const itemIds = (items ?? []).map((it) => it.id);
+  if (itemIds.length === 0) return false;
+
+  const { count, error } = await supabase
+    .from("vouchers")
+    .select("id", { count: "exact", head: true })
+    .in("tasting_package_item_id", itemIds);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+async function itemHasVouchers(itemId: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from("vouchers")
+    .select("id", { count: "exact", head: true })
+    .eq("tasting_package_item_id", itemId);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+async function syncShopItems(
+  shopId: string,
+  shop: TastingPackageEditorDraft["singleShops"][number],
+) {
+  const { data: existingItems, error: itemsErr } = await supabase
+    .from("tasting_package_items")
+    .select("id, portion_index, menu_item_id")
+    .eq("package_shop_id", shopId);
+  if (itemsErr) throw itemsErr;
+
+  const existingByPortion = new Map(
+    (existingItems ?? []).map((it) => [it.portion_index, it]),
+  );
+
+  for (let p = 0; p < shop.menu_item_ids.length; p++) {
+    const menuItemId = shop.menu_item_ids[p]?.trim();
+    if (!menuItemId) continue;
+
+    const portionIndex = p + 1;
+    const existing = existingByPortion.get(portionIndex);
+
+    if (existing) {
+      if (existing.menu_item_id !== menuItemId) {
+        const { error } = await supabase
+          .from("tasting_package_items")
+          .update({ menu_item_id: menuItemId })
+          .eq("id", existing.id);
+        if (error) throw error;
+      }
+      existingByPortion.delete(portionIndex);
+    } else {
+      const { error } = await supabase.from("tasting_package_items").insert({
+        package_shop_id: shopId,
+        menu_item_id: menuItemId,
+        portion_index: portionIndex,
+      });
+      if (error) throw error;
+    }
+  }
+
+  for (const [, item] of existingByPortion) {
+    if (await itemHasVouchers(item.id)) {
+      throw new Error("Cannot remove a tasting item that has been purchased");
+    }
+    const { error } = await supabase.from("tasting_package_items").delete().eq("id", item.id);
+    if (error) throw error;
+  }
+}
+
 async function syncShopsAndItems(
   packageId: string,
   tier: TastingPackageTier,
   shops: TastingPackageEditorDraft["singleShops"],
 ) {
+  const completeShops = shops.filter((s) => s.org_id.trim());
+
   const { data: existingShops, error: loadErr } = await supabase
     .from("tasting_package_shops")
     .select("id, org_id")
@@ -23,17 +101,20 @@ async function syncShopsAndItems(
   if (loadErr) throw loadErr;
 
   const existingByOrg = new Map((existingShops ?? []).map((s) => [s.org_id, s.id]));
-  const nextOrgIds = new Set(shops.map((s) => s.org_id));
+  const nextOrgIds = new Set(completeShops.map((s) => s.org_id));
 
   for (const [orgId, shopId] of existingByOrg) {
     if (!nextOrgIds.has(orgId)) {
+      if (await shopHasVouchers(shopId)) {
+        throw new Error("Cannot remove shop — customers already hold vouchers for this package");
+      }
       const { error } = await supabase.from("tasting_package_shops").delete().eq("id", shopId);
       if (error) throw error;
     }
   }
 
-  for (let i = 0; i < shops.length; i++) {
-    const shop = shops[i];
+  for (let i = 0; i < completeShops.length; i++) {
+    const shop = completeShops[i];
     let shopId = existingByOrg.get(shop.org_id);
 
     if (shopId) {
@@ -57,31 +138,7 @@ async function syncShopsAndItems(
       shopId = inserted.id;
     }
 
-    const { data: existingItems, error: itemsErr } = await supabase
-      .from("tasting_package_items")
-      .select("id, portion_index")
-      .eq("package_shop_id", shopId);
-    if (itemsErr) throw itemsErr;
-
-    const existingItemIds = (existingItems ?? []).map((it) => it.id);
-    if (existingItemIds.length > 0) {
-      const { error } = await supabase
-        .from("tasting_package_items")
-        .delete()
-        .in("id", existingItemIds);
-      if (error) throw error;
-    }
-
-    for (let p = 0; p < shop.menu_item_ids.length; p++) {
-      const menuItemId = shop.menu_item_ids[p]?.trim();
-      if (!menuItemId) continue;
-      const { error } = await supabase.from("tasting_package_items").insert({
-        package_shop_id: shopId,
-        menu_item_id: menuItemId,
-        portion_index: p + 1,
-      });
-      if (error) throw error;
-    }
+    await syncShopItems(shopId, shop);
   }
 }
 
