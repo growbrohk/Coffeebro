@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizeClaimSpot } from "@/lib/campaignToMapItem";
 import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { formatTastingDuoDisplay } from "@/lib/formatTastingDuoDisplay";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 
 export interface MyVoucherReview {
@@ -50,6 +51,10 @@ export interface MyVoucher {
   tasting_package_id?: string | null;
   tasting_package_title?: string | null;
   tasting_package_tier?: string | null;
+  /** Both drink names when a duo shop voucher covers two drinks. */
+  tasting_duo_items?: [string, string];
+  /** Numbered lines for wallet display when duo drinks differ. */
+  tasting_duo_lines?: [string, string];
 }
 
 export function formatVoucherRedemptionPeriod(
@@ -138,9 +143,11 @@ export function useMyVouchers() {
           tasting_package_purchase_id,
           tasting_package_item_id,
           menu_item_id,
+          menu_item_id_2,
           org_id,
           orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type ),
-          menu_items ( id, item_name ),
+          menu_items!vouchers_menu_item_id_fkey ( id, item_name ),
+          menu_item_2:menu_items!vouchers_menu_item_id_2_fkey ( id, item_name ),
           tasting_package_items (
             id,
             portion_index,
@@ -216,6 +223,19 @@ export function useMyVouchers() {
           const menuDirect = Array.isArray(rawMenuDirect) ? rawMenuDirect[0] : rawMenuDirect;
           const menu = menuDirect ?? menuFromTpi;
 
+          const rawMenu2 = v.menu_item_2;
+          const menu2 = (Array.isArray(rawMenu2) ? rawMenu2[0] : rawMenu2) as
+            | { id: string; item_name: string }
+            | null
+            | undefined;
+
+          const drink1Name = menu?.item_name?.trim() ?? "";
+          const drink2Name = menu2?.item_name?.trim() ?? "";
+          const hasDuoShopVoucher = Boolean(v.menu_item_id_2 && menu2);
+          const duoDisplay = hasDuoShopVoucher
+            ? formatTastingDuoDisplay([drink1Name || "Drink 1", drink2Name || "Drink 2"])
+            : null;
+
           const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
             walletRedeemLocation(
               orgsRow
@@ -241,7 +261,7 @@ export function useMyVouchers() {
             created_at: v.created_at as string,
             redeemed_at: (v.redeemed_at as string | null) ?? null,
             expires_at: (v.expires_at as string | null) ?? null,
-            title: menu?.item_name?.trim() ?? 'Tasting drink',
+            title: duoDisplay?.compact ?? (drink1Name || "Tasting drink"),
             org_id: v.org_id as string,
             org_name: orgsRow?.org_name,
             org_logo_url: orgsRow?.logo_url ?? null,
@@ -251,7 +271,7 @@ export function useMyVouchers() {
             event_date: null,
             thumbnail_url: null,
             menu_item_id: menu?.id ?? null,
-            menu_item_name: menu?.item_name?.trim() ?? null,
+            menu_item_name: drink1Name || null,
             campaign_details: packageTitle,
             redeem_directions_url: redeemDirectionsUrl,
             pickup_spot_label: pickup_spot_label ?? null,
@@ -261,6 +281,10 @@ export function useMyVouchers() {
             tasting_package_id: tastingPurchase?.package_id ?? pkg?.id ?? null,
             tasting_package_title: packageTitle,
             tasting_package_tier: tier,
+            tasting_duo_items: hasDuoShopVoucher
+              ? ([drink1Name || "Drink 1", drink2Name || "Drink 2"] as [string, string])
+              : undefined,
+            tasting_duo_lines: duoDisplay?.lines,
           };
         }
 

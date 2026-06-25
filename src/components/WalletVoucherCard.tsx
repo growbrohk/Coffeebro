@@ -27,6 +27,20 @@ export interface WalletVoucherCardProps {
 
 const QR_POLL_MS = 3000;
 
+function VoucherDrinkTitle({ voucher }: { voucher: MyVoucher }) {
+  if (voucher.tasting_duo_lines?.length === 2) {
+    return (
+      <ul className="space-y-0.5 text-sm font-bold text-foreground">
+        {voucher.tasting_duo_lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <p className="truncate text-sm font-bold text-foreground">{voucher.title}</p>;
+}
+
 export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -99,7 +113,7 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-foreground">{voucher.org_name || 'Partner'}</p>
-          <p className="truncate text-sm font-bold text-foreground">{voucher.title}</p>
+          <VoucherDrinkTitle voucher={voucher} />
           <p className="mt-1 text-xs text-muted-foreground">Code: {voucher.code}</p>
           <p className="text-xs text-muted-foreground">Redemption period: {redemption}</p>
         </div>

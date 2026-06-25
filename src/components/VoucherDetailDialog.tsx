@@ -87,6 +87,20 @@ export interface VoucherDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function VoucherDetailTitle({ voucher }: { voucher: MyVoucher }) {
+  if (voucher.tasting_duo_lines?.length === 2) {
+    return (
+      <ul className="space-y-0.5 text-left text-lg font-bold leading-snug text-foreground">
+        {voucher.tasting_duo_lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <p className="text-left text-lg font-bold leading-snug text-foreground">{voucher.title}</p>;
+}
+
 export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDetailDialogProps) {
   if (vouchers.length === 0) return null;
 
@@ -98,7 +112,11 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
         {vouchers.length === 1 ? (
           <>
             <DialogHeader>
-              <DialogTitle className="text-left text-lg font-bold">{first.title}</DialogTitle>
+              <DialogTitle asChild>
+                <div>
+                  <VoucherDetailTitle voucher={first} />
+                </div>
+              </DialogTitle>
               <DialogDescription asChild className="text-left text-xs text-muted-foreground">
                 {first.org_id ? (
                   <Link to={`/orgs/${first.org_id}`} className="text-muted-foreground underline-offset-4 hover:underline">
@@ -126,7 +144,7 @@ export function VoucherDetailDialog({ vouchers, open, onOpenChange }: VoucherDet
                   key={voucher.id}
                   className={i > 0 ? 'mt-4 space-y-2 border-t border-border pt-4' : 'space-y-2'}
                 >
-                  <p className="text-left text-lg font-bold leading-snug text-foreground">{voucher.title}</p>
+                  <VoucherDetailTitle voucher={voucher} />
                   {voucher.org_name ? (
                     <p className="text-left text-xs text-muted-foreground">
                       {voucher.org_id ? (

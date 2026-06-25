@@ -1010,6 +1010,7 @@ export type Database = {
           id: string
           loyalty_catalog_id: string | null
           menu_item_id: string | null
+          menu_item_id_2: string | null
           org_id: string
           owner_id: string
           redeemed_at: string | null
@@ -1027,6 +1028,7 @@ export type Database = {
           id?: string
           loyalty_catalog_id?: string | null
           menu_item_id?: string | null
+          menu_item_id_2?: string | null
           org_id: string
           owner_id: string
           redeemed_at?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
           id?: string
           loyalty_catalog_id?: string | null
           menu_item_id?: string | null
+          menu_item_id_2?: string | null
           org_id?: string
           owner_id?: string
           redeemed_at?: string | null
@@ -1084,6 +1087,13 @@ export type Database = {
           {
             foreignKeyName: "vouchers_menu_item_id_fkey"
             columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_menu_item_id_2_fkey"
+            columns: ["menu_item_id_2"]
             isOneToOne: false
             referencedRelation: "menu_items"
             referencedColumns: ["id"]
