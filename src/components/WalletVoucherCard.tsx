@@ -114,8 +114,7 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-foreground">{voucher.org_name || 'Partner'}</p>
           <VoucherDrinkTitle voucher={voucher} />
-          <p className="mt-1 text-xs text-muted-foreground">Code: {voucher.code}</p>
-          <p className="text-xs text-muted-foreground">Redemption period: {redemption}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Redemption period: {redemption}</p>
         </div>
 
         <div className="flex shrink-0 flex-col justify-center gap-1.5 border-l border-dashed border-border pl-3">
