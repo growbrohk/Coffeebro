@@ -40,7 +40,9 @@ export type TastingPackageShopDraft = {
 export type TastingPackageEditorDraft = {
   title: string;
   description: string;
-  district: string;
+  hk_areas: string[];
+  districts: string[];
+  mtr_stations: string[];
   cover_image_url: string;
   status: "draft" | "published";
   singleShops: TastingPackageShopDraft[];
@@ -51,6 +53,11 @@ export const TASTING_SINGLE_MAX_SHOPS = 5;
 export const TASTING_DUO_MAX_SHOPS = 7;
 export const TASTING_SINGLE_PORTIONS = 1;
 export const TASTING_DUO_PORTIONS = 2;
+
+export function formatPackageDistricts(districts: string[]): string {
+  if (districts.length === 0) return '';
+  return districts.join(', ');
+}
 
 export function formatTastingPrice(cents: number): string {
   return `$${Math.round(cents / 100)}`;

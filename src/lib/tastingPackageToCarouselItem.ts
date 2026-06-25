@@ -1,6 +1,6 @@
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import type { TastingPackage } from "@/types/tastingPackage";
-import { formatTastingPrice } from "@/types/tastingPackage";
+import { formatTastingPrice, formatPackageDistricts } from "@/types/tastingPackage";
 
 export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapItem {
   const singleCount = pkg.shops.filter((s) => s.tier === "single").length;
@@ -8,6 +8,8 @@ export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapIt
   const coverOrg = pkg.shops.find((s) => s.org_preview_photo_url)?.org_preview_photo_url
     ?? pkg.shops.find((s) => s.org_logo_url)?.org_logo_url
     ?? pkg.cover_image_url;
+
+  const districtLabel = formatPackageDistricts(pkg.districts);
 
   return {
     id: pkg.id,
@@ -17,7 +19,7 @@ export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapIt
     description: pkg.description,
     lat: null,
     lng: null,
-    address: pkg.district,
+    address: districtLabel,
     sort_order: 0,
     clue_image: pkg.cover_image_url ?? coverOrg ?? null,
     scanned: false,
@@ -25,7 +27,7 @@ export function tastingPackageToCarouselItem(pkg: TastingPackage): CampaignMapIt
     offerTitle: `${formatTastingPrice(pkg.single_price_cents)} / ${formatTastingPrice(pkg.duo_price_cents)}`,
     offerDescription: `${singleCount} shops · ${duoCount} duo shops`,
     offerType: "tasting_package",
-    orgName: pkg.district,
+    orgName: districtLabel,
     orgLogoUrl: null,
     orgPreviewPhotoUrl: pkg.cover_image_url ?? coverOrg ?? null,
     vouchersRemaining: null,

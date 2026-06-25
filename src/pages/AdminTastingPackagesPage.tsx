@@ -5,6 +5,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAllTastingPackages } from '@/hooks/usePublishedTastingPackages';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { formatPackageDistricts } from '@/types/tastingPackage';
 
 export default function AdminTastingPackagesPage() {
   const navigate = useNavigate();
@@ -79,7 +80,7 @@ export default function AdminTastingPackagesPage() {
                       {pkg.status}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{pkg.district}</p>
+                  <p className="text-xs text-muted-foreground">{formatPackageDistricts(pkg.districts)}</p>
                   <p className="text-xs text-muted-foreground">
                     Single: {singleCount} shops · Duo: {duoCount} shops
                   </p>

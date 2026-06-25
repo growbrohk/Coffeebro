@@ -1,4 +1,5 @@
 import { HK_DISTRICTS, type HKDistrict } from '@/data/hkDistricts';
+import { getDistrictsForAreas } from '@/data/hkLocation';
 import { HK_MTR_STATIONS } from '@/data/hkMtrStations';
 
 /**
@@ -98,4 +99,36 @@ for (const d of HK_DISTRICTS) {
 export function getMtrStationsForDistrict(district: string): readonly string[] {
   if (!district || !(district in MTR_STATIONS_BY_DISTRICT)) return [];
   return MTR_STATIONS_BY_DISTRICT[district as HKDistrict];
+}
+
+export function getMtrStationsForDistricts(districts: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const district of districts) {
+    for (const station of getMtrStationsForDistrict(district)) {
+      if (!seen.has(station)) {
+        seen.add(station);
+        result.push(station);
+      }
+    }
+  }
+  return result.sort((a, b) => a.localeCompare(b));
+}
+
+export function pruneLocationSelection(
+  hkAreas: string[],
+  districts: string[],
+  mtrStations: string[],
+): { hk_areas: string[]; districts: string[]; mtr_stations: string[] } {
+  const allowedDistricts = new Set(getDistrictsForAreas(hkAreas));
+  const prunedDistricts = districts.filter((d) => allowedDistricts.has(d as HKDistrict));
+
+  const allowedMtr = new Set(getMtrStationsForDistricts(prunedDistricts));
+  const prunedMtr = mtrStations.filter((s) => allowedMtr.has(s));
+
+  return {
+    hk_areas: hkAreas,
+    districts: prunedDistricts,
+    mtr_stations: prunedMtr,
+  };
 }

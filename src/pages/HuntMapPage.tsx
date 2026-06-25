@@ -127,7 +127,7 @@ export default function HuntMapPage() {
     return tastingPackages
       .filter((pkg) => {
         if (!q) return true;
-        const hay = [pkg.title, pkg.district, pkg.description].filter(Boolean).join(" ").toLowerCase();
+        const hay = [pkg.title, ...pkg.districts, pkg.description].filter(Boolean).join(" ").toLowerCase();
         return hay.includes(q);
       })
       .map(tastingPackageToCarouselItem);

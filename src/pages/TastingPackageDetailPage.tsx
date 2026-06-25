@@ -4,7 +4,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTastingPackage, useMyTastingPackagePurchases } from '@/hooks/usePublishedTastingPackages';
 import { Button } from '@/components/ui/button';
-import { formatTastingPrice } from '@/types/tastingPackage';
+import { formatPackageDistricts, formatTastingPrice } from '@/types/tastingPackage';
 import type { TastingPackageShop } from '@/types/tastingPackage';
 
 function TierSection({
@@ -115,7 +115,7 @@ export default function TastingPackageDetailPage() {
 
         <div>
           <p className="text-sm font-medium text-muted-foreground">District</p>
-          <p className="text-base font-semibold">{pkg.district}</p>
+          <p className="text-base font-semibold">{formatPackageDistricts(pkg.districts)}</p>
         </div>
 
         {pkg.description ? (

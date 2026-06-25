@@ -73,13 +73,13 @@ export default function ExplorePage() {
     const q = searchQuery.trim().toLowerCase();
     const filtered = tastingPackages.filter((pkg) => {
       if (!q) return true;
-      const hay = [pkg.title, pkg.district, pkg.description].filter(Boolean).join(" ").toLowerCase();
+      const hay = [pkg.title, ...pkg.districts, pkg.description].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
 
     const groups: { district: string; items: CampaignMapItem[] }[] = [];
     for (const district of HK_DISTRICTS) {
-      const pkgs = filtered.filter((p) => p.district === district);
+      const pkgs = filtered.filter((p) => p.districts.includes(district));
       if (pkgs.length === 0) continue;
       groups.push({
         district,

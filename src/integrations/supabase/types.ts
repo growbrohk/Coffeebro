@@ -955,9 +955,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
-          district: string
+          districts: string[]
           duo_price_cents: number
+          hk_areas: string[]
           id: string
+          mtr_stations: string[]
           redeem_valid_days: number
           single_price_cents: number
           status: string
@@ -969,9 +971,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          district: string
+          districts?: string[]
           duo_price_cents?: number
+          hk_areas?: string[]
           id?: string
+          mtr_stations?: string[]
           redeem_valid_days?: number
           single_price_cents?: number
           status?: string
@@ -983,9 +987,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          district?: string
+          districts?: string[]
           duo_price_cents?: number
+          hk_areas?: string[]
           id?: string
+          mtr_stations?: string[]
           redeem_valid_days?: number
           single_price_cents?: number
           status?: string

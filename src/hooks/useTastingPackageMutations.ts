@@ -93,7 +93,9 @@ export function useTastingPackageMutations() {
       const row: TablesInsert<"tasting_packages"> | (TablesUpdate<"tasting_packages"> & { id: string }) = {
         title: draft.title.trim(),
         description: draft.description.trim() || null,
-        district: draft.district,
+        hk_areas: draft.hk_areas,
+        districts: draft.districts,
+        mtr_stations: draft.mtr_stations,
         cover_image_url: draft.cover_image_url.trim() || null,
         status: draft.status,
       };
