@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import type { TastingPackageEditorDraft, TastingPackageTier } from "@/types/tastingPackage";
+import type { TastingPackageEditorDraft, TastingPackageShopDraft, TastingPackageTier } from "@/types/tastingPackage";
+import { splitDraftToTierShops } from "@/lib/tastingPackageEditorShops";
 import { publishedTastingPackagesQueryKey } from "./usePublishedTastingPackages";
 
 export type SaveTastingPackagePayload = {
@@ -39,7 +40,7 @@ async function itemHasVouchers(itemId: string): Promise<boolean> {
 
 async function syncShopItems(
   shopId: string,
-  shop: TastingPackageEditorDraft["singleShops"][number],
+  shop: TastingPackageShopDraft,
 ) {
   const { data: existingItems, error: itemsErr } = await supabase
     .from("tasting_package_items")
@@ -89,7 +90,7 @@ async function syncShopItems(
 async function syncShopsAndItems(
   packageId: string,
   tier: TastingPackageTier,
-  shops: TastingPackageEditorDraft["singleShops"],
+  shops: TastingPackageShopDraft[],
 ) {
   const completeShops = shops.filter((s) => s.org_id.trim());
 
@@ -110,6 +111,7 @@ async function syncShopsAndItems(
       }
       const { error } = await supabase.from("tasting_package_shops").delete().eq("id", shopId);
       if (error) throw error;
+      existingByOrg.delete(orgId);
     }
   }
 
@@ -136,6 +138,7 @@ async function syncShopsAndItems(
         .single();
       if (error) throw error;
       shopId = inserted.id;
+      existingByOrg.set(shop.org_id, shopId);
     }
 
     await syncShopItems(shopId, shop);
@@ -177,8 +180,9 @@ export function useTastingPackageMutations() {
         id = data.id;
       }
 
-      await syncShopsAndItems(id, "single", draft.singleShops);
-      await syncShopsAndItems(id, "duo", draft.duoShops);
+      const { singleShops, duoShops } = splitDraftToTierShops(draft.shops);
+      await syncShopsAndItems(id, "single", singleShops);
+      await syncShopsAndItems(id, "duo", duoShops);
 
       const { data: fresh, error: loadErr } = await supabase
         .from("tasting_packages")

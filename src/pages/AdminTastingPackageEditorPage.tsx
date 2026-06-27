@@ -41,15 +41,13 @@ import {
   orgMatchesPackageLocation,
 } from '@/lib/filterOrgsByLocation';
 import { useToast } from '@/hooks/use-toast';
-import type { TastingPackageEditorDraft, TastingPackageShopDraft } from '@/types/tastingPackage';
+import type { TastingPackageEditorDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
 import {
-  TASTING_DUO_MAX_SHOPS,
-  TASTING_DUO_PORTIONS,
   TASTING_DUO_PRICE_CENTS,
-  TASTING_SINGLE_MAX_SHOPS,
-  TASTING_SINGLE_PORTIONS,
+  TASTING_PACKAGE_MAX_SHOPS,
   formatTastingPrice,
 } from '@/types/tastingPackage';
+import { mergeLoadedShopsToDraft } from '@/lib/tastingPackageEditorShops';
 import { cn } from '@/lib/utils';
 import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,8 +66,7 @@ function emptyDraft(): TastingPackageEditorDraft {
     cover_image_url: '',
     status: 'draft',
     is_active: true,
-    singleShops: [],
-    duoShops: [],
+    shops: [],
   };
 }
 
@@ -79,30 +76,21 @@ type OrgOption = {
   org_name: string;
 };
 
-function ShopRowEditor({
+function SharedShopRowEditor({
   shop,
-  tier,
   orgOptions,
   orgById,
   onChange,
   onRemove,
 }: {
-  shop: TastingPackageShopDraft;
-  tier: 'single' | 'duo';
+  shop: TastingPackageSharedShopDraft;
   orgOptions: OrgOption[];
   orgById: Map<string, OrgOption>;
-  onChange: (next: TastingPackageShopDraft) => void;
+  onChange: (next: TastingPackageSharedShopDraft) => void;
   onRemove: () => void;
 }) {
-  const portions = tier === 'single' ? TASTING_SINGLE_PORTIONS : TASTING_DUO_PORTIONS;
   const { data: menuItems = [] } = useOrgMenuItems(shop.org_id || undefined);
   const [comboboxOpen, setComboboxOpen] = useState(false);
-
-  const menuIds = useMemo(() => {
-    const ids = [...shop.menu_item_ids];
-    while (ids.length < portions) ids.push('');
-    return ids.slice(0, portions);
-  }, [shop.menu_item_ids, portions]);
 
   const selectedLabel =
     (shop.org_id && orgById.get(shop.org_id)?.label) ||
@@ -147,7 +135,8 @@ function ShopRowEditor({
                             ...shop,
                             org_id: o.id,
                             org_name: o.org_name,
-                            menu_item_ids: Array(portions).fill(''),
+                            single_menu_item_id: '',
+                            duo_extra_menu_item_id: '',
                           });
                           setComboboxOpen(false);
                         }}
@@ -177,31 +166,45 @@ function ShopRowEditor({
         </Button>
       </div>
 
-      {Array.from({ length: portions }, (_, i) => (
-        <div key={i} className="space-y-1">
-          <Label className="text-xs">Tasting drink {portions > 1 ? i + 1 : ''}</Label>
-          <Select
-            value={menuIds[i] || undefined}
-            disabled={!shop.org_id}
-            onValueChange={(menuItemId) => {
-              const next = [...menuIds];
-              next[i] = menuItemId;
-              onChange({ ...shop, menu_item_ids: next });
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select menu item" />
-            </SelectTrigger>
-            <SelectContent>
-              {menuItems.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  {m.item_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ))}
+      <div className="space-y-1">
+        <Label className="text-xs">Tasting drink (Single pass)</Label>
+        <Select
+          value={shop.single_menu_item_id || undefined}
+          disabled={!shop.org_id}
+          onValueChange={(menuItemId) => onChange({ ...shop, single_menu_item_id: menuItemId })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select menu item" />
+          </SelectTrigger>
+          <SelectContent>
+            {menuItems.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.item_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Extra tasting drink (Duo pass)</Label>
+        <Select
+          value={shop.duo_extra_menu_item_id || undefined}
+          disabled={!shop.org_id}
+          onValueChange={(menuItemId) => onChange({ ...shop, duo_extra_menu_item_id: menuItemId })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select menu item" />
+          </SelectTrigger>
+          <SelectContent>
+            {menuItems.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.item_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }
@@ -242,21 +245,21 @@ export default function AdminTastingPackageEditorPage() {
       cover_image_url: existing.cover_image_url ?? '',
       status: existing.status as 'draft' | 'published',
       is_active: existing.is_active ?? true,
-      singleShops: [],
-      duoShops: [],
+      shops: [],
     });
 
     void (async () => {
       try {
         const { data, error } = await supabase
           .from('tasting_package_shops')
-          .select('id, tier, org_id, tasting_package_items ( menu_item_id, portion_index )')
-          .eq('package_id', existing.id);
+          .select('id, tier, org_id, sort_order, tasting_package_items ( menu_item_id, portion_index )')
+          .eq('package_id', existing.id)
+          .order('sort_order');
         if (error) throw error;
         if (!data) return;
 
-        const singleShops: TastingPackageShopDraft[] = [];
-        const duoShops: TastingPackageShopDraft[] = [];
+        const singleRows: { id: string; org_id: string; menu_item_ids: string[] }[] = [];
+        const duoRows: { id: string; org_id: string; menu_item_ids: string[] }[] = [];
 
         for (const row of data) {
           const rawItems = row.tasting_package_items;
@@ -267,16 +270,12 @@ export default function AdminTastingPackageEditorPage() {
           const menuIds = items
             .sort((a, b) => a.portion_index - b.portion_index)
             .map((it) => it.menu_item_id);
-          const shopDraft: TastingPackageShopDraft = {
-            clientId: row.id,
-            org_id: row.org_id,
-            menu_item_ids: menuIds,
-          };
-          if (row.tier === 'single') singleShops.push(shopDraft);
-          else duoShops.push(shopDraft);
+          const loaded = { id: row.id, org_id: row.org_id, menu_item_ids: menuIds };
+          if (row.tier === 'single') singleRows.push(loaded);
+          else duoRows.push(loaded);
         }
 
-        setDraft((d) => ({ ...d, singleShops, duoShops }));
+        setDraft((d) => ({ ...d, shops: mergeLoadedShopsToDraft(singleRows, duoRows) }));
       } finally {
         setShopsLoaded(true);
       }
@@ -312,7 +311,7 @@ export default function AdminTastingPackageEditorPage() {
 
   const orgById = useMemo(() => {
     const map = new Map(orgOptions.map((o) => [o.id, o]));
-    for (const shop of [...draft.singleShops, ...draft.duoShops]) {
+    for (const shop of draft.shops) {
       if (shop.org_id && !map.has(shop.org_id)) {
         const org = orgs.find((o) => o.id === shop.org_id);
         if (org) {
@@ -325,7 +324,7 @@ export default function AdminTastingPackageEditorPage() {
       }
     }
     return map;
-  }, [orgOptions, orgs, draft.singleShops, draft.duoShops]);
+  }, [orgOptions, orgs, draft.shops]);
 
   const patchLocation = (patch: Partial<Pick<TastingPackageEditorDraft, 'hk_areas' | 'districts' | 'mtr_stations'>>) => {
     setDraft((d) => {
@@ -339,14 +338,20 @@ export default function AdminTastingPackageEditorPage() {
     });
   };
 
-  const addShop = (tier: 'single' | 'duo') => {
-    const key = tier === 'single' ? 'singleShops' : 'duoShops';
-    const max = tier === 'single' ? TASTING_SINGLE_MAX_SHOPS : TASTING_DUO_MAX_SHOPS;
+  const addShop = () => {
     setDraft((d) => {
-      if (d[key].length >= max) return d;
+      if (d.shops.length >= TASTING_PACKAGE_MAX_SHOPS) return d;
       return {
         ...d,
-        [key]: [...d[key], { clientId: newClientId(), org_id: '', menu_item_ids: [] }],
+        shops: [
+          ...d.shops,
+          {
+            clientId: newClientId(),
+            org_id: '',
+            single_menu_item_id: '',
+            duo_extra_menu_item_id: '',
+          },
+        ],
       };
     });
   };
@@ -354,25 +359,27 @@ export default function AdminTastingPackageEditorPage() {
   const validate = (): string | null => {
     if (!draft.title.trim()) return 'Title is required';
     if (draft.districts.length === 0) return 'Select at least one district';
+    if (draft.shops.length > TASTING_PACKAGE_MAX_SHOPS) {
+      return `Maximum ${TASTING_PACKAGE_MAX_SHOPS} shops per package`;
+    }
+    const orgIds = draft.shops.map((s) => s.org_id.trim()).filter(Boolean);
+    if (new Set(orgIds).size !== orgIds.length) {
+      return 'Each coffee shop can only appear once';
+    }
     if (draft.status === 'published') {
-      if (draft.singleShops.length === 0 && draft.duoShops.length === 0) {
-        return 'Add at least one shop to Single or Duo tier before publishing';
+      if (draft.shops.length === 0) {
+        return 'Add at least one shop before publishing';
       }
-      for (const shop of [...draft.singleShops, ...draft.duoShops]) {
+      for (const shop of draft.shops) {
         if (!shop.org_id) continue;
         const org = orgs.find((o) => o.id === shop.org_id);
         if (org && !orgMatchesPackageLocation(org, draft.districts, draft.mtr_stations)) {
           return `Shop "${org.org_name}" is outside the selected location scope`;
         }
       }
-      for (const shop of draft.singleShops) {
-        if (!shop.org_id || shop.menu_item_ids.length < TASTING_SINGLE_PORTIONS) {
-          return 'Each Single shop needs a shop and 1 menu item';
-        }
-      }
-      for (const shop of draft.duoShops) {
-        if (!shop.org_id || shop.menu_item_ids.length < TASTING_DUO_PORTIONS) {
-          return 'Each Duo shop needs a shop and 2 menu items';
+      for (const shop of draft.shops) {
+        if (!shop.org_id || !shop.single_menu_item_id || !shop.duo_extra_menu_item_id) {
+          return 'Each shop needs a shop, Single pass drink, and Duo extra drink';
         }
       }
     }
@@ -558,55 +565,16 @@ export default function AdminTastingPackageEditorPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Single tier ($77 · up to {TASTING_SINGLE_MAX_SHOPS} shops)</h2>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={!canAddShops || draft.singleShops.length >= TASTING_SINGLE_MAX_SHOPS}
-              onClick={() => addShop('single')}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {!canAddShops ? (
-            <p className="text-xs text-muted-foreground">Select districts before adding shops.</p>
-          ) : null}
-          {draft.singleShops.map((shop, idx) => (
-            <ShopRowEditor
-              key={shop.clientId}
-              shop={shop}
-              tier="single"
-              orgOptions={orgOptions}
-              orgById={orgById}
-              onChange={(next) =>
-                setDraft((d) => {
-                  const copy = [...d.singleShops];
-                  copy[idx] = next;
-                  return { ...d, singleShops: copy };
-                })
-              }
-              onRemove={() =>
-                setDraft((d) => ({
-                  ...d,
-                  singleShops: d.singleShops.filter((_, i) => i !== idx),
-                }))
-              }
-            />
-          ))}
-        </section>
-
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold">
-              Duo tier ({formatTastingPrice(TASTING_DUO_PRICE_CENTS)} · up to {TASTING_DUO_MAX_SHOPS} shops)
+              Package shops ($77 Single / {formatTastingPrice(TASTING_DUO_PRICE_CENTS)} Duo · up to{' '}
+              {TASTING_PACKAGE_MAX_SHOPS} shops)
             </h2>
             <Button
               type="button"
               size="sm"
               variant="outline"
-              disabled={!canAddShops || draft.duoShops.length >= TASTING_DUO_MAX_SHOPS}
-              onClick={() => addShop('duo')}
+              disabled={!canAddShops || draft.shops.length >= TASTING_PACKAGE_MAX_SHOPS}
+              onClick={addShop}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -614,24 +582,23 @@ export default function AdminTastingPackageEditorPage() {
           {!canAddShops ? (
             <p className="text-xs text-muted-foreground">Select districts before adding shops.</p>
           ) : null}
-          {draft.duoShops.map((shop, idx) => (
-            <ShopRowEditor
+          {draft.shops.map((shop, idx) => (
+            <SharedShopRowEditor
               key={shop.clientId}
               shop={shop}
-              tier="duo"
               orgOptions={orgOptions}
               orgById={orgById}
               onChange={(next) =>
                 setDraft((d) => {
-                  const copy = [...d.duoShops];
+                  const copy = [...d.shops];
                   copy[idx] = next;
-                  return { ...d, duoShops: copy };
+                  return { ...d, shops: copy };
                 })
               }
               onRemove={() =>
                 setDraft((d) => ({
                   ...d,
-                  duoShops: d.duoShops.filter((_, i) => i !== idx),
+                  shops: d.shops.filter((_, i) => i !== idx),
                 }))
               }
             />

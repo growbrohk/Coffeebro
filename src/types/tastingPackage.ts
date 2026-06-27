@@ -37,6 +37,14 @@ export type TastingPackageShopDraft = {
   menu_item_ids: string[];
 };
 
+export type TastingPackageSharedShopDraft = {
+  clientId: string;
+  org_id: string;
+  org_name?: string;
+  single_menu_item_id: string;
+  duo_extra_menu_item_id: string;
+};
+
 export type TastingPackageEditorDraft = {
   title: string;
   description: string;
@@ -46,12 +54,12 @@ export type TastingPackageEditorDraft = {
   cover_image_url: string;
   status: "draft" | "published";
   is_active: boolean;
-  singleShops: TastingPackageShopDraft[];
-  duoShops: TastingPackageShopDraft[];
+  shops: TastingPackageSharedShopDraft[];
 };
 
-export const TASTING_SINGLE_MAX_SHOPS = 5;
-export const TASTING_DUO_MAX_SHOPS = 5;
+export const TASTING_PACKAGE_MAX_SHOPS = 5;
+export const TASTING_SINGLE_MAX_SHOPS = TASTING_PACKAGE_MAX_SHOPS;
+export const TASTING_DUO_MAX_SHOPS = TASTING_PACKAGE_MAX_SHOPS;
 export const TASTING_SINGLE_PORTIONS = 1;
 export const TASTING_DUO_PORTIONS = 2;
 export const TASTING_DUO_PRICE_CENTS = 14700;

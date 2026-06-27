@@ -66,8 +66,10 @@ export default function AdminTastingPackagesPage() {
         ) : (
           <div className="space-y-2">
             {sorted.map((pkg) => {
-              const singleCount = pkg.shops.filter((s) => s.tier === 'single').length;
-              const duoCount = pkg.shops.filter((s) => s.tier === 'duo').length;
+              const shopCount = Math.max(
+                pkg.shops.filter((s) => s.tier === 'single').length,
+                pkg.shops.filter((s) => s.tier === 'duo').length,
+              );
               const isPublished = pkg.status === 'published';
               const badgeLabel = statusBadgeLabel(pkg.status, pkg.is_active);
 
@@ -99,9 +101,7 @@ export default function AdminTastingPackagesPage() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPackageDistricts(pkg.districts)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Single: {singleCount} shops · Duo: {duoCount} shops
-                  </p>
+                  <p className="text-xs text-muted-foreground">{shopCount} shops</p>
                   <div
                     className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-3"
                     onClick={(e) => e.stopPropagation()}
