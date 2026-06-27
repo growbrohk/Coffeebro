@@ -7,6 +7,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 type Body = {
   packageId: string;
   tier: 'single' | 'duo';
+  redeemDate?: string;
 };
 
 const APP_URL = () => Deno.env.get('APP_URL') ?? 'https://www.coffee-bro.com';
@@ -60,8 +61,12 @@ Deno.serve(async (req) => {
 
   const packageId = body.packageId?.trim();
   const tier = body.tier;
+  const redeemDateRaw = body.redeemDate?.trim();
   if (!packageId || (tier !== 'single' && tier !== 'duo')) {
     return json({ error: 'packageId and tier (single|duo) required' }, 400);
+  }
+  if (!redeemDateRaw || !/^\d{4}-\d{2}-\d{2}$/.test(redeemDateRaw)) {
+    return json({ error: 'redeemDate (YYYY-MM-DD) required' }, 400);
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
@@ -85,6 +90,32 @@ Deno.serve(async (req) => {
   if (shopErr) return json({ error: shopErr.message }, 400);
   if ((shopCount ?? 0) === 0) {
     return json({ error: 'NO_SHOPS_FOR_TIER', code: 'NO_SHOPS_FOR_TIER' }, 400);
+  }
+
+  const { data: redemptionDates, error: datesErr } = await admin.rpc(
+    'get_tasting_package_redemption_dates',
+    { p_package_id: packageId },
+  );
+  if (datesErr) return json({ error: datesErr.message }, 400);
+
+  const redeemSlot = (redemptionDates ?? []).find(
+    (d: { redeem_date: string }) => d.redeem_date === redeemDateRaw,
+  ) as
+    | {
+        redeem_date: string;
+        is_available: boolean;
+        max_purchases: number;
+        booked_count: number;
+        remaining: number;
+      }
+    | undefined;
+
+  if (!redeemSlot || !redeemSlot.is_available) {
+    return json({ error: 'REDEMPTION_DATE_UNAVAILABLE', code: 'REDEMPTION_DATE_UNAVAILABLE' }, 400);
+  }
+
+  if (redeemSlot.remaining <= 0) {
+    return json({ error: 'REDEMPTION_DATE_SOLD_OUT', code: 'REDEMPTION_DATE_SOLD_OUT' }, 400);
   }
 
   const { count: existingPurchase, error: existErr } = await admin
@@ -117,6 +148,12 @@ Deno.serve(async (req) => {
   });
 
   if (pendingExisting?.stripe_checkout_session_id) {
+    if (pendingExisting.redeem_date && pendingExisting.redeem_date !== redeemDateRaw) {
+      await admin
+        .from('tasting_package_purchases')
+        .update({ status: 'failed', mint_error: 'REDEEM_DATE_CHANGED', updated_at: new Date().toISOString() })
+        .eq('id', pendingExisting.id);
+    } else {
     try {
       const sess = await stripe.checkout.sessions.retrieve(pendingExisting.stripe_checkout_session_id);
       if (sess.status === 'open' && sess.url) {
@@ -134,6 +171,7 @@ Deno.serve(async (req) => {
       .from('tasting_package_purchases')
       .update({ status: 'failed', mint_error: 'STALE_CHECKOUT_SESSION', updated_at: new Date().toISOString() })
       .eq('id', pendingExisting.id);
+    }
   }
 
   const tierLabel = tier === 'single' ? 'Single' : 'Duo';
@@ -184,6 +222,7 @@ Deno.serve(async (req) => {
     user_id: userId,
     package_id: packageId,
     tier,
+    redeem_date: redeemDateRaw,
     stripe_checkout_session_id: session.id,
     amount_cents: amountCents,
     currency: 'hkd',

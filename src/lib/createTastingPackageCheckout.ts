@@ -12,7 +12,7 @@ export type CreateTastingCheckoutResponse =
 
 export async function createTastingPackageCheckoutRequest(
   accessToken: string,
-  body: { packageId: string; tier: "single" | "duo" },
+  body: { packageId: string; tier: "single" | "duo"; redeemDate: string },
 ): Promise<CreateTastingCheckoutResponse> {
   const res = await fetch(`${supabaseUrl}/functions/v1/create-tasting-package-checkout`, {
     method: "POST",

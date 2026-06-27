@@ -122,6 +122,11 @@ export default function TastingPackageDetailPage() {
           <p className="text-sm leading-relaxed text-muted-foreground">{pkg.description}</p>
         ) : null}
 
+        <p className="text-sm text-muted-foreground">
+          All drinks in your package must be redeemed on the same day you choose at checkout, during each
+          shop&apos;s opening hours.
+        </p>
+
         <TierSection title="Single includes" priceCents={pkg.single_price_cents} shops={singleShops} />
         <TierSection title="Duo includes" priceCents={pkg.duo_price_cents} shops={duoShops} />
       </div>

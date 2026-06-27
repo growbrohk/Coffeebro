@@ -66,7 +66,11 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   const isExpired = isVoucherWalletExpired(voucher);
   const isRedeemed = voucher.status === 'redeemed';
   const hasReview = Boolean(voucher.review);
-  const redemption = formatVoucherRedemptionPeriod(voucher.expires_at, voucher.event_date ?? null);
+  const redemption = formatVoucherRedemptionPeriod(
+    voucher.expires_at,
+    voucher.event_date ?? null,
+    { preferEventDate: Boolean(voucher.tasting_package_purchase_id) },
+  );
 
   const handleReviewClick = () => {
     if (!voucher.org_id) return;

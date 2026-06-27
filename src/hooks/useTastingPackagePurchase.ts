@@ -8,16 +8,18 @@ export function useTastingPackagePurchase() {
     mutationFn: async ({
       packageId,
       tier,
+      redeemDate,
     }: {
       packageId: string;
       tier: TastingPackageTier;
+      redeemDate: string;
     }) => {
       const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Sign in to purchase");
 
-      return createTastingPackageCheckoutRequest(token, { packageId, tier });
+      return createTastingPackageCheckoutRequest(token, { packageId, tier, redeemDate });
     },
   });
 }

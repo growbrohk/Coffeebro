@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, ChevronsUpDown, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useTastingPackage } from '@/hooks/usePublishedTastingPackages';
+import { useTastingPackage, useTastingPackageRedemptionDates } from '@/hooks/usePublishedTastingPackages';
 import { useTastingPackageMutations, useDeleteTastingPackage } from '@/hooks/useTastingPackageMutations';
 import { useOrgs } from '@/hooks/useOrgs';
 import { useOrgMenuItems } from '@/hooks/useOrgMenuItems';
@@ -41,13 +41,15 @@ import {
   orgMatchesPackageLocation,
 } from '@/lib/filterOrgsByLocation';
 import { useToast } from '@/hooks/use-toast';
-import type { TastingPackageEditorDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
+import type { TastingPackageEditorDraft, TastingPackageRedemptionDateDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
 import {
   TASTING_DUO_PRICE_CENTS,
   TASTING_PACKAGE_MAX_SHOPS,
   formatTastingPrice,
 } from '@/types/tastingPackage';
 import { mergeLoadedShopsToDraft } from '@/lib/tastingPackageEditorShops';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
 import { supabase } from '@/integrations/supabase/client';
@@ -67,7 +69,68 @@ function emptyDraft(): TastingPackageEditorDraft {
     status: 'draft',
     is_active: true,
     shops: [],
+    redemption_dates: [],
   };
+}
+
+function formatRedeemDateLabel(dateStr: string): string {
+  const d = new Date(`${dateStr}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return format(d, 'd MMM yyyy');
+}
+
+function RedemptionDateRowEditor({
+  row,
+  bookedCount,
+  onChange,
+  onRemove,
+}: {
+  row: TastingPackageRedemptionDateDraft;
+  bookedCount?: number;
+  onChange: (next: TastingPackageRedemptionDateDraft) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-3">
+          <p className="text-sm font-semibold">{formatRedeemDateLabel(row.redeem_date)}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Max purchases</Label>
+              <Input
+                type="number"
+                min={1}
+                value={row.max_purchases}
+                onChange={(e) =>
+                  onChange({ ...row, max_purchases: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+            </div>
+            <div className="flex items-end justify-between gap-2 pb-1">
+              <div className="space-y-1">
+                <Label className="text-xs">Available</Label>
+                <div className="flex h-10 items-center">
+                  <Switch
+                    checked={row.is_available}
+                    onCheckedChange={(checked) => onChange({ ...row, is_available: checked })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          {bookedCount != null ? (
+            <p className="text-xs text-muted-foreground">
+              {bookedCount} booked · {Math.max(row.max_purchases - bookedCount, 0)} remaining
+            </p>
+          ) : null}
+        </div>
+        <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label="Remove date">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 type OrgOption = {
@@ -217,6 +280,7 @@ export default function AdminTastingPackageEditorPage() {
   const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { toast } = useToast();
   const { data: existing } = useTastingPackage(isNew ? undefined : id);
+  const { data: redemptionStats = [] } = useTastingPackageRedemptionDates(isNew ? undefined : id);
   const { data: orgs = [] } = useOrgs();
   const saveMutation = useTastingPackageMutations();
   const deleteMutation = useDeleteTastingPackage();
@@ -246,16 +310,27 @@ export default function AdminTastingPackageEditorPage() {
       status: existing.status as 'draft' | 'published',
       is_active: existing.is_active ?? true,
       shops: [],
+      redemption_dates: [],
     });
 
     void (async () => {
       try {
-        const { data, error } = await supabase
-          .from('tasting_package_shops')
-          .select('id, tier, org_id, sort_order, tasting_package_items ( menu_item_id, portion_index )')
-          .eq('package_id', existing.id)
-          .order('sort_order');
-        if (error) throw error;
+        const [shopsRes, datesRes] = await Promise.all([
+          supabase
+            .from('tasting_package_shops')
+            .select('id, tier, org_id, sort_order, tasting_package_items ( menu_item_id, portion_index )')
+            .eq('package_id', existing.id)
+            .order('sort_order'),
+          supabase
+            .from('tasting_package_redemption_dates')
+            .select('redeem_date, is_available, max_purchases')
+            .eq('package_id', existing.id)
+            .order('redeem_date'),
+        ]);
+        if (shopsRes.error) throw shopsRes.error;
+        if (datesRes.error) throw datesRes.error;
+
+        const data = shopsRes.data;
         if (!data) return;
 
         const singleRows: { id: string; org_id: string; menu_item_ids: string[] }[] = [];
@@ -275,7 +350,16 @@ export default function AdminTastingPackageEditorPage() {
           else duoRows.push(loaded);
         }
 
-        setDraft((d) => ({ ...d, shops: mergeLoadedShopsToDraft(singleRows, duoRows) }));
+        setDraft((d) => ({
+          ...d,
+          shops: mergeLoadedShopsToDraft(singleRows, duoRows),
+          redemption_dates: (datesRes.data ?? []).map((row) => ({
+            clientId: newClientId(),
+            redeem_date: row.redeem_date,
+            is_available: row.is_available,
+            max_purchases: row.max_purchases,
+          })),
+        }));
       } finally {
         setShopsLoaded(true);
       }
@@ -356,6 +440,37 @@ export default function AdminTastingPackageEditorPage() {
     });
   };
 
+  const bookedByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of redemptionStats) {
+      map.set(row.redeem_date, row.booked_count);
+    }
+    return map;
+  }, [redemptionStats]);
+
+  const existingRedeemDates = useMemo(
+    () => new Set(draft.redemption_dates.map((d) => d.redeem_date)),
+    [draft.redemption_dates],
+  );
+
+  const addRedemptionDate = (date: Date | undefined) => {
+    if (!date) return;
+    const redeem_date = format(date, 'yyyy-MM-dd');
+    if (existingRedeemDates.has(redeem_date)) return;
+    setDraft((d) => ({
+      ...d,
+      redemption_dates: [
+        ...d.redemption_dates,
+        {
+          clientId: newClientId(),
+          redeem_date,
+          is_available: true,
+          max_purchases: 20,
+        },
+      ].sort((a, b) => a.redeem_date.localeCompare(b.redeem_date)),
+    }));
+  };
+
   const validate = (): string | null => {
     if (!draft.title.trim()) return 'Title is required';
     if (draft.districts.length === 0) return 'Select at least one district';
@@ -381,6 +496,13 @@ export default function AdminTastingPackageEditorPage() {
         if (!shop.org_id || !shop.single_menu_item_id || !shop.duo_extra_menu_item_id) {
           return 'Each shop needs a shop, Single pass drink, and Duo extra drink';
         }
+      }
+      const todayHkt = format(new Date(), 'yyyy-MM-dd');
+      const hasFutureDate = draft.redemption_dates.some(
+        (d) => d.is_available && d.redeem_date >= todayHkt && d.max_purchases >= 1,
+      );
+      if (!hasFutureDate) {
+        return 'Add at least one available future redemption date before publishing';
       }
     }
     return null;
@@ -523,6 +645,52 @@ export default function AdminTastingPackageEditorPage() {
             <img src={draft.cover_image_url} alt="" className="mt-2 h-32 w-full rounded-xl object-cover" />
           ) : null}
         </div>
+
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-bold">Redemption dates</h2>
+            <p className="text-xs text-muted-foreground">
+              Customers pick one day at checkout. All shop vouchers in a purchase must be redeemed on that day
+              during each shop&apos;s opening hours.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3">
+            <Calendar
+              mode="single"
+              disabled={(date) => {
+                const key = format(date, 'yyyy-MM-dd');
+                return existingRedeemDates.has(key) || date < new Date(new Date().setHours(0, 0, 0, 0));
+              }}
+              onSelect={addRedemptionDate}
+            />
+          </div>
+          {draft.redemption_dates.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No dates yet. Pick a day on the calendar to add one.</p>
+          ) : (
+            <div className="space-y-2">
+              {draft.redemption_dates.map((row, idx) => (
+                <RedemptionDateRowEditor
+                  key={row.clientId}
+                  row={row}
+                  bookedCount={bookedByDate.get(row.redeem_date)}
+                  onChange={(next) =>
+                    setDraft((d) => {
+                      const copy = [...d.redemption_dates];
+                      copy[idx] = next;
+                      return { ...d, redemption_dates: copy };
+                    })
+                  }
+                  onRemove={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      redemption_dates: d.redemption_dates.filter((_, i) => i !== idx),
+                    }))
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
         <div className="space-y-2">
           <Label>Status</Label>

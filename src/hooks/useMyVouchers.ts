@@ -55,12 +55,25 @@ export interface MyVoucher {
   tasting_duo_items?: [string, string];
   /** Numbered lines for wallet display when duo drinks differ. */
   tasting_duo_lines?: [string, string];
+  /** Org opening hours for tasting redemption day hints. */
+  opening_hours?: unknown;
 }
 
 export function formatVoucherRedemptionPeriod(
   expiresAt: string | null | undefined,
   eventDate: string | null | undefined,
+  options?: { preferEventDate?: boolean },
 ): string {
+  if (options?.preferEventDate && eventDate) {
+    const d = new Date(eventDate + "T12:00:00");
+    if (!Number.isNaN(d.getTime())) {
+      return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
+  }
   if (expiresAt) {
     const d = new Date(expiresAt);
     if (!Number.isNaN(d.getTime())) {
@@ -145,7 +158,7 @@ export function useMyVouchers() {
           menu_item_id,
           menu_item_id_2,
           org_id,
-          orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type ),
+          orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type, opening_hours ),
           menu_items!vouchers_menu_item_id_fkey ( id, item_name ),
           menu_item_2:menu_items!vouchers_menu_item_id_2_fkey ( id, item_name ),
           tasting_package_items (
@@ -157,6 +170,7 @@ export function useMyVouchers() {
             id,
             tier,
             package_id,
+            redeem_date,
             tasting_packages ( id, title )
           ),
           vouchers_catalog ( title, menu_item_id, menu_items ( id, item_name ) ),
@@ -189,6 +203,7 @@ export function useMyVouchers() {
               id: string;
               tier: string;
               package_id: string;
+              redeem_date: string | null;
               tasting_packages: { id: string; title: string } | { id: string; title: string }[] | null;
             }
           | null
@@ -209,6 +224,7 @@ export function useMyVouchers() {
             location: string | null;
             google_maps_url: string | null;
             shop_type?: string | null;
+            opening_hours?: unknown;
           } | null;
 
           const rawTpi = v.tasting_package_items;
@@ -268,7 +284,8 @@ export function useMyVouchers() {
             offer_type: 'Tasting',
             description: `${packageTitle} (${tierLabel})`,
             location: locationTrimmed,
-            event_date: null,
+            event_date: tastingPurchase?.redeem_date ?? null,
+            opening_hours: orgsRow?.opening_hours ?? null,
             thumbnail_url: null,
             menu_item_id: menu?.id ?? null,
             menu_item_name: drink1Name || null,

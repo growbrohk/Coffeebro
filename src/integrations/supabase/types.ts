@@ -857,6 +857,7 @@ export type Database = {
           mint_error: string | null
           minted_vouchers_json: Json
           package_id: string
+          redeem_date: string | null
           status: string
           stripe_checkout_expires_at: string | null
           stripe_checkout_session_id: string
@@ -873,6 +874,7 @@ export type Database = {
           mint_error?: string | null
           minted_vouchers_json?: Json
           package_id: string
+          redeem_date?: string | null
           status?: string
           stripe_checkout_expires_at?: string | null
           stripe_checkout_session_id: string
@@ -889,6 +891,7 @@ export type Database = {
           mint_error?: string | null
           minted_vouchers_json?: Json
           package_id?: string
+          redeem_date?: string | null
           status?: string
           stripe_checkout_expires_at?: string | null
           stripe_checkout_session_id?: string
@@ -900,6 +903,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tasting_package_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasting_package_redemption_dates: {
+        Row: {
+          created_at: string
+          id: string
+          is_available: boolean
+          max_purchases: number
+          package_id: string
+          redeem_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          max_purchases?: number
+          package_id: string
+          redeem_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          max_purchases?: number
+          package_id?: string
+          redeem_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasting_package_redemption_dates_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "tasting_packages"
@@ -1396,6 +1437,17 @@ export type Database = {
           redeemed: number
           remaining: number
           tier: string
+        }[]
+      }
+      get_tasting_package_redemption_dates: {
+        Args: { p_package_id: string }
+        Returns: {
+          booked_count: number
+          id: string
+          is_available: boolean
+          max_purchases: number
+          redeem_date: string
+          remaining: number
         }[]
       }
       get_tasting_package_tracking_summary: {

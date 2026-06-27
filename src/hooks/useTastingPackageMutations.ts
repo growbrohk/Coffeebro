@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import type { TastingPackageEditorDraft, TastingPackageShopDraft, TastingPackageTier } from "@/types/tastingPackage";
+import type { TastingPackageEditorDraft, TastingPackageRedemptionDateDraft, TastingPackageShopDraft, TastingPackageTier } from "@/types/tastingPackage";
 import { splitDraftToTierShops } from "@/lib/tastingPackageEditorShops";
 import { publishedTastingPackagesQueryKey } from "./usePublishedTastingPackages";
 
@@ -84,6 +84,54 @@ async function syncShopItems(
     }
     const { error } = await supabase.from("tasting_package_items").delete().eq("id", item.id);
     if (error) throw error;
+  }
+}
+
+async function syncRedemptionDates(packageId: string, dates: TastingPackageRedemptionDateDraft[]) {
+  const normalized = dates
+    .filter((d) => d.redeem_date.trim())
+    .map((d) => ({
+      redeem_date: d.redeem_date.trim(),
+      is_available: d.is_available,
+      max_purchases: Math.max(1, Math.floor(d.max_purchases)),
+    }));
+
+  const { data: existing, error: loadErr } = await supabase
+    .from("tasting_package_redemption_dates")
+    .select("id, redeem_date")
+    .eq("package_id", packageId);
+  if (loadErr) throw loadErr;
+
+  const existingByDate = new Map((existing ?? []).map((row) => [row.redeem_date, row.id]));
+  const nextDates = new Set(normalized.map((d) => d.redeem_date));
+
+  for (const [date, rowId] of existingByDate) {
+    if (!nextDates.has(date)) {
+      const { error } = await supabase.from("tasting_package_redemption_dates").delete().eq("id", rowId);
+      if (error) throw error;
+    }
+  }
+
+  for (const d of normalized) {
+    const existingId = existingByDate.get(d.redeem_date);
+    if (existingId) {
+      const { error } = await supabase
+        .from("tasting_package_redemption_dates")
+        .update({
+          is_available: d.is_available,
+          max_purchases: d.max_purchases,
+        })
+        .eq("id", existingId);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("tasting_package_redemption_dates").insert({
+        package_id: packageId,
+        redeem_date: d.redeem_date,
+        is_available: d.is_available,
+        max_purchases: d.max_purchases,
+      });
+      if (error) throw error;
+    }
   }
 }
 
@@ -183,6 +231,7 @@ export function useTastingPackageMutations() {
       const { singleShops, duoShops } = splitDraftToTierShops(draft.shops);
       await syncShopsAndItems(id, "single", singleShops);
       await syncShopsAndItems(id, "duo", duoShops);
+      await syncRedemptionDates(id, draft.redemption_dates);
 
       const { data: fresh, error: loadErr } = await supabase
         .from("tasting_packages")

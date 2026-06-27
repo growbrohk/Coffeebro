@@ -45,6 +45,13 @@ export type TastingPackageSharedShopDraft = {
   duo_extra_menu_item_id: string;
 };
 
+export type TastingPackageRedemptionDateDraft = {
+  clientId: string;
+  redeem_date: string;
+  is_available: boolean;
+  max_purchases: number;
+};
+
 export type TastingPackageEditorDraft = {
   title: string;
   description: string;
@@ -55,6 +62,16 @@ export type TastingPackageEditorDraft = {
   status: "draft" | "published";
   is_active: boolean;
   shops: TastingPackageSharedShopDraft[];
+  redemption_dates: TastingPackageRedemptionDateDraft[];
+};
+
+export type TastingPackageRedemptionDate = {
+  id: string;
+  redeem_date: string;
+  is_available: boolean;
+  max_purchases: number;
+  booked_count: number;
+  remaining: number;
 };
 
 export const TASTING_PACKAGE_MAX_SHOPS = 5;

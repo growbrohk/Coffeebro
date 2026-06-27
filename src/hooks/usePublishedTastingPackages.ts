@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { TastingPackage, TastingPackageShop, TastingPackageTier } from "@/types/tastingPackage";
+import type { TastingPackage, TastingPackageRedemptionDate, TastingPackageShop, TastingPackageTier } from "@/types/tastingPackage";
 
 const PACKAGE_SELECT = `
   *,
@@ -130,6 +130,22 @@ export function useAllTastingPackages() {
       if (error) throw error;
       return (data ?? []).map((row) => mapPackageRow(row as Record<string, unknown>));
     },
+  });
+}
+
+export function useTastingPackageRedemptionDates(packageId: string | undefined) {
+  return useQuery({
+    queryKey: ["tasting-package-redemption-dates", packageId],
+    queryFn: async () => {
+      if (!packageId) return [];
+      const { data, error } = await supabase.rpc("get_tasting_package_redemption_dates", {
+        p_package_id: packageId,
+      });
+      if (error) throw error;
+      return (data ?? []) as TastingPackageRedemptionDate[];
+    },
+    enabled: Boolean(packageId),
+    staleTime: 15_000,
   });
 }
 

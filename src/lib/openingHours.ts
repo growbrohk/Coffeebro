@@ -70,3 +70,59 @@ export function weeklyToJson(hours: Record<OpeningDayKey, DayHours>): WeeklyOpen
   }
   return out;
 }
+
+function openingDayKeyFromDate(dateStr: string): OpeningDayKey {
+  const d = new Date(`${dateStr}T12:00:00`);
+  const jsDay = d.getDay();
+  const keys: OpeningDayKey[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return keys[jsDay] ?? 'mon';
+}
+
+function compactTime(isoTime: string): string {
+  return isoTime.replace(':', '').replace(/\D/g, '').slice(0, 4);
+}
+
+export function dayLineForDate(openingHours: unknown, dateStr: string): string {
+  const weekly = weeklyFromJson(openingHours);
+  const key = openingDayKeyFromDate(dateStr);
+  const h = weekly[key];
+  if (h.closed) return 'Closed';
+  return `${compactTime(h.open)}-${compactTime(h.close)}`;
+}
+
+function hktTimeParts(at: Date): { dateKey: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Hong_Kong',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(at);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const dateKey = `${get('year')}-${get('month')}-${get('day')}`;
+  const minutes = Number(get('hour')) * 60 + Number(get('minute'));
+  return { dateKey, minutes };
+}
+
+function parseHm(value: string): number {
+  const [h, m] = value.slice(0, 5).split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+/** Whether an org is open at `at` on calendar date `dateStr` (YYYY-MM-DD, HKT). */
+export function isOrgOpenAt(openingHours: unknown, at: Date, dateStr: string): boolean {
+  const { dateKey, minutes } = hktTimeParts(at);
+  if (dateKey !== dateStr) return false;
+
+  const weekly = weeklyFromJson(openingHours);
+  const key = openingDayKeyFromDate(dateStr);
+  const h = weekly[key];
+  if (h.closed) return false;
+
+  const openMin = parseHm(h.open);
+  const closeMin = parseHm(h.close);
+  return minutes >= openMin && minutes <= closeMin;
+}

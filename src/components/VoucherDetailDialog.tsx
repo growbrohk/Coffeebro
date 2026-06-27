@@ -10,11 +10,25 @@ import {
 import { Button } from '@/components/ui/button';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
+import { dayLineForDate, isOrgOpenAt } from '@/lib/openingHours';
 import QRCode from 'react-qr-code';
 
 function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
-  const redemption = formatVoucherRedemptionPeriod(voucher.expires_at, voucher.event_date ?? null);
+  const redemption = formatVoucherRedemptionPeriod(
+    voucher.expires_at,
+    voucher.event_date ?? null,
+    { preferEventDate: Boolean(voucher.tasting_package_purchase_id) },
+  );
   const showQr = voucher.status === 'active' && Boolean(voucher.code?.trim());
+  const redeemDate = voucher.event_date ?? null;
+  const hoursLine =
+    voucher.tasting_package_purchase_id && redeemDate && voucher.opening_hours
+      ? dayLineForDate(voucher.opening_hours, redeemDate)
+      : null;
+  const openNow =
+    redeemDate && voucher.opening_hours
+      ? isOrgOpenAt(voucher.opening_hours, new Date(), redeemDate)
+      : null;
 
   return (
     <div className="space-y-2 text-xs text-foreground">
@@ -33,6 +47,15 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
         <span className="font-semibold text-muted-foreground">Redemption period: </span>
         {redemption}
       </p>
+      {hoursLine ? (
+        <p>
+          <span className="font-semibold text-muted-foreground">Shop hours that day: </span>
+          {hoursLine}
+          {openNow === false ? (
+            <span className="text-muted-foreground"> (shop closed now)</span>
+          ) : null}
+        </p>
+      ) : null}
       {voucher.campaign_details?.trim() ? (
         <p>
           <span className="font-semibold text-muted-foreground">Voucher campaign details: </span>
