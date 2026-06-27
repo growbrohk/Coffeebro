@@ -9,24 +9,25 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
-import { formatVoucherRedemptionPeriod } from '@/hooks/useMyVouchers';
-import { dayLineForDate, isOrgOpenAt } from '@/lib/openingHours';
+import {
+  formatTastingVoucherShopHours,
+  formatVoucherRedemptionPeriod,
+} from '@/hooks/useMyVouchers';
+import { isOrgOpenAt } from '@/lib/openingHours';
 import QRCode from 'react-qr-code';
 
 function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
+  const isTasting = Boolean(voucher.tasting_package_purchase_id);
   const redemption = formatVoucherRedemptionPeriod(
     voucher.expires_at,
     voucher.event_date ?? null,
-    { preferEventDate: Boolean(voucher.tasting_package_purchase_id) },
+    { preferEventDate: isTasting },
   );
   const showQr = voucher.status === 'active' && Boolean(voucher.code?.trim());
   const redeemDate = voucher.event_date ?? null;
-  const hoursLine =
-    voucher.tasting_package_purchase_id && redeemDate && voucher.opening_hours
-      ? dayLineForDate(voucher.opening_hours, redeemDate)
-      : null;
+  const shopHours = isTasting ? formatTastingVoucherShopHours(voucher) : null;
   const openNow =
-    redeemDate && voucher.opening_hours
+    isTasting && redeemDate && voucher.opening_hours
       ? isOrgOpenAt(voucher.opening_hours, new Date(), redeemDate)
       : null;
 
@@ -43,19 +44,26 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
         <span className="font-semibold text-muted-foreground">Code: </span>
         <span className="font-mono font-semibold">{voucher.code}</span>
       </p>
-      <p>
-        <span className="font-semibold text-muted-foreground">Redemption period: </span>
-        {redemption}
-      </p>
-      {hoursLine ? (
+      {isTasting ? (
+        <>
+          <p>
+            <span className="font-semibold text-muted-foreground">Redemption day: </span>
+            {redemption}
+          </p>
+          <p>
+            <span className="font-semibold text-muted-foreground">Shop hours: </span>
+            {shopHours}
+            {openNow === false ? (
+              <span className="text-muted-foreground"> (shop closed now)</span>
+            ) : null}
+          </p>
+        </>
+      ) : (
         <p>
-          <span className="font-semibold text-muted-foreground">Shop hours that day: </span>
-          {hoursLine}
-          {openNow === false ? (
-            <span className="text-muted-foreground"> (shop closed now)</span>
-          ) : null}
+          <span className="font-semibold text-muted-foreground">Redemption period: </span>
+          {redemption}
         </p>
-      ) : null}
+      )}
       {voucher.campaign_details?.trim() ? (
         <p>
           <span className="font-semibold text-muted-foreground">Voucher campaign details: </span>

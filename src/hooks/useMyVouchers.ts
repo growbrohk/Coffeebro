@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { normalizeClaimSpot } from "@/lib/campaignToMapItem";
 import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
 import { formatTastingDuoDisplay } from "@/lib/formatTastingDuoDisplay";
+import { dayLineForDate } from "@/lib/openingHours";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 
 export interface MyVoucherReview {
@@ -95,6 +96,16 @@ export function formatVoucherRedemptionPeriod(
     }
   }
   return "—";
+}
+
+export function formatTastingFolderRedemptionDate(vouchers: MyVoucher[]): string {
+  const date = vouchers.find((v) => v.event_date)?.event_date ?? null;
+  return formatVoucherRedemptionPeriod(null, date, { preferEventDate: true });
+}
+
+export function formatTastingVoucherShopHours(voucher: MyVoucher): string {
+  if (!voucher.tasting_package_purchase_id || !voucher.event_date) return "—";
+  return dayLineForDate(voucher.opening_hours, voucher.event_date);
 }
 
 function parseRedemptionDeadline(

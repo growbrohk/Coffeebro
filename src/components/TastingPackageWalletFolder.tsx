@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
-import { getVoucherRedemptionDeadline, isVoucherWalletActive } from '@/hooks/useMyVouchers';
+import {
+  formatTastingFolderRedemptionDate,
+  getVoucherRedemptionDeadline,
+  isVoucherWalletActive,
+} from '@/hooks/useMyVouchers';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import { cn } from '@/lib/utils';
 
@@ -146,6 +150,9 @@ export function TastingPackageWalletFolder({ folder, defaultOpen = true }: Tasti
           <p className="truncate font-semibold text-foreground">{folder.title}</p>
           <p className="text-xs text-muted-foreground">
             {tierLabel} · {redeemed}/{total} redeemed
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Redemption period: {formatTastingFolderRedemptionDate(folder.vouchers)}
           </p>
         </div>
         {open ? (

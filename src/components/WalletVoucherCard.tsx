@@ -8,6 +8,7 @@ import { VoucherDetailDialog } from '@/components/VoucherDetailDialog';
 import { cn } from '@/lib/utils';
 import type { MyVoucher } from '@/hooks/useMyVouchers';
 import {
+  formatTastingVoucherShopHours,
   formatVoucherRedemptionPeriod,
   isVoucherWalletActive,
   isVoucherWalletExpired,
@@ -66,11 +67,13 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   const isExpired = isVoucherWalletExpired(voucher);
   const isRedeemed = voucher.status === 'redeemed';
   const hasReview = Boolean(voucher.review);
+  const isTasting = Boolean(voucher.tasting_package_purchase_id);
   const redemption = formatVoucherRedemptionPeriod(
     voucher.expires_at,
     voucher.event_date ?? null,
-    { preferEventDate: Boolean(voucher.tasting_package_purchase_id) },
+    { preferEventDate: isTasting },
   );
+  const shopHours = isTasting ? formatTastingVoucherShopHours(voucher) : null;
 
   const handleReviewClick = () => {
     if (!voucher.org_id) return;
@@ -118,7 +121,9 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-foreground">{voucher.org_name || 'Partner'}</p>
           <VoucherDrinkTitle voucher={voucher} />
-          <p className="mt-1 text-xs text-muted-foreground">Redemption period: {redemption}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isTasting ? `Shop hours: ${shopHours}` : `Redemption period: ${redemption}`}
+          </p>
         </div>
 
         <div className="flex shrink-0 flex-col justify-center gap-1.5 border-l border-dashed border-border pl-3">
