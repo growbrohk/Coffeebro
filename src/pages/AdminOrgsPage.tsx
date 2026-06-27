@@ -34,6 +34,16 @@ import { isNearHongKong } from '@/lib/hkMapBounds';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ClaimSpotsEditor } from '@/components/admin/ClaimSpotsEditor';
 import type { OrgShopType } from '@/hooks/useOrgs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const MAX_PREVIEW_SIZE = 5 * 1024 * 1024;
 const PREVIEW_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -175,7 +185,7 @@ async function uploadOrgLogoToStorage(orgId: string, file: File): Promise<string
 
 export default function AdminOrgsPage() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: orgs = [], isLoading: orgsLoading } = useOrgs();
   const { toast } = useToast();
@@ -191,6 +201,9 @@ export default function AdminOrgsPage() {
   const [activeOrgId, setActiveOrgId] = useState<string | null | 'new' | 'idle'>('idle');
   const [draft, setDraft] = useState<Draft>(emptyDraft());
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [debouncedHostQ, setDebouncedHostQ] = useState('');
   const [staffAddSearch, setStaffAddSearch] = useState('');
   const [debouncedStaffQ, setDebouncedStaffQ] = useState('');
@@ -234,6 +247,8 @@ export default function AdminOrgsPage() {
     setPendingOrgLogoFile(null);
     revokePendingOrgPreview();
     setPendingOrgPreviewFile(null);
+    setDeletePassword('');
+    setDeleteDialogOpen(false);
   }, [activeOrgId]);
 
   useEffect(() => {
@@ -326,6 +341,16 @@ export default function AdminOrgsPage() {
         (o.location ?? '').toLowerCase().includes(q)
     );
   }, [orgs, orgSearchQuery]);
+
+  const canConfirmDeleteWithPassword = useMemo(() => {
+    if (!user?.email) return false;
+    const providers = user.identities?.map((i) => i.provider) ?? [];
+    if (providers.includes('email')) return true;
+    const meta = user.app_metadata?.providers as string[] | string | undefined;
+    if (Array.isArray(meta)) return meta.includes('email');
+    if (typeof meta === 'string') return meta === 'email';
+    return false;
+  }, [user]);
 
   const updateScrollHint = useCallback(() => {
     const el = orgListRef.current;
@@ -641,8 +666,8 @@ export default function AdminOrgsPage() {
   const logoPhotoSrc = (pendingOrgLogoUrl || draft.logo_url.trim()) as string;
   const previewPhotoSrc = (pendingOrgPreviewUrl || draft.preview_photo_url.trim()) as string;
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const name = draft.org_name.trim();
     if (!name) {
       toast({ title: 'Name required', variant: 'destructive' });
@@ -790,6 +815,51 @@ export default function AdminOrgsPage() {
     }
   };
 
+  const handleDeleteOrg = async () => {
+    if (!activeOrgIdForStaff) return;
+    if (!user?.email) return;
+
+    const password = deletePassword.trim();
+    if (!password) {
+      toast({ title: 'Password required', variant: 'destructive' });
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { error: authErr } = await signIn(user.email, password);
+      if (authErr) {
+        toast({
+          title: 'Incorrect password',
+          description: 'Could not verify your password.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase.rpc('delete_org', { p_org_id: activeOrgIdForStaff });
+      if (error) throw error;
+
+      refreshOrgRelatedQueries();
+      queryClient.invalidateQueries({ queryKey: ['org-claim-spots'] });
+      setActiveOrgId('idle');
+      setDraft(emptyDraft());
+      setDeletePassword('');
+      setDeleteDialogOpen(false);
+      draftLoadedForOrgIdRef.current = 'idle';
+      toast({ title: 'Organization deleted' });
+    } catch (err: unknown) {
+      console.error(err);
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background pb-24">
       <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border bg-background px-4 py-4">
@@ -891,6 +961,7 @@ export default function AdminOrgsPage() {
             Select an organization to edit, or create a new one.
           </p>
         ) : (
+          <div className="space-y-8">
           <form onSubmit={handleSave} className="space-y-8">
             {activeOrgId !== 'new' ? (
               <div className="flex flex-wrap gap-2">
@@ -1413,11 +1484,85 @@ export default function AdminOrgsPage() {
                 </div>
               </section>
             ) : null}
-
-            <Button type="submit" className="w-full btn-run" disabled={saving}>
-              {saving ? 'Saving…' : activeOrgId === 'new' ? 'Create organization' : 'Save changes'}
-            </Button>
           </form>
+
+          {activeOrgIdForStaff ? (
+            <section className="space-y-4 rounded-xl border border-destructive/50 bg-destructive/5 p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-destructive">Danger zone</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Permanently delete this organization and all related campaigns, vouchers, menu items,
+                  and staff assignments. This cannot be undone.
+                </p>
+              </div>
+              {canConfirmDeleteWithPassword ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="delete-org-password">Enter your password to confirm</Label>
+                    <Input
+                      id="delete-org-password"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.preventDefault();
+                      }}
+                      className="h-11"
+                      autoComplete="current-password"
+                      disabled={deleting || saving}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full"
+                    disabled={deleting || saving || !deletePassword.trim()}
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    Delete organization
+                  </Button>
+                  <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {draft.org_name.trim() || 'organization'}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove the organization and all related data. This action
+                          cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={deleting}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            void handleDeleteOrg();
+                          }}
+                        >
+                          {deleting ? 'Deleting…' : 'Delete permanently'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Link an email/password login to enable org deletion.
+                </p>
+              )}
+            </section>
+          ) : null}
+
+          <Button
+            type="button"
+            className="w-full btn-run"
+            disabled={saving || deleting}
+            onClick={() => void handleSave()}
+          >
+            {saving ? 'Saving…' : activeOrgId === 'new' ? 'Create organization' : 'Save changes'}
+          </Button>
+          </div>
         )}
       </div>
     </div>

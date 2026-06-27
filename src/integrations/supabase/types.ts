@@ -1190,6 +1190,10 @@ export type Database = {
           status: string
         }[]
       }
+      delete_org: {
+        Args: { p_org_id: string }
+        Returns: undefined
+      }
       finalize_receipt_scan: {
         Args: {
           p_org_id: string
