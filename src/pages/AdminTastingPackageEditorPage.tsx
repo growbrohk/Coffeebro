@@ -45,8 +45,10 @@ import type { TastingPackageEditorDraft, TastingPackageShopDraft } from '@/types
 import {
   TASTING_DUO_MAX_SHOPS,
   TASTING_DUO_PORTIONS,
+  TASTING_DUO_PRICE_CENTS,
   TASTING_SINGLE_MAX_SHOPS,
   TASTING_SINGLE_PORTIONS,
+  formatTastingPrice,
 } from '@/types/tastingPackage';
 import { cn } from '@/lib/utils';
 import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
@@ -596,7 +598,9 @@ export default function AdminTastingPackageEditorPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">Duo tier ($177 · up to {TASTING_DUO_MAX_SHOPS} shops)</h2>
+            <h2 className="text-lg font-bold">
+              Duo tier ({formatTastingPrice(TASTING_DUO_PRICE_CENTS)} · up to {TASTING_DUO_MAX_SHOPS} shops)
+            </h2>
             <Button
               type="button"
               size="sm"

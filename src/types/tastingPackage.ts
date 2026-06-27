@@ -51,9 +51,10 @@ export type TastingPackageEditorDraft = {
 };
 
 export const TASTING_SINGLE_MAX_SHOPS = 5;
-export const TASTING_DUO_MAX_SHOPS = 7;
+export const TASTING_DUO_MAX_SHOPS = 5;
 export const TASTING_SINGLE_PORTIONS = 1;
 export const TASTING_DUO_PORTIONS = 2;
+export const TASTING_DUO_PRICE_CENTS = 14700;
 
 export function formatPackageDistricts(districts: string[]): string {
   if (districts.length === 0) return '';
