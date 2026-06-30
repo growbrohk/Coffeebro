@@ -1556,12 +1556,16 @@ export type Database = {
           p_date_to?: string | null
           p_org_id: string
           p_package_id?: string | null
+          p_limit?: number | null
+          p_cursor_redeemed_at?: string | null
+          p_cursor_id?: string | null
         }
         Returns: {
           buyer_name: string
           item_name: string
           package_title: string
           redeemed_at: string
+          scanned_by_name: string | null
           status: string
           tier: string
           voucher_id: string

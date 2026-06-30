@@ -1,31 +1,12 @@
-export type TastingTrackingDashboard = {
-  packages_sold: number;
-  total_revenue_cents: number;
-  vouchers_created: number;
-  vouchers_redeemed: number;
-  vouchers_unredeemed: number;
-  redemption_rate: number;
-};
-
-export type TastingPackageSaleRow = {
-  package_id: string;
-  package_title: string;
-  tier: string;
-  sold: number;
-  revenue_cents: number;
-  vouchers_created: number;
-  vouchers_redeemed: number;
-  redemption_rate: number;
-};
-
 export type TastingPurchaseFilters = {
   package_id?: string;
   tier?: string;
-  status?: string;
-  purchase_id?: string;
   date_from?: string;
   date_to?: string;
   buyer_search?: string;
+  limit?: number;
+  cursor_created_at?: string;
+  cursor_id?: string;
 };
 
 export type TastingPurchaseRow = {
@@ -44,25 +25,17 @@ export type TastingPurchaseRow = {
   redeemed_count: number;
 };
 
-export type TastingPurchaseVoucherRow = {
-  voucher_id: string;
-  voucher_code: string;
-  shop_name: string;
-  item_name: string;
-  status: string;
-  redeemed_at: string | null;
-  redeemed_by_name: string | null;
-};
-
 export type TastingRedemptionFilters = {
   package_id?: string;
   tier?: string;
   org_id?: string;
   menu_item_id?: string;
-  redemption_status?: 'redeemed' | 'unredeemed';
   date_from?: string;
   date_to?: string;
   buyer_search?: string;
+  limit?: number;
+  cursor_redeemed_at?: string;
+  cursor_id?: string;
 };
 
 export type TastingRedemptionRow = {
@@ -80,39 +53,28 @@ export type TastingRedemptionRow = {
   item_name: string;
   status: string;
   created_at: string;
-  redeemed_at: string | null;
+  redeemed_at: string;
   scanned_by_name: string | null;
 };
 
-export type TastingShopSummaryRow = {
-  org_id: string;
-  shop_name: string;
-  assigned_vouchers: number;
-  redeemed: number;
-  unredeemed: number;
-  redemption_rate: number;
+export type HostTastingRedemptionFilters = {
+  package_id?: string;
+  date_from?: string;
+  date_to?: string;
+  limit?: number;
+  cursor_redeemed_at?: string;
+  cursor_id?: string;
 };
 
-export type TastingShopItemRow = {
-  menu_item_id: string;
-  item_name: string;
-  issued: number;
-  redeemed: number;
-  remaining: number;
-};
-
-export type TastingPackageTrackingSummary = {
-  package_id: string;
+export type HostTastingRedemptionRow = {
+  voucher_id: string;
+  redeemed_at: string;
+  buyer_name: string;
   package_title: string;
-  package_status: string;
-  is_active: boolean;
-  sold: number;
-  revenue_cents: number;
-  vouchers_per_purchase: number | null;
-  vouchers_created: number;
-  vouchers_redeemed: number;
-  vouchers_unredeemed: number;
-  redemption_rate: number;
+  tier: string;
+  item_name: string;
+  status: string;
+  scanned_by_name: string | null;
 };
 
 export type HostTastingDashboardRow = {
@@ -127,12 +89,7 @@ export type HostTastingDashboardRow = {
   item_name: string;
 };
 
-export type HostTastingRedemptionRow = {
-  voucher_id: string;
-  redeemed_at: string;
-  buyer_name: string;
-  package_title: string;
-  tier: string;
-  item_name: string;
-  status: string;
-};
+export const TASTING_TRACKING_PAGE_SIZE = 10;
+
+export type PurchaseCursor = { created_at: string; id: string } | null;
+export type RedemptionCursor = { redeemed_at: string; id: string } | null;
