@@ -24,6 +24,7 @@ import {
   type TastingTrackingFilterValues,
 } from '@/components/tasting-tracking/TastingTrackingFilters';
 import { InfiniteScrollList } from '@/components/tasting-tracking/InfiniteScrollList';
+import { formatTastingPrice } from '@/types/tastingPackage';
 import { formatTrackingDateShort, tastingTierLabel } from '@/lib/tastingTrackingLabels';
 
 type TabId = 'purchases' | 'redemptions';
@@ -141,6 +142,7 @@ export default function AdminTastingTrackingPage() {
                   <TableHead>Time</TableHead>
                   <TableHead>Buyer</TableHead>
                   <TableHead>Package</TableHead>
+                  <TableHead>Price</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -153,6 +155,9 @@ export default function AdminTastingTrackingPage() {
                     <TableCell className="max-w-[12rem] text-xs">
                       <div>{row.package_title}</div>
                       <div className="text-muted-foreground">{tastingTierLabel(row.tier)}</div>
+                    </TableCell>
+                    <TableCell className="text-xs whitespace-nowrap tabular-nums">
+                      {formatTastingPrice(row.amount_cents)}
                     </TableCell>
                   </TableRow>
                 ))}
