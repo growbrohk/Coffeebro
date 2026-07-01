@@ -11,6 +11,8 @@ import {
   type TastingPurchaseRow,
   type TastingRedemptionFilters,
   type TastingRedemptionRow,
+  type TastingTrackingSummary,
+  type TastingTrackingTab,
 } from '@/types/tastingTracking';
 
 function mapPurchaseRow(row: {
@@ -62,6 +64,7 @@ function mapRedemptionRow(row: {
   created_at: string;
   redeemed_at: string;
   scanned_by_name: string | null;
+  shop_split_cents: number | null;
 }): TastingRedemptionRow {
   return {
     voucher_id: row.voucher_id,
@@ -80,6 +83,7 @@ function mapRedemptionRow(row: {
     created_at: row.created_at,
     redeemed_at: row.redeemed_at,
     scanned_by_name: row.scanned_by_name,
+    shop_split_cents: Number(row.shop_split_cents ?? 0),
   };
 }
 
@@ -220,5 +224,31 @@ export function useHostTastingDashboard(orgId?: string, packageId?: string | nul
       }));
     },
     enabled: Boolean(orgId),
+  });
+}
+
+export function useTastingTrackingSummary(
+  filters: Omit<TastingPurchaseFilters, 'limit' | 'cursor_created_at' | 'cursor_id'>,
+  tab: TastingTrackingTab,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['tasting-tracking-summary', tab, filters],
+    queryFn: async (): Promise<TastingTrackingSummary> => {
+      const { data, error } = await supabase.rpc('get_tasting_tracking_summary', {
+        p_filters: filters,
+        p_tab: tab,
+      });
+      if (error) throw error;
+      const row = (data ?? [])[0];
+      return {
+        packages_sold: Number(row?.packages_sold ?? 0),
+        revenue_cents: Number(row?.revenue_cents ?? 0),
+        profit_cents: Number(row?.profit_cents ?? 0),
+        vouchers_total: Number(row?.vouchers_total ?? 0),
+        vouchers_redeemed: Number(row?.vouchers_redeemed ?? 0),
+      };
+    },
+    enabled,
   });
 }

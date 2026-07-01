@@ -851,6 +851,7 @@ export type Database = {
       tasting_package_purchases: {
         Row: {
           amount_cents: number
+          coffee_shop_split_pct: number | null
           created_at: string
           currency: string
           id: string
@@ -868,6 +869,7 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
+          coffee_shop_split_pct?: number | null
           created_at?: string
           currency?: string
           id?: string
@@ -885,6 +887,7 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
+          coffee_shop_split_pct?: number | null
           created_at?: string
           currency?: string
           id?: string
@@ -992,6 +995,7 @@ export type Database = {
       }
       tasting_packages: {
         Row: {
+          coffee_shop_split_pct: number
           cover_image_url: string | null
           created_at: string
           created_by: string | null
@@ -1009,6 +1013,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          coffee_shop_split_pct?: number
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -1026,6 +1031,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          coffee_shop_split_pct?: number
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -1466,6 +1472,16 @@ export type Database = {
           vouchers_unredeemed: number
         }[]
       }
+      get_tasting_tracking_summary: {
+        Args: { p_filters?: Json; p_tab?: string }
+        Returns: {
+          packages_sold: number
+          profit_cents: number
+          revenue_cents: number
+          vouchers_redeemed: number
+          vouchers_total: number
+        }[]
+      }
       get_tasting_tracking_dashboard: {
         Args: { p_package_id?: string | null }
         Returns: {
@@ -1629,6 +1645,7 @@ export type Database = {
           redeemed_at: string | null
           scanned_by_name: string | null
           shop_name: string
+          shop_split_cents: number | null
           status: string
           tier: string
           voucher_code: string

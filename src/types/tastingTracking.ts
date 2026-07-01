@@ -55,7 +55,18 @@ export type TastingRedemptionRow = {
   created_at: string;
   redeemed_at: string;
   scanned_by_name: string | null;
+  shop_split_cents: number;
 };
+
+export type TastingTrackingSummary = {
+  packages_sold: number;
+  revenue_cents: number;
+  profit_cents: number;
+  vouchers_total: number;
+  vouchers_redeemed: number;
+};
+
+export type TastingTrackingTab = 'purchases' | 'redemptions';
 
 export type HostTastingRedemptionFilters = {
   package_id?: string;

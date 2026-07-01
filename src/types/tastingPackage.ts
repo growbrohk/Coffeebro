@@ -61,6 +61,7 @@ export type TastingPackageEditorDraft = {
   cover_image_url: string;
   status: "draft" | "published";
   is_active: boolean;
+  coffee_shop_split_pct: number;
   shops: TastingPackageSharedShopDraft[];
   redemption_dates: TastingPackageRedemptionDateDraft[];
 };
@@ -80,6 +81,7 @@ export const TASTING_DUO_MAX_SHOPS = TASTING_PACKAGE_MAX_SHOPS;
 export const TASTING_SINGLE_PORTIONS = 1;
 export const TASTING_DUO_PORTIONS = 2;
 export const TASTING_DUO_PRICE_CENTS = 14700;
+export const DEFAULT_COFFEE_SHOP_SPLIT_PCT = 0.6;
 
 export function formatPackageDistricts(districts: string[]): string {
   if (districts.length === 0) return '';

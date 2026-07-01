@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
   const { data: pkg, error: pkgErr } = await admin
     .from('tasting_packages')
-    .select('id, title, status, is_active, single_price_cents, duo_price_cents')
+    .select('id, title, status, is_active, single_price_cents, duo_price_cents, coffee_shop_split_pct')
     .eq('id', packageId)
     .maybeSingle();
 
@@ -218,6 +218,8 @@ Deno.serve(async (req) => {
     ? new Date(session.expires_at * 1000).toISOString()
     : new Date(Date.now() + 60 * 60 * 23 * 1000).toISOString();
 
+  const coffeeShopSplitPct = pkg.coffee_shop_split_pct ?? 0.6;
+
   const { error: insErr } = await admin.from('tasting_package_purchases').insert({
     user_id: userId,
     package_id: packageId,
@@ -225,6 +227,7 @@ Deno.serve(async (req) => {
     redeem_date: redeemDateRaw,
     stripe_checkout_session_id: session.id,
     amount_cents: amountCents,
+    coffee_shop_split_pct: coffeeShopSplitPct,
     currency: 'hkd',
     status: 'pending',
     stripe_checkout_expires_at: expiresAt,

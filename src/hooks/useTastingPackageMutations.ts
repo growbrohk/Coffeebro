@@ -207,6 +207,7 @@ export function useTastingPackageMutations() {
         cover_image_url: draft.cover_image_url.trim() || null,
         status: draft.status,
         is_active: draft.is_active,
+        coffee_shop_split_pct: draft.coffee_shop_split_pct,
       };
 
       let id = packageId;

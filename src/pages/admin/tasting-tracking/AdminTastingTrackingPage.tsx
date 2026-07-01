@@ -6,6 +6,7 @@ import { useAllTastingPackages } from '@/hooks/usePublishedTastingPackages';
 import {
   useTastingPurchasesInfinite,
   useTastingRedemptionsInfinite,
+  useTastingTrackingSummary,
 } from '@/hooks/useTastingTracking';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,6 +25,7 @@ import {
   type TastingTrackingFilterValues,
 } from '@/components/tasting-tracking/TastingTrackingFilters';
 import { InfiniteScrollList } from '@/components/tasting-tracking/InfiniteScrollList';
+import { StatCard, StatCardGrid } from '@/components/admin/tasting-tracking/StatCards';
 import { formatTastingPrice } from '@/types/tastingPackage';
 import { formatTrackingDateShort, tastingTierLabel } from '@/lib/tastingTrackingLabels';
 
@@ -52,6 +54,17 @@ export default function AdminTastingTrackingPage() {
 
   const purchasesQuery = useTastingPurchasesInfinite(purchaseRpcFilters, isSuperAdmin);
   const redemptionsQuery = useTastingRedemptionsInfinite(redemptionRpcFilters, isSuperAdmin);
+
+  const purchaseSummary = useTastingTrackingSummary(
+    purchaseRpcFilters,
+    'purchases',
+    isSuperAdmin && tab === 'purchases',
+  );
+  const redemptionSummary = useTastingTrackingSummary(
+    redemptionRpcFilters,
+    'redemptions',
+    isSuperAdmin && tab === 'redemptions',
+  );
 
   const purchaseRows = purchasesQuery.data?.pages.flat() ?? [];
   const redemptionRows = redemptionsQuery.data?.pages.flat() ?? [];
@@ -108,6 +121,41 @@ export default function AdminTastingTrackingPage() {
             activeId={tab}
             onChange={handleTabChange}
           />
+          {tab === 'purchases' ? (
+            <StatCardGrid>
+              <StatCard
+                label="Packages sold"
+                value={String(purchaseSummary.data?.packages_sold ?? '—')}
+              />
+              <StatCard
+                label="Revenue"
+                value={
+                  purchaseSummary.isLoading
+                    ? '…'
+                    : formatTastingPrice(purchaseSummary.data?.revenue_cents ?? 0)
+                }
+              />
+              <StatCard
+                label="Profit"
+                value={
+                  purchaseSummary.isLoading
+                    ? '…'
+                    : formatTastingPrice(purchaseSummary.data?.profit_cents ?? 0)
+                }
+              />
+            </StatCardGrid>
+          ) : (
+            <StatCardGrid className="grid-cols-2">
+              <StatCard
+                label="Total vouchers"
+                value={String(redemptionSummary.data?.vouchers_total ?? '—')}
+              />
+              <StatCard
+                label="Redeemed vouchers"
+                value={String(redemptionSummary.data?.vouchers_redeemed ?? '—')}
+              />
+            </StatCardGrid>
+          )}
           {tab === 'purchases' ? (
             <TastingTrackingFilters
               values={purchaseFilters}
@@ -181,6 +229,7 @@ export default function AdminTastingTrackingPage() {
                   <TableHead>Buyer</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead>Org</TableHead>
+                  <TableHead>Split</TableHead>
                   <TableHead>Package</TableHead>
                   <TableHead>Scan user</TableHead>
                 </TableRow>
@@ -194,6 +243,9 @@ export default function AdminTastingTrackingPage() {
                     <TableCell>{row.buyer_name}</TableCell>
                     <TableCell className="max-w-[10rem] text-xs">{row.item_name}</TableCell>
                     <TableCell>{row.shop_name}</TableCell>
+                    <TableCell className="text-xs whitespace-nowrap tabular-nums">
+                      {formatTastingPrice(row.shop_split_cents)}
+                    </TableCell>
                     <TableCell className="max-w-[12rem] text-xs">
                       <div>{row.package_title}</div>
                       <div className="text-muted-foreground">{tastingTierLabel(row.tier)}</div>

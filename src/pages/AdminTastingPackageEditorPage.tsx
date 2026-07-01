@@ -43,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { TastingPackageEditorDraft, TastingPackageRedemptionDateDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
 import {
+  DEFAULT_COFFEE_SHOP_SPLIT_PCT,
   TASTING_DUO_PRICE_CENTS,
   TASTING_PACKAGE_MAX_SHOPS,
   formatTastingPrice,
@@ -68,6 +69,7 @@ function emptyDraft(): TastingPackageEditorDraft {
     cover_image_url: '',
     status: 'draft',
     is_active: true,
+    coffee_shop_split_pct: DEFAULT_COFFEE_SHOP_SPLIT_PCT,
     shops: [],
     redemption_dates: [],
   };
@@ -309,6 +311,7 @@ export default function AdminTastingPackageEditorPage() {
       cover_image_url: existing.cover_image_url ?? '',
       status: existing.status as 'draft' | 'published',
       is_active: existing.is_active ?? true,
+      coffee_shop_split_pct: existing.coffee_shop_split_pct ?? DEFAULT_COFFEE_SHOP_SPLIT_PCT,
       shops: [],
       redemption_dates: [],
     });
@@ -746,6 +749,41 @@ export default function AdminTastingPackageEditorPage() {
             >
               <Plus className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
+            <Label className="text-xs">Coffee shop split (%)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              step={1}
+              value={Math.round(draft.coffee_shop_split_pct * 100)}
+              onChange={(e) => {
+                const pct = Math.min(100, Math.max(1, Number(e.target.value) || 1));
+                setDraft((d) => ({ ...d, coffee_shop_split_pct: pct / 100 }));
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Coffeebro keeps {100 - Math.round(draft.coffee_shop_split_pct * 100)}% of each sale.
+              {draft.shops.length > 0 ? (
+                <>
+                  {' '}
+                  Each shop earns ~
+                  {formatTastingPrice(
+                    Math.round(
+                      (7700 * draft.coffee_shop_split_pct) / draft.shops.length,
+                    ),
+                  )}{' '}
+                  (Single) or ~
+                  {formatTastingPrice(
+                    Math.round(
+                      (TASTING_DUO_PRICE_CENTS * draft.coffee_shop_split_pct) / draft.shops.length,
+                    ),
+                  )}{' '}
+                  (Duo) per redemption.
+                </>
+              ) : null}
+            </p>
           </div>
           {!canAddShops ? (
             <p className="text-xs text-muted-foreground">Select districts before adding shops.</p>
