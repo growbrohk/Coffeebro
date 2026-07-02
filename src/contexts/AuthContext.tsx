@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeUsernameHandle } from '@/lib/username';
@@ -11,17 +11,24 @@ interface Profile {
   created_at: string;
 }
 
+type ProfileFetchResult = {
+  data: Profile | null;
+  isError: boolean;
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  profileError: boolean;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   /** Starts Google OAuth; on success redirects the browser to Google (then back to redirectTo). */
   signInWithGoogle: (redirectTo?: string) => Promise<{ error: Error | null }>;
   /** Set profile username after OAuth when the row still uses a temp_ placeholder. */
   completeUsername: (username: string) => Promise<{ error: Error | null }>;
+  retryProfileLoad: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -32,74 +39,142 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<ProfileFetchResult> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    
+
     if (error) {
       console.error('Error fetching profile:', error);
-      return null;
+      return { data: null, isError: true };
     }
-    return data;
+    return { data, isError: false };
+  };
+
+  const fetchProfileWithRetry = async (userId: string, maxAttempts = 10): Promise<ProfileFetchResult> => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const result = await fetchProfile(userId);
+      if (result.isError) {
+        return result;
+      }
+      if (result.data) {
+        return result;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return { data: null, isError: false };
+  };
+
+  const resolveProfileForUser = async (
+    sessionUser: User,
+    maxAttempts = 10,
+  ): Promise<ProfileFetchResult> => {
+    const retryResult = await fetchProfileWithRetry(sessionUser.id, maxAttempts);
+    if (retryResult.isError || !retryResult.data) {
+      return retryResult;
+    }
+
+    let profileData = retryResult.data;
+
+    if (profileData.username.startsWith('temp_') && sessionUser.user_metadata?.username) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ username: sessionUser.user_metadata.username.toLowerCase().trim() })
+        .eq('user_id', sessionUser.id);
+
+      if (!updateError) {
+        const refreshed = await fetchProfile(sessionUser.id);
+        if (!refreshed.isError && refreshed.data) {
+          profileData = refreshed.data;
+        }
+      }
+    }
+
+    return { data: profileData, isError: false };
+  };
+
+  const lastAttemptedUserIdRef = useRef<string | null>(null);
+
+  const applyProfileResult = (result: ProfileFetchResult) => {
+    if (result.data) {
+      setProfile(result.data);
+      setProfileError(false);
+    } else {
+      setProfile(null);
+      setProfileError(true);
+    }
+    setLoading(false);
+  };
+
+  const loadProfileForUser = async (sessionUser: User, maxAttempts = 10) => {
+    setProfileError(false);
+    setLoading(true);
+    const result = await resolveProfileForUser(sessionUser, maxAttempts);
+    applyProfileResult(result);
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let cancelled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Use setTimeout to avoid potential race conditions
-          setTimeout(async () => {
-            const profileData = await fetchProfile(session.user.id);
-            if (profileData) {
-              // If profile has temp username, try to update it from user metadata
-              if (profileData.username.startsWith('temp_') && session.user.user_metadata?.username) {
-                const { error: updateError } = await supabase
-                  .from('profiles')
-                  .update({ username: session.user.user_metadata.username.toLowerCase().trim() })
-                  .eq('user_id', session.user.id);
-                
-                if (!updateError) {
-                  // Fetch updated profile
-                  const updatedProfile = await fetchProfile(session.user.id);
-                  setProfile(updatedProfile || profileData);
-                } else {
-                  setProfile(profileData);
-                }
-              } else {
-                setProfile(profileData);
-              }
-            }
-            setLoading(false);
-          }, 0);
-        } else {
+
+        if (!session?.user) {
+          lastAttemptedUserIdRef.current = null;
           setProfile(null);
+          setProfileError(false);
           setLoading(false);
+          return;
         }
-      }
+
+        const userId = session.user.id;
+        const skipProfileLoad =
+          event === 'TOKEN_REFRESHED' ||
+          (lastAttemptedUserIdRef.current === userId && event !== 'INITIAL_SESSION');
+
+        if (skipProfileLoad) {
+          setLoading(false);
+          return;
+        }
+
+        setLoading(true);
+        // Defer Supabase calls: running them inside the onAuthStateChange
+        // callback deadlocks because the auth client still holds its lock.
+        const sessionUser = session.user;
+        const maxAttempts = event === 'SIGNED_IN' ? 10 : 1;
+        setTimeout(async () => {
+          const result = await resolveProfileForUser(sessionUser, maxAttempts);
+          if (cancelled) return;
+
+          applyProfileResult(result);
+          lastAttemptedUserIdRef.current = userId;
+        }, 0);
+      },
     );
 
-    // THEN get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const profileData = await fetchProfile(session.user.id);
-        setProfile(profileData);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const retryProfileLoad = () => {
+    void (async () => {
+      const {
+        data: { session: s },
+      } = await supabase.auth.getSession();
+      const sessionUser = s?.user;
+      if (!sessionUser) return;
+
+      await loadProfileForUser(sessionUser, 3);
+    })();
+  };
 
   const signUp = async (email: string, password: string, username: string) => {
     // Check if username is taken
@@ -139,35 +214,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let profileExists = false;
       let attempts = 0;
       const maxAttempts = 10;
-      
+
       while (!profileExists && attempts < maxAttempts) {
-        const profile = await fetchProfile(data.user.id);
-        if (profile) {
+        const result = await fetchProfile(data.user.id);
+        if (result.isError) {
+          return { error: new Error('Could not load profile. Please try again.') };
+        }
+        const profileRow = result.data;
+        if (profileRow) {
           profileExists = true;
           // Update profile with actual username if it has a temp one
-          if (profile.username.startsWith('temp_')) {
+          if (profileRow.username.startsWith('temp_')) {
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ username: username.toLowerCase().trim() })
               .eq('user_id', data.user.id);
-            
+
             if (updateError) {
               // If update fails (e.g., user not authenticated due to email confirmation),
               // don't treat it as fatal - the auth state change listener will handle it
               console.warn('Could not update profile username immediately:', updateError.message);
               // Still set the profile so the user can proceed
-              setProfile(profile);
+              setProfile(profileRow);
             } else {
               // Fetch updated profile
-              const updatedProfile = await fetchProfile(data.user.id);
-              if (updatedProfile) {
-                setProfile(updatedProfile);
+              const updatedResult = await fetchProfile(data.user.id);
+              if (updatedResult.data) {
+                setProfile(updatedResult.data);
               } else {
-                setProfile(profile);
+                setProfile(profileRow);
               }
             }
           } else {
-            setProfile(profile);
+            setProfile(profileRow);
           }
           break;
         }
@@ -256,16 +335,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.updateUser({ data: { username: normalized } });
 
     const updated = await fetchProfile(uid);
-    if (updated) {
-      setProfile(updated);
+    if (updated.data) {
+      setProfile(updated.data);
+      setProfileError(false);
     }
 
     return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    lastAttemptedUserIdRef.current = null;
     setProfile(null);
+    setProfileError(false);
+    setUser(null);
+    setSession(null);
+    setLoading(false);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error signing out:', err);
+    }
   };
 
   return (
@@ -275,10 +364,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         loading,
+        profileError,
         signUp,
         signIn,
         signInWithGoogle,
         completeUsername,
+        retryProfileLoad,
         signOut,
       }}
     >

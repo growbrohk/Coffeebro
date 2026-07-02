@@ -122,7 +122,18 @@ export default function ProfilePage() {
   };
 
   const authMessage = getMessage();
-  const { user, profile, loading, signIn, signUp, signInWithGoogle, completeUsername } = useAuth();
+  const {
+    user,
+    profile,
+    loading,
+    profileError,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    completeUsername,
+    retryProfileLoad,
+    signOut,
+  } = useAuth();
   const { isSuperAdmin, isLoading: roleLoading } = useUserRole();
   const { data: staffAssignments = [], isLoading: staffLoading } = useOrgStaff();
 
@@ -152,6 +163,24 @@ export default function ProfilePage() {
     if (openAuthAsSignUp) setIsSignUp(true);
   }, [openAuthAsSignUp]);
 
+  useEffect(() => {
+    const oauthError = searchParams.get('error');
+    if (!oauthError) return;
+
+    const description = searchParams.get('error_description');
+    setError(
+      description
+        ? decodeURIComponent(description.replace(/\+/g, ' '))
+        : 'Sign-in was cancelled or failed.',
+    );
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('error');
+    next.delete('error_description');
+    const qs = next.toString();
+    navigate({ pathname: '/profile', search: qs ? `?${qs}` : '' }, { replace: true });
+  }, [navigate, searchParams]);
+
   /** After Google OAuth, land on /profile?claim=… once a real username exists (not temp_). */
   useEffect(() => {
     if (!user || !profile || !claimParam) return;
@@ -178,6 +207,35 @@ export default function ProfilePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="animate-pulse text-lg font-semibold">Loading...</div>
+      </div>
+    );
+  }
+
+  if (user && !profile && profileError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="mx-auto max-w-sm space-y-4 text-center">
+          <p className="text-lg font-semibold">We couldn&apos;t load your profile</p>
+          <p className="text-sm text-muted-foreground">
+            Check your connection and try again, or log out and sign back in.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button type="button" className="w-full btn-run btn-run-yes" onClick={retryProfileLoad}>
+              Try again
+            </Button>
+            <Button type="button" variant="outline" className="w-full" onClick={() => void signOut()}>
+              Log out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && !profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-pulse text-lg font-semibold">Setting up your profile...</div>
       </div>
     );
   }

@@ -96,9 +96,7 @@ export function AuthDialog({
     setIsSubmitting(true);
     try {
       handleReturnToSetup();
-      const redirectTo = returnToPath
-        ? `${window.location.origin}/profile`
-        : `${window.location.origin}/profile`;
+      const redirectTo = `${window.location.origin}/profile`;
       const { error: oauthError } = await signInWithGoogle(redirectTo);
       if (oauthError) {
         setError(oauthError.message);
