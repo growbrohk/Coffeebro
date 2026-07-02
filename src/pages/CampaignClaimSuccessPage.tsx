@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Gift, Loader2 } from "lucide-react";
@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RedeemCodeCard } from "@/components/RedeemCodeCard";
-import { useMyVouchers } from "@/hooks/useMyVouchers";
+import { useMyCampaignVouchers } from "@/hooks/useMyVouchers";
 import { publishedCampaignsQueryKey } from "@/hooks/usePublishedCampaigns";
 import { campaignVoucherPoolsQueryKey } from "@/hooks/usePublishedCampaignVoucherPools";
 
@@ -21,7 +21,8 @@ export default function CampaignClaimSuccessPage() {
   const sessionId = searchParams.get("session_id");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: vouchers = [], isLoading, refetch, isFetching } = useMyVouchers();
+  const { data: forCampaign = [], isLoading, refetch, isFetching } =
+    useMyCampaignVouchers(campaignId);
 
   const [timedOut, setTimedOut] = useState(false);
 
@@ -45,11 +46,6 @@ export default function CampaignClaimSuccessPage() {
 
     return () => window.clearInterval(iv);
   }, [sessionId, campaignId, refetch]);
-
-  const forCampaign = useMemo(
-    () => vouchers.filter((v) => v.campaign_id === campaignId),
-    [vouchers, campaignId],
-  );
 
   const successOpen = forCampaign.length > 0;
 

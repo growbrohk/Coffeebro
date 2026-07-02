@@ -144,18 +144,7 @@ export function isVoucherWalletExpired(v: MyVoucher): boolean {
   return false;
 }
 
-export function useMyVouchers() {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ["vouchers", "my", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-
-      const { data: vouchers, error } = await supabase
-        .from("vouchers")
-        .select(
-          `
+const MY_VOUCHERS_SELECT = `
           id,
           code,
           status,
@@ -198,14 +187,33 @@ export function useMyVouchers() {
               org_claim_spots ( id, label, address, lat, lng, google_maps_url )
             )
           )
-        `,
-        )
-        .eq("owner_id", user.id)
-        .order("created_at", { ascending: false });
+        `;
 
-      if (error) throw error;
+const myVouchersQueryOptions = {
+  refetchOnWindowFocus: true,
+  staleTime: 5_000,
+  retry: 1,
+  retryDelay: (attempt: number) => 3000 * attempt,
+} as const;
 
-      const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
+async function fetchMyVouchers(
+  userId: string,
+  opts?: { campaignId?: string },
+): Promise<MyVoucher[]> {
+  let query = supabase
+    .from("vouchers")
+    .select(MY_VOUCHERS_SELECT)
+    .eq("owner_id", userId);
+
+  if (opts?.campaignId) {
+    query = query.eq("campaign_id", opts.campaignId);
+  }
+
+  const { data: vouchers, error } = await query.order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
         const tastingPurchaseRaw = v.tasting_package_purchases;
         const tastingPurchase = (Array.isArray(tastingPurchaseRaw)
           ? tastingPurchaseRaw[0]
@@ -492,7 +500,7 @@ export function useMyVouchers() {
           .select(
             "id, voucher_id, log_item, log_item_other, tasting_notes, share_publicly, coffee_date",
           )
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .in("voucher_id", redeemedIds);
 
         const byVoucher = new Map<string, MyVoucherReview>();
@@ -515,12 +523,33 @@ export function useMyVouchers() {
         }
       }
 
-      return result;
+  return result;
+}
+
+export function useMyVouchers() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["vouchers", "my", user?.id],
+    queryFn: () => {
+      if (!user) return [];
+      return fetchMyVouchers(user.id);
     },
     enabled: !!user,
-    refetchOnWindowFocus: true,
-    staleTime: 5_000,
-    retry: 1,
-    retryDelay: (attempt) => 3000 * attempt,
+    ...myVouchersQueryOptions,
+  });
+}
+
+export function useMyCampaignVouchers(campaignId: string | undefined) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["vouchers", "my", "campaign", user?.id, campaignId],
+    queryFn: () => {
+      if (!user || !campaignId) return [];
+      return fetchMyVouchers(user.id, { campaignId });
+    },
+    enabled: !!user && !!campaignId,
+    ...myVouchersQueryOptions,
   });
 }

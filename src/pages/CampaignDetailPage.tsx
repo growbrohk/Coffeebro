@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { VoucherDetailDialog } from "@/components/VoucherDetailDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClaimCampaign, describeClaimCampaignError } from "@/hooks/useClaimCampaign";
-import { useMyVouchers } from "@/hooks/useMyVouchers";
+import { useMyCampaignVouchers } from "@/hooks/useMyVouchers";
 import { useOrgStaff } from "@/hooks/useOrgStaff";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
@@ -167,12 +167,7 @@ export default function CampaignDetailPage() {
     },
   });
 
-  const { data: myVouchers = [] } = useMyVouchers();
-
-  const myVouchersForCampaign = useMemo(
-    () => myVouchers.filter((v) => v.campaign_id === campaignId),
-    [myVouchers, campaignId],
-  );
+  const { data: myVouchersForCampaign = [] } = useMyCampaignVouchers(campaignId);
 
   const poolQuery = usePublishedCampaignVoucherPools(campaignId ? [campaignId] : []);
 

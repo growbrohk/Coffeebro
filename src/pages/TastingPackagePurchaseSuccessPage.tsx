@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Gift, Loader2 } from 'lucide-react';
@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useMyVouchers } from '@/hooks/useMyVouchers';
 import {
   publishedTastingPackagesQueryKey,
   useTastingPackagePurchaseBySession,
@@ -23,7 +22,6 @@ export default function TastingPackagePurchaseSuccessPage() {
   const sessionId = searchParams.get('session_id');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: vouchers = [], refetch: refetchVouchers } = useMyVouchers();
   const {
     data: purchase,
     refetch: refetchPurchase,
@@ -43,18 +41,8 @@ export default function TastingPackagePurchaseSuccessPage() {
     }
   }, [id, purchase?.status]);
 
-  const tastingVouchers = useMemo(
-    () =>
-      vouchers.filter(
-        (v) =>
-          v.tasting_package_id === id ||
-          (purchase?.id && v.tasting_package_purchase_id === purchase.id),
-      ),
-    [vouchers, id, purchase?.id],
-  );
-
   const mintFailed = purchase?.status === 'failed';
-  const mintSucceeded = purchase?.status === 'minted' || tastingVouchers.length > 0;
+  const mintSucceeded = purchase?.status === 'minted';
   const stillPending =
     Boolean(sessionId) &&
     !purchaseLoading &&
@@ -62,11 +50,10 @@ export default function TastingPackagePurchaseSuccessPage() {
     (purchase.status === 'pending' || purchase.status === 'paid') &&
     !mintSucceeded;
 
-  const successOpen = mintSucceeded && tastingVouchers.length > 0;
+  const successOpen = mintSucceeded;
 
   const handleRefresh = () => {
     void refetchPurchase();
-    void refetchVouchers();
   };
 
   if (!id) {
@@ -141,7 +128,7 @@ export default function TastingPackagePurchaseSuccessPage() {
               Tasting package ready!
             </DialogTitle>
             <DialogDescription>
-              {tastingVouchers.length} voucher{tastingVouchers.length === 1 ? '' : 's'} added to your wallet.
+              Your tasting vouchers have been added to your wallet.
             </DialogDescription>
           </DialogHeader>
           <Button className="w-full" onClick={() => navigate('/vouchers')}>
