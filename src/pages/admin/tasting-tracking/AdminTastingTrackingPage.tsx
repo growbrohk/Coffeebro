@@ -26,6 +26,7 @@ import {
 } from '@/components/tasting-tracking/TastingTrackingFilters';
 import { InfiniteScrollList } from '@/components/tasting-tracking/InfiniteScrollList';
 import { StatCard, StatCardGrid } from '@/components/admin/tasting-tracking/StatCards';
+import { UserDetailDialog } from '@/components/admin/UserDetailDialog';
 import { formatTastingPrice } from '@/types/tastingPackage';
 import { formatTrackingDateShort, tastingTierLabel } from '@/lib/tastingTrackingLabels';
 
@@ -43,6 +44,9 @@ export default function AdminTastingTrackingPage() {
     useState<TastingTrackingFilterValues>(DEFAULT_FILTER_VALUES);
   const [redemptionFilters, setRedemptionFilters] =
     useState<TastingTrackingFilterValues>(DEFAULT_FILTER_VALUES);
+  const [selectedAffiliateUserId, setSelectedAffiliateUserId] = useState<string | null>(null);
+  const [selectedAffiliateUsername, setSelectedAffiliateUsername] = useState<string | null>(null);
+  const [affiliateDialogOpen, setAffiliateDialogOpen] = useState(false);
 
   const packageOptions = useMemo(
     () => packages.map((p) => ({ id: p.id, title: p.title })),
@@ -76,6 +80,20 @@ export default function AdminTastingTrackingPage() {
       setSearchParams({ tab: 'redemptions' }, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
+    }
+  };
+
+  const handleAffiliateClick = (userId: string, username: string | null) => {
+    setSelectedAffiliateUserId(userId);
+    setSelectedAffiliateUsername(username);
+    setAffiliateDialogOpen(true);
+  };
+
+  const handleAffiliateDialogOpenChange = (open: boolean) => {
+    setAffiliateDialogOpen(open);
+    if (!open) {
+      setSelectedAffiliateUserId(null);
+      setSelectedAffiliateUsername(null);
     }
   };
 
@@ -201,8 +219,20 @@ export default function AdminTastingTrackingPage() {
                       {formatTrackingDateShort(row.created_at)}
                     </TableCell>
                     <TableCell>{row.buyer_name}</TableCell>
-                    <TableCell className="max-w-[8rem] truncate text-xs font-mono">
-                      {row.affiliate_user_id ?? ''}
+                    <TableCell className="max-w-[8rem] truncate text-xs">
+                      {row.affiliate_user_id ? (
+                        <button
+                          type="button"
+                          className="max-w-full truncate text-left underline-offset-4 hover:underline"
+                          onClick={() =>
+                            handleAffiliateClick(row.affiliate_user_id!, row.affiliate_username)
+                          }
+                        >
+                          {row.affiliate_username ?? row.affiliate_user_id}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[12rem] text-xs">
                       <div>{row.package_title}</div>
@@ -262,6 +292,13 @@ export default function AdminTastingTrackingPage() {
           </InfiniteScrollList>
         )}
       </div>
+
+      <UserDetailDialog
+        userId={selectedAffiliateUserId}
+        open={affiliateDialogOpen}
+        onOpenChange={handleAffiliateDialogOpenChange}
+        initialUsername={selectedAffiliateUsername}
+      />
     </div>
   );
 }

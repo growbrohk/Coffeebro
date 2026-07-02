@@ -47,7 +47,7 @@ export function useUserProfile(userId: string | undefined) {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, username')
+        .select('user_id, username, created_at')
         .eq('user_id', userId)
         .maybeSingle();
 
