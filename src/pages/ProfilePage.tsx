@@ -23,6 +23,7 @@ import {
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings } from 'lucide-react';
+import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { suggestUsernameFromDisplayName } from '@/lib/username';
 import { consumePendingReturnTo } from '@/lib/tastingAffiliateRef';
 
@@ -555,6 +556,26 @@ export default function ProfilePage() {
 
           <Button type="submit" className="w-full btn-run btn-run-yes" disabled={isSubmitting}>
             {isSubmitting ? 'Loading...' : isSignUp ? 'Create Account' : 'Login'}
+          </Button>
+
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            disabled={isSubmitting}
+            onClick={() => void handleGoogleSignIn()}
+          >
+            <GoogleIcon className="h-5 w-5" />
+            Continue with Google
           </Button>
 
           <button

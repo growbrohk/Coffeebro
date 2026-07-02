@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { GoogleIcon } from '@/components/auth/GoogleIcon';
 import { setPendingReturnTo } from '@/lib/tastingAffiliateRef';
 
 export type AuthDialogProps = {
@@ -174,10 +175,11 @@ export function AuthDialog({
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full gap-2"
             disabled={isSubmitting}
             onClick={() => void handleGoogleSignIn()}
           >
+            <GoogleIcon className="h-5 w-5" />
             Continue with Google
           </Button>
 
