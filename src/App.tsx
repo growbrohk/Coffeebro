@@ -43,7 +43,16 @@ import TastingPackageDetailPage from "./pages/TastingPackageDetailPage";
 import TastingPackageCheckoutPage from "./pages/TastingPackageCheckoutPage";
 import TastingPackagePurchaseSuccessPage from "./pages/TastingPackagePurchaseSuccessPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function LoyaltyActivityToDashboard() {
   const { orgId } = useParams<{ orgId: string }>();

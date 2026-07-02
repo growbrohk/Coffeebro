@@ -519,7 +519,6 @@ export function useMyVouchers() {
     },
     enabled: !!user,
     refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
     staleTime: 5_000,
     retry: 1,
     retryDelay: (attempt) => 3000 * attempt,

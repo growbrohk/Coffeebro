@@ -252,32 +252,3 @@ export function useMessageSubscription(threadId: string | null) {
     };
   }, [threadId, queryClient]);
 }
-
-// Subscribe to thread updates for unread badge
-export function useThreadsSubscription() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
-  useEffect(() => {
-    if (!user) return;
-    
-    const channel = supabase
-      .channel('dm_threads_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'dm_threads',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['dm_threads'] });
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
-}

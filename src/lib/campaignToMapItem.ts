@@ -19,7 +19,6 @@ export type PublishedCampaignRow = Tables<"campaigns"> & {
         | "lat"
         | "lng"
         | "location"
-        | "owner_user_id"
         | "shop_type"
       >)
     | null;

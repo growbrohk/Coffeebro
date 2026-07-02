@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { localYMD } from '@/lib/date';
 import { computeCoffeeStreakFromToday } from '@/lib/coffeeStreak';
 
+const MONTHLY_COFFEE_COLUMNS =
+  'id, coffee_date, created_at, log_item, log_item_other, tasting_notes, log_type, place, location_kind, share_publicly, receipt_amount_cents, receipt_line_items';
+
 export function useMonthlyCoffees(year: number, month: number) {
   const { user } = useAuth();
 
@@ -17,7 +20,7 @@ export function useMonthlyCoffees(year: number, month: number) {
 
       const { data, error } = await supabase
         .from('daily_coffees')
-        .select('*')
+        .select(MONTHLY_COFFEE_COLUMNS)
         .eq('user_id', user.id)
         .gte('coffee_date', startDate)
         .lte('coffee_date', endDate);
@@ -437,8 +440,10 @@ export function useCoffeeCheckIn() {
 }
 
 export function useTodayPercentage() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['today-percentage'],
+    queryKey: ['today-percentage', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_today_coffee_percentage');
       if (error) throw error;

@@ -5,9 +5,7 @@ import { LogCoffeeNavButton } from '@/components/LogCoffeeNavButton';
 import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 } from '@/components/CoffeeCupMark';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  useMonthCoffeeDayCounts,
   useMonthlyCoffees,
-  useCalendarMonthCoffeeCount,
   useCoffeeStreak,
   drinkLabelFromDailyCoffee,
 } from '@/hooks/useCoffees';
@@ -68,10 +66,18 @@ export default function CalendarPage() {
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const { data: viewMonthCoffeeTotal = 0 } = useCalendarMonthCoffeeCount(year, month);
   const { data: streak = 0 } = useCoffeeStreak();
-  const { data: coffeeDayCounts = {} } = useMonthCoffeeDayCounts(year, month);
   const { data: monthCoffees = [] } = useMonthlyCoffees(year, month);
+
+  const viewMonthCoffeeTotal = monthCoffees.length;
+
+  const coffeeDayCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const row of monthCoffees) {
+      counts[row.coffee_date] = (counts[row.coffee_date] || 0) + 1;
+    }
+    return counts;
+  }, [monthCoffees]);
 
   const firstDay = new Date(year, month, 1).getDay();
   const weeks = useMemo(() => buildMonthWeeks(daysInMonth, firstDay), [daysInMonth, firstDay]);

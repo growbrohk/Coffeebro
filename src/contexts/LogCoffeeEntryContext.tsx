@@ -2,14 +2,13 @@ import {
   createContext,
   useCallback,
   useContext,
-  useMemo,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useAddCoffee, useTodayPercentage, type CoffeeDetails } from '@/hooks/useCoffees';
 import { LogCoffeeEntryModals } from '@/components/LogCoffeeEntryModals';
 import {
@@ -55,28 +54,39 @@ export function LogCoffeeEntryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const addCoffee = useAddCoffee();
-  const { data: myVouchers = [] } = useMyVouchers();
   const { data: percentage } = useTodayPercentage();
 
   const [prefill, setPrefill] = useState<LogCoffeePrefill | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [celebrationOpen, setCelebrationOpen] = useState(false);
   const [redeemPromptVoucherId, setRedeemPromptVoucherId] = useState<string | null>(null);
+  const [redeemPromptDetail, setRedeemPromptDetail] =
+    useState<VoucherRedeemedPromptDetail | null>(null);
   const [redeemPromptReviewLoading, setRedeemPromptReviewLoading] = useState(false);
   const queueRef = useRef<LogCoffeePrefill[]>([]);
   const detailsOpenRef = useRef(false);
   detailsOpenRef.current = detailsOpen;
 
-  const redeemPromptDetail = useMemo((): VoucherRedeemedPromptDetail | null => {
-    if (!redeemPromptVoucherId) return null;
-    const v = myVouchers.find((row) => row.id === redeemPromptVoucherId);
-    if (!v) return null;
-    return {
-      title: v.title ?? null,
-      orgName: v.org_name ?? null,
-      menuItemName: v.menu_item_name ?? null,
+  useEffect(() => {
+    if (!redeemPromptVoucherId) {
+      setRedeemPromptDetail(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchVoucherLogPrefill(redeemPromptVoucherId).then((prefill) => {
+      if (cancelled) return;
+      setRedeemPromptDetail({
+        title: null,
+        orgName: prefill?.orgName ?? null,
+        menuItemName: prefill?.menuItemName ?? null,
+      });
+    });
+
+    return () => {
+      cancelled = true;
     };
-  }, [redeemPromptVoucherId, myVouchers]);
+  }, [redeemPromptVoucherId]);
 
   const flushQueue = useCallback(() => {
     const next = queueRef.current.shift();
