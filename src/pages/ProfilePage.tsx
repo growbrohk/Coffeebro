@@ -24,6 +24,7 @@ import { CoffeeCupIcon, COFFEE_CUP_FILL_1, COFFEE_CUP_FILL_2, COFFEE_CUP_FILL_3 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import { suggestUsernameFromDisplayName } from '@/lib/username';
+import { consumePendingReturnTo } from '@/lib/tastingAffiliateRef';
 
 function isTempProfileUsername(name: string) {
   return name.startsWith('temp_');
@@ -196,14 +197,16 @@ export default function ProfilePage() {
         if (error) {
           setError(error.message);
         } else {
-          navigate(claimParam ? `/q?claim=${claimParam}` : '/');
+          const returnTo = consumePendingReturnTo();
+          navigate(returnTo ?? (claimParam ? `/q?claim=${claimParam}` : '/'));
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
           setError(error.message);
         } else {
-          navigate(claimParam ? `/q?claim=${claimParam}` : '/');
+          const returnTo = consumePendingReturnTo();
+          navigate(returnTo ?? (claimParam ? `/q?claim=${claimParam}` : '/'));
         }
       }
     } catch {

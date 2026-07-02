@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
+import { PendingReturnToHandler } from "@/components/auth/PendingReturnToHandler";
 import ExplorePage from "./pages/ExplorePage";
 import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -57,6 +58,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PendingReturnToHandler />
           <Layout>
             <Routes>
               <Route path="/" element={<Navigate to="/hunts" replace />} />

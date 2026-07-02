@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeUsernameHandle } from '@/lib/username';
+import { peekPendingReturnTo } from '@/lib/tastingAffiliateRef';
 
 interface Profile {
   id: string;
@@ -112,11 +113,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Username already taken') };
     }
 
+    const pendingReturnTo = peekPendingReturnTo();
+    const emailRedirectTo = pendingReturnTo
+      ? `${window.location.origin}${pendingReturnTo}`
+      : window.location.origin;
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo,
         data: {
           username: username.toLowerCase().trim(),
         },

@@ -10,7 +10,14 @@ import { formatTastingPrice } from '@/types/tastingPackage';
 import type { TastingPackageTier } from '@/types/tastingPackage';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { captureAffiliateRef, clearAffiliateRef, getStoredAffiliateRef } from '@/lib/tastingAffiliateRef';
+import {
+  buildTastingCheckoutPath,
+  captureAffiliateRef,
+  clearAffiliateRef,
+  resolveAffiliateRef,
+  setPendingReturnTo,
+} from '@/lib/tastingAffiliateRef';
+import { AuthDialog } from '@/components/auth/AuthDialog';
 
 export type TastingCheckoutLocationState = {
   tier: TastingPackageTier;
@@ -31,6 +38,10 @@ function todayHktDateKey(): string {
   }).format(new Date());
 }
 
+function parseTier(value: string | null | undefined): TastingPackageTier | undefined {
+  return value === 'single' || value === 'duo' ? value : undefined;
+}
+
 export default function TastingPackageCheckoutPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -41,9 +52,10 @@ export default function TastingPackageCheckoutPage() {
   const purchase = useTastingPackagePurchase();
   const [submitting, setSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const state = location.state as TastingCheckoutLocationState | null;
-  const tier = state?.tier;
+  const tier = state?.tier ?? parseTier(searchParams.get('tier'));
 
   const { data: pkg, isLoading } = useTastingPackage(id);
   const { data: redemptionDates = [], isLoading: datesLoading } = useTastingPackageRedemptionDates(id);
@@ -67,17 +79,23 @@ export default function TastingPackageCheckoutPage() {
     if (ref) captureAffiliateRef(id, ref);
   }, [id, searchParams]);
 
+  const checkoutReturnPath = useMemo(() => {
+    if (!id || !tier) return undefined;
+    const ref = resolveAffiliateRef(id, searchParams.get('ref'));
+    return buildTastingCheckoutPath(id, tier, ref);
+  }, [id, tier, searchParams]);
+
   useEffect(() => {
-    if (!user && id) {
-      navigate('/profile', { replace: true });
-    }
-  }, [user, navigate, id]);
+    if (user || !id || !tier || !checkoutReturnPath) return;
+    setPendingReturnTo(checkoutReturnPath);
+    setAuthOpen(true);
+  }, [user, id, tier, checkoutReturnPath]);
 
   const amountCents = tier === 'duo' ? pkg?.duo_price_cents : pkg?.single_price_cents;
 
   const startCheckout = useCallback(async () => {
     if (!user || !id || !tier || !selectedDate) return;
-    const ref = getStoredAffiliateRef(id) ?? searchParams.get('ref') ?? undefined;
+    const ref = resolveAffiliateRef(id, searchParams.get('ref'));
     setSubmitting(true);
     try {
       const res = await purchase.mutateAsync({ packageId: id, tier, redeemDate: selectedDate, ref });
@@ -107,7 +125,24 @@ export default function TastingPackageCheckoutPage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <>
+        <AuthDialog
+          open={authOpen}
+          onOpenChange={setAuthOpen}
+          defaultSignUp
+          title="Sign up to checkout"
+          message="Create an account or log in to complete your tasting package purchase."
+          returnToPath={checkoutReturnPath}
+          onSuccess={() => setAuthOpen(false)}
+        />
+        <div className="flex min-h-screen items-center justify-center bg-background px-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </>
+    );
+  }
 
   if (!tier) {
     return (

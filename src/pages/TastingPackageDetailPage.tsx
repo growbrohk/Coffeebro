@@ -1,12 +1,18 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTastingPackage, useMyTastingPackagePurchases } from '@/hooks/usePublishedTastingPackages';
 import { Button } from '@/components/ui/button';
 import { formatPackageDistricts, formatTastingPrice } from '@/types/tastingPackage';
-import type { TastingPackageShop } from '@/types/tastingPackage';
-import { captureAffiliateRef } from '@/lib/tastingAffiliateRef';
+import type { TastingPackageShop, TastingPackageTier } from '@/types/tastingPackage';
+import {
+  buildTastingCheckoutPath,
+  captureAffiliateRef,
+  resolveAffiliateRef,
+  setPendingReturnTo,
+} from '@/lib/tastingAffiliateRef';
+import { AuthDialog } from '@/components/auth/AuthDialog';
 
 function TierSection({
   title,
@@ -53,12 +59,51 @@ export default function TastingPackageDetailPage() {
   const { user } = useAuth();
   const { data: pkg, isLoading } = useTastingPackage(id);
   const { data: purchases = [] } = useMyTastingPackagePurchases();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [pendingTier, setPendingTier] = useState<TastingPackageTier | null>(null);
 
   useEffect(() => {
     if (!id) return;
     const ref = searchParams.get('ref');
     if (ref) captureAffiliateRef(id, ref);
   }, [id, searchParams]);
+
+  const checkoutPathForTier = useCallback(
+    (tier: TastingPackageTier) => {
+      if (!id) return '/explore';
+      const ref = resolveAffiliateRef(id, searchParams.get('ref'));
+      return buildTastingCheckoutPath(id, tier, ref);
+    },
+    [id, searchParams],
+  );
+
+  const proceedToCheckout = useCallback(
+    (tier: TastingPackageTier) => {
+      if (!id) return;
+      navigate(checkoutPathForTier(tier), { state: { tier } });
+    },
+    [id, navigate, checkoutPathForTier],
+  );
+
+  const startPurchase = (tier: TastingPackageTier) => {
+    if (!id) return;
+    if (!user) {
+      const returnPath = checkoutPathForTier(tier);
+      setPendingReturnTo(returnPath);
+      setPendingTier(tier);
+      setAuthOpen(true);
+      return;
+    }
+    proceedToCheckout(tier);
+  };
+
+  const handleAuthSuccess = () => {
+    if (pendingTier) {
+      proceedToCheckout(pendingTier);
+      setPendingTier(null);
+    }
+    setAuthOpen(false);
+  };
 
   const ownedTiers = useMemo(() => {
     const set = new Set<string>();
@@ -79,14 +124,7 @@ export default function TastingPackageDetailPage() {
     [pkg],
   );
 
-  const startPurchase = (tier: 'single' | 'duo') => {
-    if (!user) {
-      navigate('/profile');
-      return;
-    }
-    if (!id) return;
-    navigate(`/tasting-packages/${id}/checkout`, { state: { tier } });
-  };
+  const authReturnPath = pendingTier ? checkoutPathForTier(pendingTier) : undefined;
 
   if (isLoading) {
     return (
@@ -165,6 +203,16 @@ export default function TastingPackageDetailPage() {
           ) : null}
         </div>
       </div>
+
+      <AuthDialog
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        defaultSignUp
+        title="Sign up to purchase"
+        message="Create an account or log in to continue to checkout."
+        returnToPath={authReturnPath}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }
