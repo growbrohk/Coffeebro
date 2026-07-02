@@ -449,5 +449,7 @@ export function useTodayPercentage() {
       if (error) throw error;
       return Number(data) || 0;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   });
 }
