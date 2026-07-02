@@ -1556,6 +1556,10 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      my_voucher_hunter_stats: {
+        Args: never
+        Returns: { voucher_count: number; top_percent: number | null }[]
+      }
       my_voucher_hunter_top_percent: { Args: never; Returns: number | null }
       redeem_voucher_atomic: {
         Args: { p_code: string }

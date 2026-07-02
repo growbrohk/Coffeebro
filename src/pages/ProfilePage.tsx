@@ -12,8 +12,7 @@ import {
   useCoffeeProfileStats,
 } from '@/hooks/useCoffees';
 import { useTopCafes } from '@/hooks/useTopCafes';
-import { useMyVouchers } from '@/hooks/useMyVouchers';
-import { useMyVoucherTopPercent } from '@/hooks/useVouchers';
+import { useMyVoucherHunterStats } from '@/hooks/useVouchers';
 import {
   FROG_AVATAR_PATH,
   FROG_DEFAULT_GROUP_AVATAR_PATH,
@@ -146,8 +145,8 @@ export default function ProfilePage() {
   const { data: lifetimeTotal = 0, isLoading: lifetimeLoading } = useLifetimeCoffeeCount();
   const { data: profileStats, isLoading: profileStatsLoading } = useCoffeeProfileStats();
   const { data: topCafeRows = [], isLoading: topCafesLoading } = useTopCafes();
-  const { data: vouchers = [], isLoading: vouchersLoading } = useMyVouchers();
-  const { data: voucherTopPercent, isLoading: voucherTopLoading } = useMyVoucherTopPercent();
+  const { data: voucherHunterStats, isLoading: voucherHunterStatsLoading } =
+    useMyVoucherHunterStats();
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(openAuthAsSignUp);
@@ -375,7 +374,8 @@ export default function ProfilePage() {
     }));
 
     const topDrinks = profileStats?.topDrinks ?? [];
-    const voucherCount = vouchers.length;
+    const voucherCount = voucherHunterStats?.voucherCount ?? 0;
+    const voucherTopPercent = voucherHunterStats?.topPercent ?? null;
 
     return (
       <div className="min-h-screen bg-background pb-24">
@@ -453,15 +453,15 @@ export default function ProfilePage() {
           <div className={`${profileCardClass} shadow-sm`}>
             <p className="text-sm">You&apos;ve hunted &amp; grabbed</p>
             <p className="mt-1 text-2xl font-bold">
-              {vouchersLoading ? '…' : voucherCount}{' '}
+              {voucherHunterStatsLoading ? '…' : voucherCount}{' '}
               {voucherCount === 1 ? 'voucher' : 'vouchers'}
             </p>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-              {!voucherTopLoading && voucherTopPercent != null ? (
+              {!voucherHunterStatsLoading && voucherTopPercent != null ? (
                 <p className="text-sm text-[#2E1A14]/60">
                   Top {voucherTopPercent}% of the population!
                 </p>
-              ) : voucherTopLoading && voucherCount > 0 ? (
+              ) : voucherHunterStatsLoading && voucherCount > 0 ? (
                 <p className="text-sm text-[#2E1A14]/60">…</p>
               ) : voucherCount === 0 ? (
                 <p className="text-sm text-[#2E1A14]/60">
