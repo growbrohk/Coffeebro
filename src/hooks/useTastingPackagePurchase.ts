@@ -9,17 +9,19 @@ export function useTastingPackagePurchase() {
       packageId,
       tier,
       redeemDate,
+      ref,
     }: {
       packageId: string;
       tier: TastingPackageTier;
       redeemDate: string;
+      ref?: string;
     }) => {
       const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr) throw sessionErr;
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Sign in to purchase");
 
-      return createTastingPackageCheckoutRequest(token, { packageId, tier, redeemDate });
+      return createTastingPackageCheckoutRequest(token, { packageId, tier, redeemDate, ref });
     },
   });
 }

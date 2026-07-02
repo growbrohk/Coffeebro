@@ -15,6 +15,7 @@ import {
   publishedTastingPackagesQueryKey,
   useTastingPackagePurchaseBySession,
 } from '@/hooks/usePublishedTastingPackages';
+import { clearAffiliateRef } from '@/lib/tastingAffiliateRef';
 
 export default function TastingPackagePurchaseSuccessPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,12 @@ export default function TastingPackagePurchaseSuccessPage() {
     void queryClient.invalidateQueries({ queryKey: ['tasting-package-purchases'] });
     void queryClient.invalidateQueries({ queryKey: ['tasting-package-purchase', 'session'] });
   }, [queryClient]);
+
+  useEffect(() => {
+    if (id && (purchase?.status === 'paid' || purchase?.status === 'minted')) {
+      clearAffiliateRef(id);
+    }
+  }, [id, purchase?.status]);
 
   const tastingVouchers = useMemo(
     () =>

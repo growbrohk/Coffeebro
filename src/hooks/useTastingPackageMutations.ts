@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
-import type { TastingPackageEditorDraft, TastingPackageRedemptionDateDraft, TastingPackageShopDraft, TastingPackageTier } from "@/types/tastingPackage";
+import type { TastingPackageEditorDraft, TastingPackageAffiliateDraft, TastingPackageRedemptionDateDraft, TastingPackageShopDraft, TastingPackageTier } from "@/types/tastingPackage";
 import { splitDraftToTierShops } from "@/lib/tastingPackageEditorShops";
 import { publishedTastingPackagesQueryKey } from "./usePublishedTastingPackages";
 
@@ -84,6 +84,44 @@ async function syncShopItems(
     }
     const { error } = await supabase.from("tasting_package_items").delete().eq("id", item.id);
     if (error) throw error;
+  }
+}
+
+async function syncAffiliates(packageId: string, affiliates: TastingPackageAffiliateDraft[]) {
+  const normalized = affiliates.filter((a) => a.user_id.trim());
+
+  const { data: existing, error: loadErr } = await supabase
+    .from("tasting_package_affiliates")
+    .select("id, user_id, ref_code")
+    .eq("package_id", packageId);
+  if (loadErr) throw loadErr;
+
+  const existingByUser = new Map((existing ?? []).map((row) => [row.user_id, row]));
+  const nextUserIds = new Set(normalized.map((a) => a.user_id));
+
+  for (const [userId, row] of existingByUser) {
+    if (!nextUserIds.has(userId)) {
+      const { error } = await supabase.from("tasting_package_affiliates").delete().eq("id", row.id);
+      if (error) throw error;
+    }
+  }
+
+  for (const affiliate of normalized) {
+    const existingRow = existingByUser.get(affiliate.user_id);
+    if (existingRow) {
+      const { error } = await supabase
+        .from("tasting_package_affiliates")
+        .update({ split_pct: affiliate.split_pct })
+        .eq("id", existingRow.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("tasting_package_affiliates").insert({
+        package_id: packageId,
+        user_id: affiliate.user_id,
+        split_pct: affiliate.split_pct,
+      });
+      if (error) throw error;
+    }
   }
 }
 
@@ -232,6 +270,7 @@ export function useTastingPackageMutations() {
       const { singleShops, duoShops } = splitDraftToTierShops(draft.shops);
       await syncShopsAndItems(id, "single", singleShops);
       await syncShopsAndItems(id, "duo", duoShops);
+      await syncAffiliates(id, draft.affiliates);
       await syncRedemptionDates(id, draft.redemption_dates);
 
       const { data: fresh, error: loadErr } = await supabase

@@ -8,7 +8,46 @@ type Body = {
   packageId: string;
   tier: 'single' | 'duo';
   redeemDate?: string;
+  ref?: string;
 };
+
+type ResolvedAffiliate = {
+  userId: string;
+  splitPct: number;
+  refCode: string;
+};
+
+async function resolveAffiliate(
+  admin: ReturnType<typeof createClient>,
+  packageId: string,
+  buyerUserId: string,
+  coffeeShopSplitPct: number,
+  refRaw: string | undefined,
+): Promise<ResolvedAffiliate | null> {
+  const ref = refRaw?.trim();
+  if (!ref) return null;
+
+  const { data: affiliate, error } = await admin
+    .from('tasting_package_affiliates')
+    .select('user_id, split_pct, ref_code')
+    .eq('package_id', packageId)
+    .eq('ref_code', ref)
+    .maybeSingle();
+
+  if (error || !affiliate) return null;
+  if (affiliate.user_id === buyerUserId) return null;
+
+  const splitPct = Number(affiliate.split_pct);
+  if (!Number.isFinite(splitPct) || splitPct <= 0 || splitPct >= coffeeShopSplitPct) {
+    return null;
+  }
+
+  return {
+    userId: affiliate.user_id,
+    splitPct,
+    refCode: affiliate.ref_code,
+  };
+}
 
 const APP_URL = () => Deno.env.get('APP_URL') ?? 'https://www.coffee-bro.com';
 
@@ -62,6 +101,7 @@ Deno.serve(async (req) => {
   const packageId = body.packageId?.trim();
   const tier = body.tier;
   const redeemDateRaw = body.redeemDate?.trim();
+  const refCode = body.ref?.trim();
   if (!packageId || (tier !== 'single' && tier !== 'duo')) {
     return json({ error: 'packageId and tier (single|duo) required' }, 400);
   }
@@ -131,6 +171,8 @@ Deno.serve(async (req) => {
   }
 
   const amountCents = tier === 'single' ? pkg.single_price_cents : pkg.duo_price_cents;
+  const coffeeShopSplitPct = pkg.coffee_shop_split_pct ?? 0.6;
+  const resolvedAffiliate = await resolveAffiliate(admin, packageId, userId, coffeeShopSplitPct, refCode);
   const nowIso = new Date().toISOString();
 
   const { data: pendingExisting } = await admin
@@ -154,23 +196,36 @@ Deno.serve(async (req) => {
         .update({ status: 'failed', mint_error: 'REDEEM_DATE_CHANGED', updated_at: new Date().toISOString() })
         .eq('id', pendingExisting.id);
     } else {
-    try {
-      const sess = await stripe.checkout.sessions.retrieve(pendingExisting.stripe_checkout_session_id);
-      if (sess.status === 'open' && sess.url) {
-        return json({
-          requiresPayment: true,
-          checkoutUrl: sess.url,
-          sessionId: sess.id,
-          reused: true,
-        });
+      const pendingAffiliateId = pendingExisting.affiliate_user_id ?? null;
+      const nextAffiliateId = resolvedAffiliate?.userId ?? null;
+      if (pendingAffiliateId !== nextAffiliateId) {
+        await admin
+          .from('tasting_package_purchases')
+          .update({
+            status: 'failed',
+            mint_error: 'AFFILIATE_CHANGED',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', pendingExisting.id);
+      } else {
+        try {
+          const sess = await stripe.checkout.sessions.retrieve(pendingExisting.stripe_checkout_session_id);
+          if (sess.status === 'open' && sess.url) {
+            return json({
+              requiresPayment: true,
+              checkoutUrl: sess.url,
+              sessionId: sess.id,
+              reused: true,
+            });
+          }
+        } catch (err) {
+          console.warn('Could not retrieve existing session', err);
+        }
+        await admin
+          .from('tasting_package_purchases')
+          .update({ status: 'failed', mint_error: 'STALE_CHECKOUT_SESSION', updated_at: new Date().toISOString() })
+          .eq('id', pendingExisting.id);
       }
-    } catch (err) {
-      console.warn('Could not retrieve existing session', err);
-    }
-    await admin
-      .from('tasting_package_purchases')
-      .update({ status: 'failed', mint_error: 'STALE_CHECKOUT_SESSION', updated_at: new Date().toISOString() })
-      .eq('id', pendingExisting.id);
     }
   }
 
@@ -199,12 +254,24 @@ Deno.serve(async (req) => {
       supabase_user_id: userId,
       tasting_package_id: packageId,
       tasting_tier: tier,
+      ...(resolvedAffiliate
+        ? {
+            affiliate_user_id: resolvedAffiliate.userId,
+            affiliate_ref_code: resolvedAffiliate.refCode,
+          }
+        : {}),
     },
     payment_intent_data: {
       metadata: {
         supabase_user_id: userId,
         tasting_package_id: packageId,
         tasting_tier: tier,
+        ...(resolvedAffiliate
+          ? {
+              affiliate_user_id: resolvedAffiliate.userId,
+              affiliate_ref_code: resolvedAffiliate.refCode,
+            }
+          : {}),
       },
     },
     expires_at: Math.floor(Date.now() / 1000) + 60 * 60 * 23,
@@ -218,7 +285,7 @@ Deno.serve(async (req) => {
     ? new Date(session.expires_at * 1000).toISOString()
     : new Date(Date.now() + 60 * 60 * 23 * 1000).toISOString();
 
-  const coffeeShopSplitPct = pkg.coffee_shop_split_pct ?? 0.6;
+  const coffeeShopSplitPctSnapshot = coffeeShopSplitPct;
 
   const { error: insErr } = await admin.from('tasting_package_purchases').insert({
     user_id: userId,
@@ -227,7 +294,9 @@ Deno.serve(async (req) => {
     redeem_date: redeemDateRaw,
     stripe_checkout_session_id: session.id,
     amount_cents: amountCents,
-    coffee_shop_split_pct: coffeeShopSplitPct,
+    coffee_shop_split_pct: coffeeShopSplitPctSnapshot,
+    affiliate_user_id: resolvedAffiliate?.userId ?? null,
+    affiliate_split_pct: resolvedAffiliate?.splitPct ?? null,
     currency: 'hkd',
     status: 'pending',
     stripe_checkout_expires_at: expiresAt,

@@ -29,6 +29,8 @@ function mapPurchaseRow(row: {
   created_at: string;
   voucher_count: number;
   redeemed_count: number;
+  affiliate_user_id: string | null;
+  affiliate_username: string | null;
 }): TastingPurchaseRow {
   return {
     purchase_id: row.purchase_id,
@@ -44,6 +46,8 @@ function mapPurchaseRow(row: {
     created_at: row.created_at,
     voucher_count: Number(row.voucher_count),
     redeemed_count: Number(row.redeemed_count),
+    affiliate_user_id: row.affiliate_user_id,
+    affiliate_username: row.affiliate_username,
   };
 }
 

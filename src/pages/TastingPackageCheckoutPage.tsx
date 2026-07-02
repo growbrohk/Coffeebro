@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useParams, useLocation, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { formatTastingPrice } from '@/types/tastingPackage';
 import type { TastingPackageTier } from '@/types/tastingPackage';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { captureAffiliateRef, clearAffiliateRef, getStoredAffiliateRef } from '@/lib/tastingAffiliateRef';
 
 export type TastingCheckoutLocationState = {
   tier: TastingPackageTier;
@@ -32,6 +33,7 @@ function todayHktDateKey(): string {
 
 export default function TastingPackageCheckoutPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -60,6 +62,12 @@ export default function TastingPackageCheckoutPage() {
   }, [availableDates, selectedDate]);
 
   useEffect(() => {
+    if (!id) return;
+    const ref = searchParams.get('ref');
+    if (ref) captureAffiliateRef(id, ref);
+  }, [id, searchParams]);
+
+  useEffect(() => {
     if (!user && id) {
       navigate('/profile', { replace: true });
     }
@@ -69,10 +77,12 @@ export default function TastingPackageCheckoutPage() {
 
   const startCheckout = useCallback(async () => {
     if (!user || !id || !tier || !selectedDate) return;
+    const ref = getStoredAffiliateRef(id) ?? searchParams.get('ref') ?? undefined;
     setSubmitting(true);
     try {
-      const res = await purchase.mutateAsync({ packageId: id, tier, redeemDate: selectedDate });
+      const res = await purchase.mutateAsync({ packageId: id, tier, redeemDate: selectedDate, ref });
       if (!res.requiresPayment) {
+        clearAffiliateRef(id);
         toast({ title: 'Purchased!', description: 'Check your wallet.' });
         navigate('/vouchers', { replace: true });
         return;
@@ -87,7 +97,7 @@ export default function TastingPackageCheckoutPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [user, id, tier, selectedDate, purchase, navigate, toast]);
+  }, [user, id, tier, selectedDate, searchParams, purchase, navigate, toast]);
 
   if (!id) {
     return (

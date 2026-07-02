@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useMemo, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTastingPackage, useMyTastingPackagePurchases } from '@/hooks/usePublishedTastingPackages';
 import { Button } from '@/components/ui/button';
 import { formatPackageDistricts, formatTastingPrice } from '@/types/tastingPackage';
 import type { TastingPackageShop } from '@/types/tastingPackage';
+import { captureAffiliateRef } from '@/lib/tastingAffiliateRef';
 
 function TierSection({
   title,
@@ -47,10 +48,17 @@ function TierSection({
 
 export default function TastingPackageDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: pkg, isLoading } = useTastingPackage(id);
   const { data: purchases = [] } = useMyTastingPackagePurchases();
+
+  useEffect(() => {
+    if (!id) return;
+    const ref = searchParams.get('ref');
+    if (ref) captureAffiliateRef(id, ref);
+  }, [id, searchParams]);
 
   const ownedTiers = useMemo(() => {
     const set = new Set<string>();

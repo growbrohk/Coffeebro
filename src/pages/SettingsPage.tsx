@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, QrCode } from 'lucide-react';
+import { ArrowLeft, Copy, QrCode } from 'lucide-react';
 import { HuntTreasureQrCard } from '@/components/campaigns/HuntTreasureQrCard';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,10 +15,14 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useOrgs } from '@/hooks/useOrgs';
 import { useOrgStaff } from '@/hooks/useOrgStaff';
 import { useStoreConversionRates } from '@/hooks/useStoreConversionRates';
+import { useMyTastingAffiliateLinks } from '@/hooks/useMyTastingAffiliateLinks';
 import { getCoffeebroMarketingSiteUrl } from '@/lib/quiz/share';
+import { buildTastingAffiliateLink } from '@/lib/tastingAffiliateRef';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [siteQrOpen, setSiteQrOpen] = useState(false);
   const marketingSiteUrl = getCoffeebroMarketingSiteUrl();
   const { user, loading, signOut } = useAuth();
@@ -27,6 +31,7 @@ export default function SettingsPage() {
   const { isLoading: staffLoading } = useOrgStaff();
   const orgIds = orgs.map((o) => o.id);
   const { data: conversionRates = [] } = useStoreConversionRates(orgIds);
+  const { data: affiliateLinks = [] } = useMyTastingAffiliateLinks();
 
   const handleSignOut = async () => {
     await signOut();
@@ -77,6 +82,38 @@ export default function SettingsPage() {
                     </p>
                   </div>
                   <p className="text-xl font-black">{cr.conversion_rate}%</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {affiliateLinks.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-normal text-muted-foreground">Tasting affiliate links</h2>
+            {affiliateLinks.map((link) => {
+              const href = buildTastingAffiliateLink(link.package_id, link.ref_code);
+              return (
+                <div key={link.package_id} className="space-y-2 rounded-xl border border-border bg-muted/20 p-4">
+                  <div>
+                    <p className="font-semibold">{link.package_title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(link.split_pct * 100)}% commission per sale
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(href).then(() => {
+                        toast({ title: 'Link copied' });
+                      });
+                    }}
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy link
+                  </Button>
                 </div>
               );
             })}

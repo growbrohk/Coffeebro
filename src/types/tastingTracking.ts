@@ -23,6 +23,8 @@ export type TastingPurchaseRow = {
   created_at: string;
   voucher_count: number;
   redeemed_count: number;
+  affiliate_user_id: string | null;
+  affiliate_username: string | null;
 };
 
 export type TastingRedemptionFilters = {

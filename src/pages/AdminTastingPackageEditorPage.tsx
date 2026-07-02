@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronsUpDown, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronsUpDown, Copy, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useTastingPackage, useTastingPackageRedemptionDates } from '@/hooks/usePublishedTastingPackages';
@@ -41,8 +41,9 @@ import {
   orgMatchesPackageLocation,
 } from '@/lib/filterOrgsByLocation';
 import { useToast } from '@/hooks/use-toast';
-import type { TastingPackageEditorDraft, TastingPackageRedemptionDateDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
+import type { TastingPackageEditorDraft, TastingPackageAffiliateDraft, TastingPackageRedemptionDateDraft, TastingPackageSharedShopDraft } from '@/types/tastingPackage';
 import {
+  DEFAULT_AFFILIATE_SPLIT_PCT,
   DEFAULT_COFFEE_SHOP_SPLIT_PCT,
   TASTING_DUO_PRICE_CENTS,
   TASTING_PACKAGE_MAX_SHOPS,
@@ -53,6 +54,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
+import { buildTastingAffiliateLink } from '@/lib/tastingAffiliateRef';
+import { useSearchUsers } from '@/hooks/useUserRuns';
 import { supabase } from '@/integrations/supabase/client';
 
 function newClientId() {
@@ -70,6 +73,7 @@ function emptyDraft(): TastingPackageEditorDraft {
     status: 'draft',
     is_active: true,
     coffee_shop_split_pct: DEFAULT_COFFEE_SHOP_SPLIT_PCT,
+    affiliates: [],
     shops: [],
     redemption_dates: [],
   };
@@ -274,6 +278,115 @@ function SharedShopRowEditor({
   );
 }
 
+function AffiliateRowEditor({
+  affiliate,
+  coffeeShopSplitPct,
+  packageId,
+  onChange,
+  onRemove,
+}: {
+  affiliate: TastingPackageAffiliateDraft;
+  coffeeShopSplitPct: number;
+  packageId?: string;
+  onChange: (next: TastingPackageAffiliateDraft) => void;
+  onRemove: () => void;
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const { data: searchResults = [] } = useSearchUsers(debouncedQ);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedQ(searchQuery.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  const affiliateLink =
+    packageId && affiliate.ref_code
+      ? buildTastingAffiliateLink(packageId, affiliate.ref_code)
+      : null;
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-2">
+          <Label className="text-xs">Affiliate user</Label>
+          {affiliate.user_id ? (
+            <p className="text-sm font-medium">{affiliate.username ?? affiliate.user_id}</p>
+          ) : (
+            <>
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search username…"
+                className="h-9"
+              />
+              {searchResults.length > 0 ? (
+                <ul className="max-h-32 overflow-y-auto rounded-md border border-border bg-background text-sm">
+                  {searchResults.map((u) => (
+                    <li key={u.user_id}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left hover:bg-muted"
+                        onClick={() => {
+                          onChange({
+                            ...affiliate,
+                            user_id: u.user_id,
+                            username: u.username,
+                          });
+                          setSearchQuery('');
+                        }}
+                      >
+                        {u.username}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
+        </div>
+        <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label="Remove affiliate">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Affiliate commission (%)</Label>
+        <Input
+          type="number"
+          min={1}
+          max={Math.max(1, Math.round(coffeeShopSplitPct * 100) - 1)}
+          step={1}
+          value={Math.round(affiliate.split_pct * 100)}
+          onChange={(e) => {
+            const maxPct = Math.max(1, Math.round(coffeeShopSplitPct * 100) - 1);
+            const pct = Math.min(maxPct, Math.max(1, Number(e.target.value) || 1));
+            onChange({ ...affiliate, split_pct: pct / 100 });
+          }}
+        />
+      </div>
+
+      {affiliateLink ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            void navigator.clipboard.writeText(affiliateLink).then(() => {
+              toast({ title: 'Link copied' });
+            });
+          }}
+        >
+          <Copy className="mr-2 h-4 w-4" />
+          Copy affiliate link
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export default function AdminTastingPackageEditorPage() {
   const { id } = useParams<{ id: string }>();
   const isNew = id === 'new' || !id;
@@ -312,13 +425,14 @@ export default function AdminTastingPackageEditorPage() {
       status: existing.status as 'draft' | 'published',
       is_active: existing.is_active ?? true,
       coffee_shop_split_pct: existing.coffee_shop_split_pct ?? DEFAULT_COFFEE_SHOP_SPLIT_PCT,
+      affiliates: [],
       shops: [],
       redemption_dates: [],
     });
 
     void (async () => {
       try {
-        const [shopsRes, datesRes] = await Promise.all([
+        const [shopsRes, datesRes, affiliatesRes] = await Promise.all([
           supabase
             .from('tasting_package_shops')
             .select('id, tier, org_id, sort_order, tasting_package_items ( menu_item_id, portion_index )')
@@ -329,9 +443,26 @@ export default function AdminTastingPackageEditorPage() {
             .select('redeem_date, is_available, max_purchases')
             .eq('package_id', existing.id)
             .order('redeem_date'),
+          supabase
+            .from('tasting_package_affiliates')
+            .select('user_id, split_pct, ref_code')
+            .eq('package_id', existing.id),
         ]);
         if (shopsRes.error) throw shopsRes.error;
         if (datesRes.error) throw datesRes.error;
+        if (affiliatesRes.error) throw affiliatesRes.error;
+
+        const affiliateRows = affiliatesRes.data ?? [];
+        const affiliateUserIds = affiliateRows.map((row) => row.user_id);
+        let usernameByUserId = new Map<string, string>();
+        if (affiliateUserIds.length > 0) {
+          const { data: profiles, error: profilesErr } = await supabase
+            .from('profiles')
+            .select('user_id, username')
+            .in('user_id', affiliateUserIds);
+          if (profilesErr) throw profilesErr;
+          usernameByUserId = new Map((profiles ?? []).map((p) => [p.user_id, p.username]));
+        }
 
         const data = shopsRes.data;
         if (!data) return;
@@ -356,6 +487,13 @@ export default function AdminTastingPackageEditorPage() {
         setDraft((d) => ({
           ...d,
           shops: mergeLoadedShopsToDraft(singleRows, duoRows),
+          affiliates: affiliateRows.map((row) => ({
+            clientId: newClientId(),
+            user_id: row.user_id,
+            username: usernameByUserId.get(row.user_id) ?? undefined,
+            split_pct: Number(row.split_pct),
+            ref_code: row.ref_code,
+          })),
           redemption_dates: (datesRes.data ?? []).map((row) => ({
             clientId: newClientId(),
             redeem_date: row.redeem_date,
@@ -443,6 +581,27 @@ export default function AdminTastingPackageEditorPage() {
     });
   };
 
+  const addAffiliate = () => {
+    setDraft((d) => ({
+      ...d,
+      affiliates: [
+        ...d.affiliates,
+        {
+          clientId: newClientId(),
+          user_id: '',
+          split_pct: DEFAULT_AFFILIATE_SPLIT_PCT,
+        },
+      ],
+    }));
+  };
+
+  const maxAffiliatePctPreview = useMemo(() => {
+    if (draft.affiliates.length === 0) return 0;
+    return Math.max(...draft.affiliates.map((a) => a.split_pct));
+  }, [draft.affiliates]);
+
+  const effectiveShopPoolPct = draft.coffee_shop_split_pct - maxAffiliatePctPreview;
+
   const bookedByDate = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of redemptionStats) {
@@ -483,6 +642,18 @@ export default function AdminTastingPackageEditorPage() {
     const orgIds = draft.shops.map((s) => s.org_id.trim()).filter(Boolean);
     if (new Set(orgIds).size !== orgIds.length) {
       return 'Each coffee shop can only appear once';
+    }
+    const affiliateUserIds = draft.affiliates.map((a) => a.user_id.trim()).filter(Boolean);
+    if (new Set(affiliateUserIds).size !== affiliateUserIds.length) {
+      return 'Each affiliate user can only appear once';
+    }
+    for (const affiliate of draft.affiliates) {
+      if (!affiliate.user_id.trim()) {
+        return 'Each affiliate row needs a user';
+      }
+      if (affiliate.split_pct <= 0 || affiliate.split_pct >= draft.coffee_shop_split_pct) {
+        return 'Affiliate commission must be greater than 0% and less than the coffee shop split %';
+      }
     }
     if (draft.status === 'published') {
       if (draft.shops.length === 0) {
@@ -771,19 +942,70 @@ export default function AdminTastingPackageEditorPage() {
                   Each shop earns ~
                   {formatTastingPrice(
                     Math.round(
-                      (7700 * draft.coffee_shop_split_pct) / draft.shops.length,
+                      ((draft.affiliates.length > 0 ? effectiveShopPoolPct : draft.coffee_shop_split_pct) *
+                        7700) /
+                        draft.shops.length,
                     ),
                   )}{' '}
                   (Single) or ~
                   {formatTastingPrice(
                     Math.round(
-                      (TASTING_DUO_PRICE_CENTS * draft.coffee_shop_split_pct) / draft.shops.length,
+                      ((draft.affiliates.length > 0 ? effectiveShopPoolPct : draft.coffee_shop_split_pct) *
+                        TASTING_DUO_PRICE_CENTS) /
+                        draft.shops.length,
                     ),
                   )}{' '}
-                  (Duo) per redemption.
+                  (Duo) per redemption
+                  {draft.affiliates.length > 0 ? ' with an affiliate link' : ''}.
                 </>
               ) : null}
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Affiliates</h3>
+                <p className="text-xs text-muted-foreground">
+                  Commission comes from the coffee shop split pool. Coffeebro&apos;s share is unchanged.
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={addAffiliate}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {draft.affiliates.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No affiliates yet.</p>
+            ) : (
+              draft.affiliates.map((affiliate, idx) => (
+                <AffiliateRowEditor
+                  key={affiliate.clientId}
+                  affiliate={affiliate}
+                  coffeeShopSplitPct={draft.coffee_shop_split_pct}
+                  packageId={isNew ? undefined : id}
+                  onChange={(next) =>
+                    setDraft((d) => {
+                      const copy = [...d.affiliates];
+                      copy[idx] = next;
+                      return { ...d, affiliates: copy };
+                    })
+                  }
+                  onRemove={() =>
+                    setDraft((d) => ({
+                      ...d,
+                      affiliates: d.affiliates.filter((_, i) => i !== idx),
+                    }))
+                  }
+                />
+              ))
+            )}
+            {draft.affiliates.length > 0 && draft.shops.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                With affiliate link (max {Math.round(maxAffiliatePctPreview * 100)}%): affiliate earns ~
+                {formatTastingPrice(Math.round(7700 * maxAffiliatePctPreview))} (Single) or ~
+                {formatTastingPrice(Math.round(TASTING_DUO_PRICE_CENTS * maxAffiliatePctPreview))} (Duo).
+              </p>
+            ) : null}
           </div>
           {!canAddShops ? (
             <p className="text-xs text-muted-foreground">Select districts before adding shops.</p>

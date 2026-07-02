@@ -848,8 +848,45 @@ export type Database = {
           },
         ]
       }
+      tasting_package_affiliates: {
+        Row: {
+          created_at: string
+          id: string
+          package_id: string
+          ref_code: string
+          split_pct: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_id: string
+          ref_code?: string
+          split_pct?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_id?: string
+          ref_code?: string
+          split_pct?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasting_package_affiliates_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "tasting_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasting_package_purchases: {
         Row: {
+          affiliate_split_pct: number | null
+          affiliate_user_id: string | null
           amount_cents: number
           coffee_shop_split_pct: number | null
           created_at: string
@@ -868,6 +905,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          affiliate_split_pct?: number | null
+          affiliate_user_id?: string | null
           amount_cents: number
           coffee_shop_split_pct?: number | null
           created_at?: string
@@ -886,6 +925,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          affiliate_split_pct?: number | null
+          affiliate_user_id?: string | null
           amount_cents?: number
           coffee_shop_split_pct?: number | null
           created_at?: string
@@ -1612,9 +1653,20 @@ export type Database = {
           voucher_id: string
         }[]
       }
+      get_my_tasting_affiliate_links: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          package_id: string
+          package_title: string
+          ref_code: string
+          split_pct: number
+        }[]
+      }
       list_tasting_purchases: {
         Args: { p_filters?: Json }
         Returns: {
+          affiliate_user_id: string | null
+          affiliate_username: string | null
           amount_cents: number
           buyer_email: string | null
           buyer_id: string

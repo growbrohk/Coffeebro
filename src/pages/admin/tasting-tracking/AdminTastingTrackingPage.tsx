@@ -189,6 +189,7 @@ export default function AdminTastingTrackingPage() {
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead>Buyer</TableHead>
+                  <TableHead>Affiliate</TableHead>
                   <TableHead>Package</TableHead>
                   <TableHead>Price</TableHead>
                 </TableRow>
@@ -200,6 +201,9 @@ export default function AdminTastingTrackingPage() {
                       {formatTrackingDateShort(row.created_at)}
                     </TableCell>
                     <TableCell>{row.buyer_name}</TableCell>
+                    <TableCell className="max-w-[8rem] truncate text-xs font-mono">
+                      {row.affiliate_user_id ?? ''}
+                    </TableCell>
                     <TableCell className="max-w-[12rem] text-xs">
                       <div>{row.package_title}</div>
                       <div className="text-muted-foreground">{tastingTierLabel(row.tier)}</div>
