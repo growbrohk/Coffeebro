@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "coffee-bro.com"
+        }
+      ],
+      "destination": "https://www.coffee-bro.com/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|icons/|og-quiz/|q/|registerSW\\.js|manifest\\.webmanifest|favicon\\.ico|favicon\\.png|apple-touch-icon\\.png|og-image\\.png|brand/).*)",

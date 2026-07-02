@@ -3,14 +3,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import Stripe from 'npm:stripe@17.7.0';
 import { corsHeaders } from '../_shared/cors.ts';
+import { resolveStripeReturnBase } from '../_shared/stripeReturnOrigin.ts';
 
 type Body = {
   campaignId: string;
   channel: 'grab' | 'hunt';
   huntQrPayload?: string | null;
+  origin?: string;
 };
-
-const APP_URL = () => Deno.env.get('APP_URL') ?? 'https://www.coffee-bro.com';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
   const title = campRow?.display_title?.trim() || 'Coffeebro campaign';
   const lineName = `${title} — ${offerLabel} — ${menuItemName}`;
 
-  const base = APP_URL().replace(/\/$/, '');
+  const base = resolveStripeReturnBase(body.origin, req.headers.get('Origin'));
   const successUrl = `${base}/campaigns/${campaignId}/claim/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl =
     channel === 'hunt' ? `${base}/hunts/scan` : `${base}/campaigns/${campaignId}`;

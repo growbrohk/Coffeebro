@@ -3,12 +3,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import Stripe from 'npm:stripe@17.7.0';
 import { corsHeaders } from '../_shared/cors.ts';
+import { resolveStripeReturnBase } from '../_shared/stripeReturnOrigin.ts';
 
 type Body = {
   packageId: string;
   tier: 'single' | 'duo';
   redeemDate?: string;
   ref?: string;
+  origin?: string;
 };
 
 type ResolvedAffiliate = {
@@ -48,8 +50,6 @@ async function resolveAffiliate(
     refCode: affiliate.ref_code,
   };
 }
-
-const APP_URL = () => Deno.env.get('APP_URL') ?? 'https://www.coffee-bro.com';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
 
   const tierLabel = tier === 'single' ? 'Single' : 'Duo';
   const lineName = `${pkg.title} — Tasting Package (${tierLabel})`;
-  const base = APP_URL().replace(/\/$/, '');
+  const base = resolveStripeReturnBase(body.origin, req.headers.get('Origin'));
   const successUrl = `${base}/tasting-packages/${packageId}/purchase/success?session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${base}/tasting-packages/${packageId}`;
 

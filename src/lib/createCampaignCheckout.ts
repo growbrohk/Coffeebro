@@ -21,7 +21,10 @@ export async function createCampaignCheckoutRequest(
       apikey: anonKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      origin: window.location.origin,
+    }),
   });
   const json = (await res.json()) as CreateCheckoutResponse & { error?: string };
   if (!res.ok) {
