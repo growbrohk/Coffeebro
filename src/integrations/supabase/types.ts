@@ -373,6 +373,66 @@ export type Database = {
         }
         Relationships: []
       }
+      return_voucher_presets: {
+        Row: {
+          created_at: string
+          fulfillment_rule: string
+          id: string
+          menu_item_id: string
+          offer_type: string
+          org_id: string
+          quantity: number
+          redeem_valid_days: number
+          sort_order: number
+          temperature_rule: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fulfillment_rule: string
+          id?: string
+          menu_item_id: string
+          offer_type: string
+          org_id: string
+          quantity: number
+          redeem_valid_days?: number
+          sort_order?: number
+          temperature_rule: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fulfillment_rule?: string
+          id?: string
+          menu_item_id?: string
+          offer_type?: string
+          org_id?: string
+          quantity?: number
+          redeem_valid_days?: number
+          sort_order?: number
+          temperature_rule?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_voucher_presets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_voucher_presets_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_claim_payments: {
         Row: {
           amount_cents: number
@@ -504,6 +564,7 @@ export type Database = {
           id: string
           org_id: string
           qr_payload: string | null
+          return_voucher_preset_id: string | null
           reward_mode: string
           reward_per_action: number
           start_at: string | null
@@ -526,6 +587,7 @@ export type Database = {
           id?: string
           org_id: string
           qr_payload?: string | null
+          return_voucher_preset_id?: string | null
           reward_mode: string
           reward_per_action?: number
           start_at?: string | null
@@ -548,6 +610,7 @@ export type Database = {
           id?: string
           org_id?: string
           qr_payload?: string | null
+          return_voucher_preset_id?: string | null
           reward_mode?: string
           reward_per_action?: number
           start_at?: string | null
@@ -572,6 +635,13 @@ export type Database = {
             columns: ["claim_spot_id"]
             isOneToOne: false
             referencedRelation: "org_claim_spots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_return_voucher_preset_id_fkey"
+            columns: ["return_voucher_preset_id"]
+            isOneToOne: false
+            referencedRelation: "return_voucher_presets"
             referencedColumns: ["id"]
           },
         ]
@@ -998,6 +1068,7 @@ export type Database = {
           id: string
           org_id: string
           package_id: string
+          return_voucher_preset_id: string | null
           sort_order: number
           tier: string
         }
@@ -1006,6 +1077,7 @@ export type Database = {
           id?: string
           org_id: string
           package_id: string
+          return_voucher_preset_id?: string | null
           sort_order?: number
           tier: string
         }
@@ -1014,6 +1086,7 @@ export type Database = {
           id?: string
           org_id?: string
           package_id?: string
+          return_voucher_preset_id?: string | null
           sort_order?: number
           tier?: string
         }
@@ -1030,6 +1103,13 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "tasting_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasting_package_shops_return_voucher_preset_id_fkey"
+            columns: ["return_voucher_preset_id"]
+            isOneToOne: false
+            referencedRelation: "return_voucher_presets"
             referencedColumns: ["id"]
           },
         ]
@@ -1106,6 +1186,7 @@ export type Database = {
           owner_id: string
           redeemed_at: string | null
           redeemed_by: string | null
+          return_voucher_preset_id: string | null
           status: string
           tasting_package_item_id: string | null
           tasting_package_purchase_id: string | null
@@ -1124,6 +1205,7 @@ export type Database = {
           owner_id: string
           redeemed_at?: string | null
           redeemed_by?: string | null
+          return_voucher_preset_id?: string | null
           status?: string
           tasting_package_item_id?: string | null
           tasting_package_purchase_id?: string | null
@@ -1142,6 +1224,7 @@ export type Database = {
           owner_id?: string
           redeemed_at?: string | null
           redeemed_by?: string | null
+          return_voucher_preset_id?: string | null
           status?: string
           tasting_package_item_id?: string | null
           tasting_package_purchase_id?: string | null
@@ -1201,6 +1284,13 @@ export type Database = {
             columns: ["tasting_package_purchase_id"]
             isOneToOne: false
             referencedRelation: "tasting_package_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_return_voucher_preset_id_fkey"
+            columns: ["return_voucher_preset_id"]
+            isOneToOne: false
+            referencedRelation: "return_voucher_presets"
             referencedColumns: ["id"]
           },
         ]
@@ -1571,6 +1661,8 @@ export type Database = {
           org_name: string | null
           owner_id: string | null
           owner_username: string | null
+          return_voucher_code: string | null
+          return_voucher_minted: boolean | null
           status: string
           voucher_code: string | null
           voucher_id: string | null

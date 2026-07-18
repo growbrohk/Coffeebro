@@ -146,6 +146,9 @@ export default function OrgMenuPage() {
           <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/campaigns`)}>
             Campaigns
           </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/vouchers`)}>
+            Vouchers
+          </Button>
         </div>
         {itemsLoading ? (
           <p className="text-sm text-muted-foreground">Loading menu…</p>

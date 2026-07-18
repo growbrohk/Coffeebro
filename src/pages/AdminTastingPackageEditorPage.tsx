@@ -56,6 +56,8 @@ import { cn } from '@/lib/utils';
 import { getAdminTastingPackageSaveErrorMessage, getErrorMessage } from '@/lib/errorMessage';
 import { buildTastingAffiliateLink } from '@/lib/tastingAffiliateRef';
 import { useSearchUsers } from '@/hooks/useUserRuns';
+import { useReturnVoucherPresets } from '@/hooks/useReturnVoucherPresets';
+import { ReturnVoucherPresetPreview } from '@/components/returnVouchers/ReturnVoucherPresetPreview';
 import { supabase } from '@/integrations/supabase/client';
 
 function newClientId() {
@@ -159,7 +161,10 @@ function SharedShopRowEditor({
   onRemove: () => void;
 }) {
   const { data: menuItems = [] } = useOrgMenuItems(shop.org_id || undefined);
+  const { data: returnPresets = [] } = useReturnVoucherPresets(shop.org_id || undefined);
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  const selectedReturnPreset =
+    returnPresets.find((p) => p.id === shop.return_voucher_preset_id) ?? null;
 
   const selectedLabel =
     (shop.org_id && orgById.get(shop.org_id)?.label) ||
@@ -206,6 +211,7 @@ function SharedShopRowEditor({
                             org_name: o.org_name,
                             single_menu_item_id: '',
                             duo_extra_menu_item_id: '',
+                            return_voucher_preset_id: null,
                           });
                           setComboboxOpen(false);
                         }}
@@ -274,6 +280,33 @@ function SharedShopRowEditor({
           </SelectContent>
         </Select>
       </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Return voucher (optional)</Label>
+        <Select
+          value={shop.return_voucher_preset_id ?? "__none__"}
+          disabled={!shop.org_id}
+          onValueChange={(presetId) =>
+            onChange({
+              ...shop,
+              return_voucher_preset_id: presetId === "__none__" ? null : presetId,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="None" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">None</SelectItem>
+            {returnPresets.map((preset) => (
+              <SelectItem key={preset.id} value={preset.id}>
+                {preset.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {selectedReturnPreset ? <ReturnVoucherPresetPreview preset={selectedReturnPreset} /> : null}
     </div>
   );
 }
@@ -435,7 +468,7 @@ export default function AdminTastingPackageEditorPage() {
         const [shopsRes, datesRes, affiliatesRes] = await Promise.all([
           supabase
             .from('tasting_package_shops')
-            .select('id, tier, org_id, sort_order, tasting_package_items ( menu_item_id, portion_index )')
+            .select('id, tier, org_id, sort_order, return_voucher_preset_id, tasting_package_items ( menu_item_id, portion_index )')
             .eq('package_id', existing.id)
             .order('sort_order'),
           supabase
@@ -467,8 +500,8 @@ export default function AdminTastingPackageEditorPage() {
         const data = shopsRes.data;
         if (!data) return;
 
-        const singleRows: { id: string; org_id: string; menu_item_ids: string[] }[] = [];
-        const duoRows: { id: string; org_id: string; menu_item_ids: string[] }[] = [];
+        const singleRows: { id: string; org_id: string; menu_item_ids: string[]; return_voucher_preset_id?: string | null }[] = [];
+        const duoRows: { id: string; org_id: string; menu_item_ids: string[]; return_voucher_preset_id?: string | null }[] = [];
 
         for (const row of data) {
           const rawItems = row.tasting_package_items;
@@ -479,7 +512,12 @@ export default function AdminTastingPackageEditorPage() {
           const menuIds = items
             .sort((a, b) => a.portion_index - b.portion_index)
             .map((it) => it.menu_item_id);
-          const loaded = { id: row.id, org_id: row.org_id, menu_item_ids: menuIds };
+          const loaded = {
+            id: row.id,
+            org_id: row.org_id,
+            menu_item_ids: menuIds,
+            return_voucher_preset_id: row.return_voucher_preset_id ?? null,
+          };
           if (row.tier === 'single') singleRows.push(loaded);
           else duoRows.push(loaded);
         }
@@ -575,6 +613,7 @@ export default function AdminTastingPackageEditorPage() {
             org_id: '',
             single_menu_item_id: '',
             duo_extra_menu_item_id: '',
+            return_voucher_preset_id: null,
           },
         ],
       };

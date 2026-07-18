@@ -30,6 +30,7 @@ import {
 import { TreasureLocationSection } from "@/components/campaigns/sections/TreasureLocationSection";
 import { HuntTreasureQrPanel } from "@/components/campaigns/HuntTreasureQrPanel";
 import { CampaignVouchersSection } from "@/components/campaigns/sections/CampaignVouchersSection";
+import { CampaignReturnVoucherSection } from "@/components/campaigns/sections/CampaignReturnVoucherSection";
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
@@ -103,6 +104,7 @@ export default function OrgCampaignEditorPage() {
   const hintImageFileRef = useRef<HTMLInputElement>(null);
   const [vouchers, setVouchers] = useState<VoucherDraft[]>([]);
   const [claimSpotId, setClaimSpotId] = useState<string>("");
+  const [returnVoucherPresetId, setReturnVoucherPresetId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
@@ -125,6 +127,7 @@ export default function OrgCampaignEditorPage() {
     setHintImageUrl(campaign.hint_image_url ?? "");
     setVouchers(vouchersFromCampaign(campaign));
     setClaimSpotId(campaign.claim_spot_id ?? "");
+    setReturnVoucherPresetId(campaign.return_voucher_preset_id ?? null);
     setHydrated(true);
   }, [campaign, isNew]);
 
@@ -338,6 +341,7 @@ export default function OrgCampaignEditorPage() {
           hint_image_url: d.hint_image_url,
           status: d.status,
           claim_spot_id: d.claim_spot_id ?? null,
+          return_voucher_preset_id: returnVoucherPresetId,
           qr_payload: null,
         }
       : {
@@ -357,6 +361,7 @@ export default function OrgCampaignEditorPage() {
           hint_image_url: d.hint_image_url,
           status: d.status,
           claim_spot_id: d.claim_spot_id ?? null,
+          return_voucher_preset_id: returnVoucherPresetId,
         };
 
     try {
@@ -649,6 +654,13 @@ export default function OrgCampaignEditorPage() {
           vouchers={vouchers}
           menuItems={menuItems}
           onChange={setVouchers}
+          disabled={saveCampaign.isPending}
+        />
+
+        <CampaignReturnVoucherSection
+          orgId={orgId}
+          value={returnVoucherPresetId}
+          onChange={setReturnVoucherPresetId}
           disabled={saveCampaign.isPending}
         />
 

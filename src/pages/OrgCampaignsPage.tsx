@@ -73,6 +73,9 @@ export default function OrgCampaignsPage() {
           <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/menu`)}>
             Menu
           </Button>
+          <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/vouchers`)}>
+            Vouchers
+          </Button>
           <Button type="button" className="gap-1" onClick={() => navigate(`/org/${orgId}/campaigns/new`)}>
             <Plus className="h-4 w-4" />
             New campaign

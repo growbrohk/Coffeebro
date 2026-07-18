@@ -15,6 +15,8 @@ export type HostRedeemSuccessDetail = {
   offerType: string | null;
   voucherCode: string | null;
   ownerUsername: string | null;
+  returnVoucherMinted?: boolean;
+  returnVoucherCode?: string | null;
 };
 
 interface HostRedeemSuccessModalProps {
@@ -60,6 +62,18 @@ export function HostRedeemSuccessModal({
               <p>
                 <span className="font-semibold text-muted-foreground">Username: </span>
                 <span className="font-semibold">{detail.ownerUsername.trim()}</span>
+              </p>
+            ) : null}
+            {detail?.returnVoucherMinted ? (
+              <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+                Return voucher sent to customer&apos;s wallet
+                {detail.returnVoucherCode?.trim() ? (
+                  <>
+                    {' '}
+                    (<span className="font-mono font-semibold">{detail.returnVoucherCode.trim()}</span>)
+                  </>
+                ) : null}
+                .
               </p>
             ) : null}
           </div>

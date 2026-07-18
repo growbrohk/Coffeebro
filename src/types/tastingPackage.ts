@@ -35,6 +35,7 @@ export type TastingPackageShopDraft = {
   org_id: string;
   org_name?: string;
   menu_item_ids: string[];
+  return_voucher_preset_id?: string | null;
 };
 
 export type TastingPackageSharedShopDraft = {
@@ -43,6 +44,7 @@ export type TastingPackageSharedShopDraft = {
   org_name?: string;
   single_menu_item_id: string;
   duo_extra_menu_item_id: string;
+  return_voucher_preset_id?: string | null;
 };
 
 export type TastingPackageRedemptionDateDraft = {

@@ -125,6 +125,8 @@ export default function ScanPage() {
           offerType: rawOffer ? voucherOfferLabel(rawOffer) : null,
           voucherCode: res.voucher_code ?? trimmedCode,
           ownerUsername: res.owner_username ?? null,
+          returnVoucherMinted: Boolean(res.return_voucher_minted),
+          returnVoucherCode: res.return_voucher_code ?? null,
         });
         if (lastCodeTimerRef.current != null) {
           clearTimeout(lastCodeTimerRef.current);

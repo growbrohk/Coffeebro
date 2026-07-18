@@ -8,6 +8,7 @@ export type LoadedTierShopRow = {
   id: string;
   org_id: string;
   menu_item_ids: string[];
+  return_voucher_preset_id?: string | null;
 };
 
 /** Dedupe by org_id and cap at package max (shared shops model). */
@@ -45,6 +46,7 @@ export function mergeLoadedShopsToDraft(
       duo_extra_menu_item_id:
         duo?.menu_item_ids[1] ??
         (isSinglePrimary ? "" : row.menu_item_ids[1] ?? row.menu_item_ids[0] ?? ""),
+      return_voucher_preset_id: row.return_voucher_preset_id ?? duo?.return_voucher_preset_id ?? null,
     };
   });
 
@@ -65,6 +67,7 @@ export function splitDraftToTierShops(shops: TastingPackageSharedShopDraft[]): {
       org_id: shop.org_id,
       org_name: shop.org_name,
       menu_item_ids: shop.single_menu_item_id ? [shop.single_menu_item_id] : [],
+      return_voucher_preset_id: shop.return_voucher_preset_id ?? null,
     });
     duoShops.push({
       clientId: shop.clientId,
@@ -74,6 +77,7 @@ export function splitDraftToTierShops(shops: TastingPackageSharedShopDraft[]): {
         shop.single_menu_item_id && shop.duo_extra_menu_item_id
           ? [shop.single_menu_item_id, shop.duo_extra_menu_item_id]
           : [],
+      return_voucher_preset_id: shop.return_voucher_preset_id ?? null,
     });
   }
 

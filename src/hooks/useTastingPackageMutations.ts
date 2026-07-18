@@ -208,7 +208,10 @@ async function syncShopsAndItems(
     if (shopId) {
       const { error } = await supabase
         .from("tasting_package_shops")
-        .update({ sort_order: i })
+        .update({
+          sort_order: i,
+          return_voucher_preset_id: shop.return_voucher_preset_id ?? null,
+        })
         .eq("id", shopId);
       if (error) throw error;
     } else {
@@ -219,6 +222,7 @@ async function syncShopsAndItems(
           org_id: shop.org_id,
           tier,
           sort_order: i,
+          return_voucher_preset_id: shop.return_voucher_preset_id ?? null,
         })
         .select("id")
         .single();

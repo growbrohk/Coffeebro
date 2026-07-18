@@ -153,6 +153,7 @@ const MY_VOUCHERS_SELECT = `
           expires_at,
           campaign_id,
           loyalty_catalog_id,
+          return_voucher_preset_id,
           tasting_package_purchase_id,
           tasting_package_item_id,
           menu_item_id,
@@ -161,6 +162,11 @@ const MY_VOUCHERS_SELECT = `
           orgs ( org_name, logo_url, lat, lng, location, google_maps_url, shop_type, opening_hours ),
           menu_items!vouchers_menu_item_id_fkey ( id, item_name ),
           menu_item_2:menu_items!vouchers_menu_item_id_2_fkey ( id, item_name ),
+          return_voucher_presets (
+            title,
+            offer_type,
+            menu_items ( id, item_name )
+          ),
           tasting_package_items (
             id,
             portion_index,
@@ -321,6 +327,79 @@ async function fetchMyVouchers(
               ? ([drink1Name || "Drink 1", drink2Name || "Drink 2"] as [string, string])
               : undefined,
             tasting_duo_lines: duoDisplay?.lines,
+          };
+        }
+
+        const rawReturnPreset = v.return_voucher_presets;
+        const returnPreset = (Array.isArray(rawReturnPreset) ? rawReturnPreset[0] : rawReturnPreset) as
+          | {
+              title: string;
+              offer_type: string;
+              menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null;
+            }
+          | null
+          | undefined;
+
+        if (v.return_voucher_preset_id && returnPreset) {
+          const orgsRow = v.orgs as {
+            org_name: string;
+            logo_url?: string | null;
+            lat: number | null;
+            lng: number | null;
+            location: string | null;
+            google_maps_url: string | null;
+            shop_type?: string | null;
+          } | null;
+
+          const rawMenuDirect = v.menu_items;
+          const menuDirect = Array.isArray(rawMenuDirect) ? rawMenuDirect[0] : rawMenuDirect;
+          const rawPresetMenu = returnPreset.menu_items;
+          const presetMenu = Array.isArray(rawPresetMenu) ? rawPresetMenu[0] : rawPresetMenu;
+          const menu = menuDirect ?? presetMenu;
+          const menuName = menu?.item_name?.trim() ?? null;
+
+          const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
+            walletRedeemLocation(
+              orgsRow
+                ? {
+                    shop_type: orgsRow.shop_type ?? null,
+                    lat: orgsRow.lat ?? null,
+                    lng: orgsRow.lng ?? null,
+                    location: orgsRow.location ?? null,
+                    google_maps_url: orgsRow.google_maps_url ?? null,
+                  }
+                : null,
+              null,
+            );
+
+          const title =
+            voucherNameFromOfferAndMenu(returnPreset.offer_type, menuName) ??
+            returnPreset.title?.trim() ??
+            "Return voucher";
+
+          return {
+            id: v.id as string,
+            code: v.code as string,
+            status: v.status as MyVoucher["status"],
+            created_at: v.created_at as string,
+            redeemed_at: (v.redeemed_at as string | null) ?? null,
+            expires_at: (v.expires_at as string | null) ?? null,
+            title,
+            org_id: v.org_id as string,
+            org_name: orgsRow?.org_name,
+            org_logo_url: orgsRow?.logo_url ?? null,
+            offer_type: voucherOfferLabel(returnPreset.offer_type),
+            description: returnPreset.title?.trim() ?? null,
+            location: locationTrimmed,
+            event_date: null,
+            thumbnail_url: null,
+            menu_item_id: menu?.id ?? null,
+            menu_item_name: menuName,
+            campaign_details: returnPreset.title?.trim() ?? null,
+            redeem_directions_url: redeemDirectionsUrl,
+            pickup_spot_label: pickup_spot_label ?? null,
+            org_shop_type: orgsRow?.shop_type ?? null,
+            review: null,
           };
         }
 
