@@ -7,11 +7,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { voucherNameFromOfferAndMenu } from '@/lib/voucherOfferLabels';
 
 export type VoucherRedeemedPromptDetail = {
   title: string | null;
   orgName: string | null;
   menuItemName: string | null;
+  returnVoucherSent?: boolean;
+  returnVoucherOfferType?: string | null;
+  returnVoucherItemName?: string | null;
 };
 
 interface VoucherRedeemedPromptModalProps {
@@ -30,6 +34,9 @@ export function VoucherRedeemedPromptModal({
   reviewLoading = false,
 }: VoucherRedeemedPromptModalProps) {
   const headline = detail?.title?.trim() || detail?.menuItemName?.trim() || 'Your voucher';
+  const returnVoucherLabel = detail?.returnVoucherSent
+    ? voucherNameFromOfferAndMenu(detail.returnVoucherOfferType, detail.returnVoucherItemName)
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,6 +51,12 @@ export function VoucherRedeemedPromptModal({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {returnVoucherLabel ? (
+            <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-foreground">
+              Return voucher sent to your wallet:{' '}
+              <span className="font-semibold">{returnVoucherLabel}</span>
+            </p>
+          ) : null}
           <p className="text-sm text-muted-foreground">
             Your voucher has been scanned and redeemed.
           </p>

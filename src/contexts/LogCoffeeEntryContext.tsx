@@ -80,6 +80,9 @@ export function LogCoffeeEntryProvider({ children }: { children: ReactNode }) {
         title: null,
         orgName: prefill?.orgName ?? null,
         menuItemName: prefill?.menuItemName ?? null,
+        returnVoucherSent: prefill?.returnVoucherSent ?? false,
+        returnVoucherOfferType: prefill?.returnVoucherOfferType ?? null,
+        returnVoucherItemName: prefill?.returnVoucherItemName ?? null,
       });
     });
 

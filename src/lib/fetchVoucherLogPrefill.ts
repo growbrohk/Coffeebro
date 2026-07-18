@@ -7,6 +7,9 @@ export type VoucherLogPrefill = {
   menuItemId: string | null;
   menuItemName: string | null;
   redeemedAt: string;
+  returnVoucherSent?: boolean;
+  returnVoucherOfferType?: string | null;
+  returnVoucherItemName?: string | null;
 };
 
 /**
@@ -31,5 +34,8 @@ export async function fetchVoucherLogPrefill(voucherId: string): Promise<Voucher
     menuItemId: row.menu_item_id ?? null,
     menuItemName: row.menu_item_name?.trim() || null,
     redeemedAt: row.redeemed_at ?? new Date().toISOString(),
+    returnVoucherSent: Boolean(row.return_voucher_sent),
+    returnVoucherOfferType: row.return_voucher_offer_type?.trim() || null,
+    returnVoucherItemName: row.return_voucher_item_name?.trim() || null,
   };
 }

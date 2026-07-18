@@ -1182,6 +1182,7 @@ export type Database = {
           loyalty_catalog_id: string | null
           menu_item_id: string | null
           menu_item_id_2: string | null
+          minted_from_voucher_id: string | null
           org_id: string
           owner_id: string
           redeemed_at: string | null
@@ -1201,6 +1202,7 @@ export type Database = {
           loyalty_catalog_id?: string | null
           menu_item_id?: string | null
           menu_item_id_2?: string | null
+          minted_from_voucher_id?: string | null
           org_id: string
           owner_id: string
           redeemed_at?: string | null
@@ -1220,6 +1222,7 @@ export type Database = {
           loyalty_catalog_id?: string | null
           menu_item_id?: string | null
           menu_item_id_2?: string | null
+          minted_from_voucher_id?: string | null
           org_id?: string
           owner_id?: string
           redeemed_at?: string | null
@@ -1490,6 +1493,9 @@ export type Database = {
           menu_item_id: string | null
           menu_item_name: string | null
           redeemed_at: string
+          return_voucher_sent: boolean
+          return_voucher_offer_type: string | null
+          return_voucher_item_name: string | null
         }[]
       }
       get_public_leaderboard: {
