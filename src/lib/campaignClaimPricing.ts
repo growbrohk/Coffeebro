@@ -1,8 +1,11 @@
 /** Display-only hints. Authoritative amounts come from `compute_campaign_claim_amount_cents` (server). */
 
+import { isDiscountOffer } from "./voucherOfferType";
+
 export function offerTypeRequiresPayment(offerType: string | null | undefined): boolean {
   const t = offerType?.trim();
   if (!t || t === "free") return false;
+  if (isDiscountOffer(t)) return false;
   return true;
 }
 
@@ -27,6 +30,7 @@ export function displayAmountCentsForVoucherLine(
 ): number | null {
   const ot = offerType.trim();
   if (ot === "free") return 0;
+  if (isDiscountOffer(ot)) return 0;
   if (ot === "b1g1") {
     if (basePriceHkd == null || !Number.isFinite(Number(basePriceHkd))) return null;
     return Math.round(Number(basePriceHkd) * 100);

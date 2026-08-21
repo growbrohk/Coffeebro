@@ -1,12 +1,12 @@
 import type { ReturnVoucherPresetWithMenu } from "@/hooks/useReturnVoucherPresets";
-import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { voucherOfferLabel, menuItemDisplayName } from "@/lib/voucherOfferLabels";
 
 type Props = {
   preset: ReturnVoucherPresetWithMenu;
 };
 
 export function ReturnVoucherPresetPreview({ preset }: Props) {
-  const menuName = preset.menu_items?.item_name?.trim() || "—";
+  const menuName = menuItemDisplayName(preset.menu_items?.item_name);
   const offerLabel = voucherOfferLabel(preset.offer_type);
 
   return (

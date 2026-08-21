@@ -4,30 +4,66 @@ import {
   allowedTemperatureRules,
   type MenuItemRuleSource,
 } from "./campaignVoucherRules";
+import {
+  BASE_OFFER_TYPES,
+  isDiscountOffer,
+  isRandomPoolAllowedOffer,
+  isValidOfferType,
+  menuItemIdToDb,
+  parseDiscountOffer,
+} from "./voucherOfferType";
 
 export const CAMPAIGN_TYPES = ["grab", "hunt"] as const;
 export const REWARD_MODES = ["fixed", "random"] as const;
 export const CAMPAIGN_STATUSES = ["draft", "published", "ended"] as const;
 export const TREASURE_LOCATION_TYPES = ["shop", "custom"] as const;
-export const OFFER_TYPES = [
-  "free",
-  "b1g1",
-  "fixed_price_7",
-  "fixed_price_17",
-  "fixed_price_20",
-  "fixed_price_27",
-] as const;
+export const OFFER_TYPES = [...BASE_OFFER_TYPES] as const;
 
 export const campaignVoucherLineSchema = z.object({
   id: z.string().uuid().optional(),
-  menu_item_id: z.string().uuid("Pick a menu item"),
-  offer_type: z.enum(OFFER_TYPES),
+  menu_item_id: z
+    .union([z.string().uuid(), z.literal(""), z.literal("__any__")])
+    .transform((v) => menuItemIdToDb(v))
+    .pipe(z.string().uuid().nullable()),
+  offer_type: z.string().refine(isValidOfferType, "Invalid offer type"),
   redeem_valid_days: z.coerce.number().int().min(1).max(90),
   quantity: z.coerce.number().int().min(1),
   temperature_rule: z.string().min(1),
   fulfillment_rule: z.string().min(1),
   sort_order: z.coerce.number().int().min(0).default(0),
 });
+
+export function validateVoucherOfferLine(
+  offerType: string,
+  menuItemId: string | null,
+  getMenuItem?: (menuItemId: string) => MenuItemRuleSource | undefined,
+): string | null {
+  if (!isValidOfferType(offerType)) return "Invalid offer type";
+
+  const discount = parseDiscountOffer(offerType);
+  if (discount) {
+    if (discount.kind === "percent_discount" && (discount.amount < 1 || discount.amount > 99)) {
+      return "Percent discount must be between 1 and 99";
+    }
+    if (discount.kind === "dollar_discount" && discount.amount < 1) {
+      return "Dollar discount must be at least $1";
+    }
+    if (!menuItemId) return null;
+    if (discount.kind === "dollar_discount" && getMenuItem) {
+      const menu = getMenuItem(menuItemId);
+      if (!menu) return "Unknown menu item";
+      const max = Math.ceil(Number(menu.base_price)) - 1;
+      if (max < 1) return "Item price is too low for a dollar discount";
+      if (discount.amount >= Math.ceil(Number(menu.base_price))) {
+        return `Dollar discount must be less than item price ($${Number(menu.base_price).toFixed(0)})`;
+      }
+    }
+    return null;
+  }
+
+  if (!menuItemId) return "Pick a menu item";
+  return null;
+}
 
 export const campaignFormSchema = z
   .object({
@@ -104,16 +140,27 @@ export const campaignFormSchema = z
     }
 
     if (data.reward_mode === "random") {
-      const nonFree = data.vouchers.find((v) => v.offer_type !== "free");
-      if (nonFree) {
+      const disallowed = data.vouchers.find((v) => !isRandomPoolAllowedOffer(v.offer_type));
+      if (disallowed) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            "Random prize pools can only use free offers. Use fixed reward mode for paid offers (Stripe checkout).",
+            "Random prize pools can only use free or discount offers. Use fixed reward mode for paid offers (Stripe checkout).",
           path: ["vouchers"],
         });
       }
     }
+
+    data.vouchers.forEach((v, index) => {
+      if (isDiscountOffer(v.offer_type) && v.menu_item_id != null) return;
+      if (!isDiscountOffer(v.offer_type) && v.menu_item_id == null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Pick a menu item",
+          path: ["vouchers", index, "menu_item_id"],
+        });
+      }
+    });
 
     if (data.status === "published") {
       if (!data.start_at || !data.end_at) {
@@ -145,6 +192,18 @@ export function refineCampaignVouchersWithMenuItems(
   ctx: z.RefinementCtx,
 ): void {
   data.vouchers.forEach((v, index) => {
+    const offerErr = validateVoucherOfferLine(v.offer_type, v.menu_item_id, getMenuItem);
+    if (offerErr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: offerErr,
+        path: ["vouchers", index, v.menu_item_id ? "offer_type" : "menu_item_id"],
+      });
+      if (v.menu_item_id == null) return;
+    }
+
+    if (v.menu_item_id == null) return;
+
     const menu = getMenuItem(v.menu_item_id);
     if (!menu) {
       ctx.addIssue({

@@ -34,6 +34,7 @@ import { CampaignReturnVoucherSection } from "@/components/campaigns/sections/Ca
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
+import { ANY_MENU_ITEM, menuItemIdFromDb } from "@/lib/voucherOfferType";
 import { useToast } from "@/hooks/use-toast";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -56,8 +57,8 @@ function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
   return (c.campaign_vouchers ?? []).map((cv, i) => ({
     clientKey: cv.id,
     id: cv.id,
-    menu_item_id: cv.menu_item_id,
-    offer_type: cv.offer_type as VoucherDraft["offer_type"],
+    menu_item_id: menuItemIdFromDb(cv.menu_item_id),
+    offer_type: cv.offer_type,
     redeem_valid_days: cv.redeem_valid_days,
     quantity: cv.quantity,
     temperature_rule: cv.temperature_rule,
@@ -165,7 +166,10 @@ export default function OrgCampaignEditorPage() {
     () =>
       vouchers.map((v) => ({
         offer_type: v.offer_type,
-        item_name: menuItems.find((m) => m.id === v.menu_item_id)?.item_name ?? null,
+        item_name:
+          v.menu_item_id && v.menu_item_id !== ANY_MENU_ITEM
+            ? menuItems.find((m) => m.id === v.menu_item_id)?.item_name ?? null
+            : null,
       })),
     [vouchers, menuItems],
   );

@@ -24,14 +24,16 @@ import {
   type ReturnVoucherPresetDraft,
 } from "@/components/returnVouchers/ReturnVoucherPresetCard";
 import { useToast } from "@/hooks/use-toast";
+import { validateVoucherOfferLine } from "@/lib/campaignFormSchema";
+import { menuItemIdFromDb, menuItemIdToDb } from "@/lib/voucherOfferType";
 
 function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnVoucherPresetDraft {
   return {
     clientKey: row.id,
     id: row.id,
     title: row.title,
-    menu_item_id: row.menu_item_id,
-    offer_type: row.offer_type as ReturnVoucherPresetDraft["offer_type"],
+    menu_item_id: menuItemIdFromDb(row.menu_item_id),
+    offer_type: row.offer_type,
     redeem_valid_days: row.redeem_valid_days,
     quantity: row.quantity,
     temperature_rule: row.temperature_rule,
@@ -40,9 +42,14 @@ function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnV
   };
 }
 
-function validateDraft(draft: ReturnVoucherPresetDraft): string | null {
+function validateDraft(
+  draft: ReturnVoucherPresetDraft,
+  getMenuItem: (id: string) => { base_price: number } | undefined,
+): string | null {
   if (!draft.title.trim()) return "Title is required";
-  if (!draft.menu_item_id) return "Pick a menu item";
+  const menuItemId = menuItemIdToDb(draft.menu_item_id);
+  const offerErr = validateVoucherOfferLine(draft.offer_type, menuItemId, getMenuItem);
+  if (offerErr) return offerErr;
   if (!Number.isFinite(draft.quantity) || draft.quantity < 1) return "Pool quantity must be at least 1";
   if (!Number.isFinite(draft.redeem_valid_days) || draft.redeem_valid_days < 1 || draft.redeem_valid_days > 90) {
     return "Valid days must be between 1 and 90";
@@ -77,7 +84,7 @@ export default function OrgReturnVouchersPage() {
   };
 
   const handleSave = async () => {
-    const err = validateDraft(draft);
+    const err = validateDraft(draft, (id) => menuItems.find((m) => m.id === id));
     if (err) {
       toast({ title: "Cannot save", description: err, variant: "destructive" });
       return;
@@ -86,7 +93,7 @@ export default function OrgReturnVouchersPage() {
       await upsert.mutateAsync({
         id: draft.id,
         title: draft.title.trim(),
-        menu_item_id: draft.menu_item_id,
+        menu_item_id: menuItemIdToDb(draft.menu_item_id),
         offer_type: draft.offer_type,
         redeem_valid_days: draft.redeem_valid_days,
         quantity: draft.quantity,

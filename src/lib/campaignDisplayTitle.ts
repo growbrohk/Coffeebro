@@ -1,4 +1,4 @@
-import { voucherOfferLabel } from "./voucherOfferLabels";
+import { voucherOfferLabel, menuItemDisplayName } from "./voucherOfferLabels";
 
 export type CampaignDisplayTitleVoucher = {
   offer_type: string;
@@ -16,7 +16,7 @@ export function buildCampaignDisplayTitle(opts: {
   if (rewardMode === "fixed" && vouchers.length >= 1) {
     const v = vouchers[0];
     const offer = voucherOfferLabel(v.offer_type);
-    const name = v.item_name?.trim() || "Reward";
+    const name = menuItemDisplayName(v.item_name);
     return `${modeWord} · ${offer} · ${name}`;
   }
 

@@ -11,30 +11,31 @@ import {
 import { MenuItemPicker } from "@/components/campaigns/vouchers/MenuItemPicker";
 import { allowedFulfillmentRules, allowedTemperatureRules } from "@/components/campaigns/vouchers/voucherRules";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
+import {
+  ANY_MENU_ITEM,
+  composeDiscountOffer,
+  fixedTierFromOfferType,
+  isDiscountOffer,
+  isFixedOfferType,
+  maxDollarDiscountForPrice,
+  offerKindOf,
+  parseDiscountOffer,
+  type DiscountOfferKind,
+  type OfferKind,
+} from "@/lib/voucherOfferType";
 import { Trash2 } from "lucide-react";
-
-const FIXED_PRICE_TIERS = ["fixed_price_7", "fixed_price_17", "fixed_price_20", "fixed_price_27"] as const;
 
 export type VoucherDraft = {
   clientKey: string;
   id?: string;
   menu_item_id: string;
-  offer_type: "free" | "b1g1" | (typeof FIXED_PRICE_TIERS)[number];
+  offer_type: string;
   redeem_valid_days: number;
   quantity: number;
   temperature_rule: string;
   fulfillment_rule: string;
   sort_order: number;
 };
-
-function isFixedOfferType(ot: string): ot is (typeof FIXED_PRICE_TIERS)[number] {
-  return (FIXED_PRICE_TIERS as readonly string[]).includes(ot);
-}
-
-function fixedTierFromOfferType(ot: string): (typeof FIXED_PRICE_TIERS)[number] {
-  if (isFixedOfferType(ot)) return ot;
-  return "fixed_price_17";
-}
 
 type Props = {
   index: number;
@@ -46,6 +47,31 @@ type Props = {
   disabled?: boolean;
 };
 
+function resolveMenu(value: VoucherDraft, menuItems: MenuItemRow[]): MenuItemRow | undefined {
+  if (!value.menu_item_id || value.menu_item_id === ANY_MENU_ITEM) return undefined;
+  return menuItems.find((m) => m.id === value.menu_item_id);
+}
+
+function handleOfferKindChange(
+  value: VoucherDraft,
+  kind: OfferKind,
+): Partial<VoucherDraft> {
+  if (kind === "fixed") {
+    return { offer_type: fixedTierFromOfferType(value.offer_type) };
+  }
+  if (kind === "percent_discount" || kind === "dollar_discount") {
+    const existing = parseDiscountOffer(value.offer_type);
+    const amount =
+      existing?.kind === kind ? existing.amount : kind === "percent_discount" ? 10 : 10;
+    return { offer_type: composeDiscountOffer(kind, amount) };
+  }
+  const leavingDiscount = isDiscountOffer(value.offer_type);
+  return {
+    offer_type: kind,
+    ...(leavingDiscount && value.menu_item_id === ANY_MENU_ITEM ? { menu_item_id: "" } : {}),
+  };
+}
+
 export function VoucherDefinitionCard({
   index,
   value,
@@ -55,13 +81,15 @@ export function VoucherDefinitionCard({
   canRemove,
   disabled,
 }: Props) {
-  const menu = menuItems.find((m) => m.id === value.menu_item_id);
+  const menu = resolveMenu(value, menuItems);
   const tempOpts = menu ? allowedTemperatureRules(menu) : [];
   const fulfillOpts = menu ? allowedFulfillmentRules(menu) : [];
-
   const patch = (p: Partial<VoucherDraft>) => onChange({ ...value, ...p });
 
-  const offerKindValue = isFixedOfferType(value.offer_type) ? "fixed" : value.offer_type;
+  const offerKindValue = offerKindOf(value.offer_type);
+  const discount = parseDiscountOffer(value.offer_type);
+  const allowAnyItem = isDiscountOffer(value.offer_type);
+  const dollarMax = discount?.kind === "dollar_discount" ? maxDollarDiscountForPrice(menu?.base_price) : null;
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -77,14 +105,7 @@ export function VoucherDefinitionCard({
         <Label>Offer</Label>
         <Select
           value={offerKindValue}
-          onValueChange={(kind) => {
-            if (kind === "fixed") {
-              const tier = fixedTierFromOfferType(value.offer_type);
-              patch({ offer_type: tier });
-            } else {
-              patch({ offer_type: kind as "free" | "b1g1" });
-            }
-          }}
+          onValueChange={(kind) => patch(handleOfferKindChange(value, kind as OfferKind))}
           disabled={disabled}
         >
           <SelectTrigger>
@@ -94,6 +115,8 @@ export function VoucherDefinitionCard({
             <SelectItem value="free">Free</SelectItem>
             <SelectItem value="b1g1">Buy 1 get 1</SelectItem>
             <SelectItem value="fixed">Fixed price</SelectItem>
+            <SelectItem value="percent_discount">% discount</SelectItem>
+            <SelectItem value="dollar_discount">$ discount</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -103,7 +126,7 @@ export function VoucherDefinitionCard({
           <p className="text-xs text-muted-foreground">Any menu item</p>
           <Select
             value={fixedTierFromOfferType(value.offer_type)}
-            onValueChange={(tier) => patch({ offer_type: tier as VoucherDraft["offer_type"] })}
+            onValueChange={(tier) => patch({ offer_type: tier })}
             disabled={disabled}
           >
             <SelectTrigger>
@@ -118,12 +141,45 @@ export function VoucherDefinitionCard({
           </Select>
         </div>
       )}
+      {discount && (
+        <div className="grid gap-2">
+          <Label>{discount.kind === "percent_discount" ? "Discount (%)" : "Discount ($)"}</Label>
+          <Input
+            type="number"
+            min={1}
+            max={discount.kind === "percent_discount" ? 99 : dollarMax ?? undefined}
+            value={discount.amount}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (!Number.isFinite(n)) return;
+              patch({
+                offer_type: composeDiscountOffer(discount.kind as DiscountOfferKind, n),
+              });
+            }}
+            disabled={disabled}
+          />
+          {discount.kind === "dollar_discount" && menu && dollarMax != null && (
+            <p className="text-xs text-muted-foreground">
+              Max ${dollarMax} for this item (price ${Number(menu.base_price).toFixed(0)})
+            </p>
+          )}
+        </div>
+      )}
       <div className="grid gap-2">
         <Label>Menu item</Label>
         <MenuItemPicker
           items={menuItems}
           value={value.menu_item_id}
+          allowAnyItem={allowAnyItem}
           onChange={(menu_item_id) => {
+            if (menu_item_id === ANY_MENU_ITEM) {
+              patch({
+                menu_item_id,
+                temperature_rule: "all_supported",
+                fulfillment_rule: "all_supported",
+              });
+              return;
+            }
             const m = menuItems.find((x) => x.id === menu_item_id);
             const nextTemp = m ? allowedTemperatureRules(m)[0] : "n_a";
             const nextFul = m ? allowedFulfillmentRules(m)[0] : "all_supported";
@@ -194,3 +250,5 @@ export function VoucherDefinitionCard({
     </div>
   );
 }
+
+export { isFixedOfferType, fixedTierFromOfferType, FIXED_PRICE_TIERS } from "@/lib/voucherOfferType";

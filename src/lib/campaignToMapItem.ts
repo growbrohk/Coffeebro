@@ -1,7 +1,7 @@
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { pinKindFromCampaignType } from "@/lib/huntMapPinKind";
 import type { Tables } from "@/integrations/supabase/types";
-import { voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { voucherOfferLabel, menuItemDisplayName } from "@/lib/voucherOfferLabels";
 
 export type PublishedCampaignClaimSpot = Pick<
   Tables<"org_claim_spots">,
@@ -101,7 +101,7 @@ export function publishedCampaignToMapItem(
     clue_image: row.hint_image_url ?? org?.preview_photo_url ?? org?.logo_url ?? null,
     scanned: claimedCampaignIds.has(row.id),
     pinKind: pinKindFromCampaignType(row.campaign_type),
-    offerTitle: menu?.item_name ?? title,
+    offerTitle: menuItemDisplayName(menu?.item_name) === "Any item" ? title : (menu?.item_name ?? title),
     offerDescription: row.hint_text,
     offerType: primary ? voucherOfferLabel(primary.offer_type) : null,
     orgName: org?.org_name ?? null,

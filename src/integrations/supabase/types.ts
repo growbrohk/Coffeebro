@@ -378,7 +378,7 @@ export type Database = {
           created_at: string
           fulfillment_rule: string
           id: string
-          menu_item_id: string
+          menu_item_id: string | null
           offer_type: string
           org_id: string
           quantity: number
@@ -392,7 +392,7 @@ export type Database = {
           created_at?: string
           fulfillment_rule: string
           id?: string
-          menu_item_id: string
+          menu_item_id?: string | null
           offer_type: string
           org_id: string
           quantity: number
@@ -406,7 +406,7 @@ export type Database = {
           created_at?: string
           fulfillment_rule?: string
           id?: string
-          menu_item_id?: string
+          menu_item_id?: string | null
           offer_type?: string
           org_id?: string
           quantity?: number
@@ -501,7 +501,7 @@ export type Database = {
           created_at: string
           fulfillment_rule: string
           id: string
-          menu_item_id: string
+          menu_item_id: string | null
           offer_type: string
           quantity: number
           redeem_valid_days: number
@@ -514,7 +514,7 @@ export type Database = {
           created_at?: string
           fulfillment_rule: string
           id?: string
-          menu_item_id: string
+          menu_item_id?: string | null
           offer_type: string
           quantity: number
           redeem_valid_days?: number
@@ -527,7 +527,7 @@ export type Database = {
           created_at?: string
           fulfillment_rule?: string
           id?: string
-          menu_item_id?: string
+          menu_item_id?: string | null
           offer_type?: string
           quantity?: number
           redeem_valid_days?: number
