@@ -26,6 +26,7 @@ const CATEGORIES = [
   { value: "pastry", label: "Pastry" },
   { value: "dessert", label: "Dessert" },
   { value: "food", label: "Food" },
+  { value: "other", label: "Other" },
 ] as const;
 
 const TEMPS = [
