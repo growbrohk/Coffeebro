@@ -26,11 +26,22 @@ import {
 } from "@/components/ui/table";
 import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
+import {
+  RETURN_VOUCHER_FILTER_ORDER,
+  RETURN_VOUCHER_STATE_LABELS,
+  formatReturnVoucherRedeemedAt,
+  returnVoucherCellLabel,
+  returnVoucherState,
+  type ReturnVoucherState,
+} from "@/lib/returnVoucherState";
 import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
 import type { CampaignParticipantRow } from "@/hooks/useCampaignParticipants";
 
 const ALL_STATUSES_VALUE = "all";
 const ALL_VOUCHERS_VALUE = "all";
+const ALL_RETURN_VOUCHERS_VALUE = "all";
+const NOT_APPLICABLE_FILTER_VALUE = "__not_applicable__";
+const NOT_ISSUED_FILTER_VALUE = "__not_issued__";
 
 function voucherFilterKey(r: CampaignParticipantRow): string {
   return JSON.stringify([r.offer_type ?? null, r.item_name ?? null]);
@@ -40,6 +51,9 @@ function participantSearchHaystack(r: CampaignParticipantRow): string {
   const displayName = voucherNameFromOfferAndMenu(r.offer_type, r.item_name);
   const claimed = new Date(r.created_at).toLocaleString();
   const redeemed = r.redeemed_at ? new Date(r.redeemed_at).toLocaleString() : "";
+  const rvState = returnVoucherState(r);
+  const rvLabel = returnVoucherCellLabel(rvState);
+  const rvRedeemed = formatReturnVoucherRedeemedAt(r.return_voucher_redeemed_at);
   return [
     r.owner_name,
     r.owner_id,
@@ -52,10 +66,26 @@ function participantSearchHaystack(r: CampaignParticipantRow): string {
     r.redeemed_at,
     claimed,
     redeemed,
+    rvState,
+    rvLabel,
+    rvRedeemed,
+    r.return_voucher_status,
+    r.return_voucher_redeemed_at,
   ]
     .filter((p): p is string => Boolean(p && String(p).trim()))
     .join(" ")
     .toLowerCase();
+}
+
+function returnVoucherFilterValue(state: ReturnVoucherState): string {
+  if (state === "not_applicable") return NOT_APPLICABLE_FILTER_VALUE;
+  if (state === "not_issued") return NOT_ISSUED_FILTER_VALUE;
+  return state;
+}
+
+function matchesReturnVoucherFilter(r: CampaignParticipantRow, filter: string): boolean {
+  if (filter === ALL_RETURN_VOUCHERS_VALUE) return true;
+  return returnVoucherFilterValue(returnVoucherState(r)) === filter;
 }
 
 export default function CampaignParticipantsPage() {
@@ -73,7 +103,15 @@ export default function CampaignParticipantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(ALL_STATUSES_VALUE);
   const [voucherFilter, setVoucherFilter] = useState<string>(ALL_VOUCHERS_VALUE);
+  const [returnVoucherFilter, setReturnVoucherFilter] = useState<string>(ALL_RETURN_VOUCHERS_VALUE);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const showReturnVoucherColumn = useMemo(
+    () =>
+      Boolean(campaign?.return_voucher_preset_id) ||
+      rows.some((r) => r.return_voucher_status != null),
+    [campaign?.return_voucher_preset_id, rows],
+  );
 
   const distinctStatuses = useMemo(() => {
     const set = new Set(rows.map((r) => r.status).filter(Boolean) as string[]);
@@ -105,8 +143,30 @@ export default function CampaignParticipantsPage() {
     return voucherKeys.includes(voucherFilter) ? voucherFilter : ALL_VOUCHERS_VALUE;
   }, [voucherFilter, voucherKeys]);
 
+  const distinctReturnVoucherOptions = useMemo(() => {
+    const present = new Set(rows.map((r) => returnVoucherState(r)));
+    return RETURN_VOUCHER_FILTER_ORDER.filter((state) => present.has(state)).map((state) => ({
+      value: returnVoucherFilterValue(state),
+      label: RETURN_VOUCHER_STATE_LABELS[state],
+    }));
+  }, [rows]);
+
+  const returnVoucherFilterValues = useMemo(
+    () => distinctReturnVoucherOptions.map((o) => o.value),
+    [distinctReturnVoucherOptions],
+  );
+
+  const effectiveReturnVoucher = useMemo(() => {
+    if (returnVoucherFilter === ALL_RETURN_VOUCHERS_VALUE) return ALL_RETURN_VOUCHERS_VALUE;
+    return returnVoucherFilterValues.includes(returnVoucherFilter)
+      ? returnVoucherFilter
+      : ALL_RETURN_VOUCHERS_VALUE;
+  }, [returnVoucherFilter, returnVoucherFilterValues]);
+
   const filtersActive =
-    effectiveStatus !== ALL_STATUSES_VALUE || effectiveVoucher !== ALL_VOUCHERS_VALUE;
+    effectiveStatus !== ALL_STATUSES_VALUE ||
+    effectiveVoucher !== ALL_VOUCHERS_VALUE ||
+    (showReturnVoucherColumn && effectiveReturnVoucher !== ALL_RETURN_VOUCHERS_VALUE);
 
   const filteredRows = useMemo(() => {
     let out = rows;
@@ -116,10 +176,13 @@ export default function CampaignParticipantsPage() {
     if (effectiveVoucher !== ALL_VOUCHERS_VALUE) {
       out = out.filter((r) => voucherFilterKey(r) === effectiveVoucher);
     }
+    if (showReturnVoucherColumn && effectiveReturnVoucher !== ALL_RETURN_VOUCHERS_VALUE) {
+      out = out.filter((r) => matchesReturnVoucherFilter(r, effectiveReturnVoucher));
+    }
     const q = searchQuery.trim().toLowerCase();
     if (!q) return out;
     return out.filter((r) => participantSearchHaystack(r).includes(q));
-  }, [rows, effectiveStatus, effectiveVoucher, searchQuery]);
+  }, [rows, effectiveStatus, effectiveVoucher, effectiveReturnVoucher, showReturnVoucherColumn, searchQuery]);
 
   const canAccess =
     Boolean(user && orgId) &&
@@ -241,6 +304,29 @@ export default function CampaignParticipantsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {showReturnVoucherColumn ? (
+                  <div className="space-y-1.5">
+                    <label
+                      className="text-xs font-medium text-muted-foreground"
+                      htmlFor="participants-return-voucher-filter"
+                    >
+                      Return voucher
+                    </label>
+                    <Select value={effectiveReturnVoucher} onValueChange={setReturnVoucherFilter}>
+                      <SelectTrigger id="participants-return-voucher-filter" aria-label="Return voucher status">
+                        <SelectValue placeholder="All return vouchers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ALL_RETURN_VOUCHERS_VALUE}>All return vouchers</SelectItem>
+                        {distinctReturnVoucherOptions.map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
               </PopoverContent>
             </Popover>
           </div>
@@ -269,10 +355,14 @@ export default function CampaignParticipantsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Claimed</TableHead>
                 <TableHead>Redeemed</TableHead>
+                {showReturnVoucherColumn ? <TableHead>Return voucher</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.map((r) => (
+              {filteredRows.map((r) => {
+                const rvState = returnVoucherState(r);
+                const rvRedeemedAt = formatReturnVoucherRedeemedAt(r.return_voucher_redeemed_at);
+                return (
                 <TableRow key={r.voucher_id}>
                   <TableCell>{r.owner_name || r.owner_id}</TableCell>
                   <TableCell className="font-mono text-xs">{r.code}</TableCell>
@@ -284,8 +374,17 @@ export default function CampaignParticipantsPage() {
                   <TableCell className="text-xs">
                     {r.redeemed_at ? new Date(r.redeemed_at).toLocaleString() : "—"}
                   </TableCell>
+                  {showReturnVoucherColumn ? (
+                    <TableCell className="text-xs">
+                      <div>{returnVoucherCellLabel(rvState)}</div>
+                      {rvState === "redeemed" && rvRedeemedAt ? (
+                        <div className="text-muted-foreground">{rvRedeemedAt}</div>
+                      ) : null}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}

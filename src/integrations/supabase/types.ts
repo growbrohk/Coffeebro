@@ -1705,6 +1705,9 @@ export type Database = {
           owner_id: string
           owner_name: string
           redeemed_at: string | null
+          return_voucher_expires_at: string | null
+          return_voucher_redeemed_at: string | null
+          return_voucher_status: string | null
           status: string
           voucher_id: string
         }[]

@@ -11,6 +11,9 @@ export type CampaignParticipantRow = {
   code: string;
   offer_type: string | null;
   item_name: string | null;
+  return_voucher_status: string | null;
+  return_voucher_redeemed_at: string | null;
+  return_voucher_expires_at: string | null;
 };
 
 export function campaignParticipantsQueryKey(campaignId: string) {
