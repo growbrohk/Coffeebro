@@ -17,12 +17,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  CARTO_TILE_ATTRIBUTION,
+  CARTO_TILE_LAYER_OPTIONS,
+  CARTO_TILE_LAYERS,
+} from "@/lib/cartoBasemapTiles";
 import { reverseGeocode } from "@/lib/reverseGeocode";
-
-const TILE_LAYERS = {
-  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-} as const;
 
 const HK_DEFAULT: [number, number] = [22.3193, 114.1694];
 
@@ -122,7 +122,7 @@ type Props = {
 export function TreasureMapPickerDialog({ open, onOpenChange, initialLat, initialLng, onApply, disabled }: Props) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
+  const tileUrl = isDark ? CARTO_TILE_LAYERS.dark : CARTO_TILE_LAYERS.light;
   const { toast } = useToast();
 
   /** Map view center — only updated when dialog opens, not when the pin moves (avoids resetting the view on each click). */
@@ -190,8 +190,9 @@ export function TreasureMapPickerDialog({ open, onOpenChange, initialLat, initia
             zoomControl
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+              attribution={CARTO_TILE_ATTRIBUTION}
               url={tileUrl}
+              {...CARTO_TILE_LAYER_OPTIONS}
             />
             <InvalidateSizeWhenOpen open={open} />
             <MapClickHandler

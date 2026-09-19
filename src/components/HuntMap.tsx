@@ -10,13 +10,12 @@ import huntPinStar from '@/assets/hunt-pin-star.svg';
 import huntPinGrab from '@/assets/hunt-pin-grab.svg';
 import coffeeShopPin from '@/assets/coffee-shop-pin.svg';
 import userLocationPin from '@/assets/user-location-pin.svg';
+import {
+  CARTO_TILE_ATTRIBUTION,
+  CARTO_TILE_LAYER_OPTIONS,
+  CARTO_TILE_LAYERS,
+} from '@/lib/cartoBasemapTiles';
 import { isNearHongKong, MAP_FIT_SPAN_OUTLIER_DEG } from '@/lib/hkMapBounds';
-
-
-const TILE_LAYERS = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-} as const;
 
 /** Pin glyph size on the map (Leaflet icon box matches this exactly). */
 const PIN_SIZE = 24;
@@ -227,7 +226,7 @@ export function HuntMap({
 }: HuntMapProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const tileUrl = isDark ? TILE_LAYERS.dark : TILE_LAYERS.light;
+  const tileUrl = isDark ? CARTO_TILE_LAYERS.dark : CARTO_TILE_LAYERS.light;
   const overlayPad = mapOverlayPadding ?? DEFAULT_MAP_OVERLAY_PADDING;
 
   const treasuresWithCoords = useMemo(
@@ -310,8 +309,9 @@ export function HuntMap({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+          attribution={CARTO_TILE_ATTRIBUTION}
           url={tileUrl}
+          {...CARTO_TILE_LAYER_OPTIONS}
         />
         <ZoomTracker setZoom={setMapZoom} />
         <FitBounds
