@@ -12,6 +12,7 @@ import coffeeShopPin from '@/assets/coffee-shop-pin.svg';
 import userLocationPin from '@/assets/user-location-pin.svg';
 import { isNearHongKong, MAP_FIT_SPAN_OUTLIER_DEG } from '@/lib/hkMapBounds';
 
+
 const TILE_LAYERS = {
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
