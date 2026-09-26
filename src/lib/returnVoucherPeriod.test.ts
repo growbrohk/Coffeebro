@@ -43,6 +43,17 @@ describe("periodBoundToInstant", () => {
     expect(start?.getHours()).toBe(9);
     expect(start?.getMinutes()).toBe(30);
   });
+
+  it("re-parses a converted ISO instant without shifting the end", () => {
+    const start = periodBoundToInstant("2026-10-01", "start")!;
+    const end = periodBoundToInstant("2026-10-31", "end")!;
+    expect(periodBoundToInstant(start.toISOString(), "start")?.getTime()).toBe(start.getTime());
+    expect(periodBoundToInstant(end.toISOString(), "end")?.getTime()).toBe(end.getTime());
+  });
+
+  it("returns null for an invalid value", () => {
+    expect(periodBoundToInstant("not-a-date", "start")).toBeNull();
+  });
 });
 
 describe("periodBoundFromSaved", () => {
@@ -140,5 +151,40 @@ describe("validateRedemptionPeriod", () => {
         redeem_ends_at: "2026-10-01",
       }),
     ).toBeNull();
+  });
+
+  it("accepts a campaign-save ISO pair from a valid draft", () => {
+    const startIso = periodBoundToInstant("2026-10-01", "start")!.toISOString();
+    const endIso = periodBoundToInstant("2026-10-31", "end")!.toISOString();
+    expect(
+      validateRedemptionPeriod({
+        redemption_mode: "fixed_period",
+        redeem_valid_days: 7,
+        redeem_starts_at: startIso,
+        redeem_ends_at: endIso,
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects inverted ISO instants", () => {
+    expect(
+      validateRedemptionPeriod({
+        redemption_mode: "fixed_period",
+        redeem_valid_days: 7,
+        redeem_starts_at: "2026-10-31T10:00:00.000Z",
+        redeem_ends_at: "2026-10-01T01:00:00.000Z",
+      }),
+    ).toBe("End must be after start");
+  });
+
+  it("requires both dates when only the end is set", () => {
+    expect(
+      validateRedemptionPeriod({
+        redemption_mode: "fixed_period",
+        redeem_valid_days: 7,
+        redeem_starts_at: "",
+        redeem_ends_at: "2026-10-31",
+      }),
+    ).toBe("Start and end date are required");
   });
 });

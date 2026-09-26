@@ -34,7 +34,12 @@ import { CampaignReturnVoucherSection } from "@/components/campaigns/sections/Ca
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
-import { periodBoundFromSaved, periodBoundToInstant, returnVoucherRedemptionMode } from "@/lib/returnVoucherPeriod";
+import {
+  periodBoundFromSaved,
+  periodBoundToInstant,
+  returnVoucherRedemptionMode,
+  validateRedemptionPeriod,
+} from "@/lib/returnVoucherPeriod";
 import { menuItemModeFromDb } from "@/lib/voucherOfferType";
 import { useToast } from "@/hooks/use-toast";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
@@ -263,6 +268,14 @@ export default function OrgCampaignEditorPage() {
           });
           return;
         }
+      }
+    }
+
+    for (const v of vouchers) {
+      const err = validateRedemptionPeriod(v);
+      if (err) {
+        toast({ title: "Fix form", description: err, variant: "destructive" });
+        return;
       }
     }
 

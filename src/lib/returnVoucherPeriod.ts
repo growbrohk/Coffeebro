@@ -57,7 +57,9 @@ export function periodBoundToInstant(
     if (bound === "end") return new Date(Number(y), Number(m) - 1, Number(d) + 1);
     return new Date(Number(y), Number(m) - 1, Number(d));
   }
-  return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
 }
 
 export function periodBoundFromSaved(
