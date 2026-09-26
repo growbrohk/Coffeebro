@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { VoucherItemScopeFields } from "@/components/campaigns/vouchers/VoucherItemScopeFields";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
-import { dollarMaxForDraft, resolveVoucherItemRules } from "@/lib/voucherItemDraft";
+import { dollarMaxForDraft, emptyVoucherItemDraft, resolveVoucherItemRules } from "@/lib/voucherItemDraft";
 import {
   ANY_MENU_ITEM,
   composeDiscountOffer,
@@ -22,6 +23,10 @@ import {
   type DiscountOfferKind,
   type OfferKind,
 } from "@/lib/voucherOfferType";
+import {
+  isFixedPeriodEnded,
+  type ReturnVoucherRedemptionMode,
+} from "@/lib/returnVoucherPeriod";
 import { Trash2 } from "lucide-react";
 
 export type VoucherDraft = {
@@ -31,21 +36,27 @@ export type VoucherDraft = {
   menu_item_ids: string[];
   custom_item_text: string;
   offer_type: string;
+  redemption_mode: ReturnVoucherRedemptionMode;
   redeem_valid_days: number;
+  redeem_starts_at: string;
+  redeem_ends_at: string;
   quantity: number;
   temperature_rule: string;
   fulfillment_rule: string;
   sort_order: number;
 };
 
-type Props = {
+type Props<T extends VoucherDraft> = {
   index: number;
-  value: VoucherDraft;
+  value: T;
   menuItems: MenuItemRow[];
-  onChange: (next: VoucherDraft) => void;
+  onChange: (next: T) => void;
   onRemove: () => void;
   canRemove: boolean;
   disabled?: boolean;
+  heading?: string;
+  titleSlot?: ReactNode;
+  blockB1g1CustomText?: boolean;
 };
 
 function handleOfferKindChange(
@@ -68,7 +79,23 @@ function handleOfferKindChange(
   };
 }
 
-export function VoucherDefinitionCard({
+export function newVoucherDraft(sort: number): VoucherDraft {
+  return {
+    clientKey: crypto.randomUUID(),
+    ...emptyVoucherItemDraft(),
+    offer_type: "free",
+    redemption_mode: "days_after_claim",
+    redeem_valid_days: 7,
+    redeem_starts_at: "",
+    redeem_ends_at: "",
+    quantity: 10,
+    temperature_rule: "all_supported",
+    fulfillment_rule: "all_supported",
+    sort_order: sort,
+  };
+}
+
+export function VoucherDefinitionCard<T extends VoucherDraft>({
   index,
   value,
   menuItems,
@@ -76,7 +103,10 @@ export function VoucherDefinitionCard({
   onRemove,
   canRemove,
   disabled,
-}: Props) {
+  heading = "Voucher",
+  titleSlot,
+  blockB1g1CustomText,
+}: Props<T>) {
   const { tempOpts, fulfillOpts, rulesEnabled } = resolveVoucherItemRules(value, menuItems);
   const patch = (p: Partial<VoucherDraft>) => onChange({ ...value, ...p });
 
@@ -93,13 +123,14 @@ export function VoucherDefinitionCard({
   return (
     <div className="rounded-lg border p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">Voucher {index + 1}</span>
+        <span className="text-sm font-medium">{heading} {index + 1}</span>
         {canRemove && (
           <Button type="button" variant="ghost" size="sm" onClick={onRemove} disabled={disabled}>
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
       </div>
+      {titleSlot}
       <div className="grid gap-2">
         <Label>Offer</Label>
         <Select
@@ -169,7 +200,7 @@ export function VoucherDefinitionCard({
         menuItems={menuItems}
         onChange={patch}
         disabled={disabled}
-        blockB1g1CustomText
+        blockB1g1CustomText={blockB1g1CustomText}
       />
       <div className="grid gap-2">
         <Label>Pool quantity</Label>
@@ -182,16 +213,62 @@ export function VoucherDefinitionCard({
         />
       </div>
       <div className="grid gap-2">
-        <Label>Valid days after claim</Label>
-        <Input
-          type="number"
-          min={1}
-          max={90}
-          value={value.redeem_valid_days}
-          onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
+        <Label>Redemption Period</Label>
+        <Select
+          value={value.redemption_mode}
+          onValueChange={(mode) => patch({ redemption_mode: mode as ReturnVoucherRedemptionMode })}
           disabled={disabled}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="days_after_claim">Valid days after claim</SelectItem>
+            <SelectItem value="fixed_period">Fixed Period</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      {value.redemption_mode === "days_after_claim" ? (
+        <div className="grid gap-2">
+          <Label>Valid days after claim</Label>
+          <Input
+            type="number"
+            min={1}
+            max={90}
+            value={value.redeem_valid_days}
+            onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
+            disabled={disabled}
+          />
+        </div>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor={`redeem-starts-${value.clientKey}`}>Start</Label>
+            <Input
+              id={`redeem-starts-${value.clientKey}`}
+              type="datetime-local"
+              value={value.redeem_starts_at}
+              onChange={(e) => patch({ redeem_starts_at: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={`redeem-ends-${value.clientKey}`}>End</Label>
+            <Input
+              id={`redeem-ends-${value.clientKey}`}
+              type="datetime-local"
+              value={value.redeem_ends_at}
+              onChange={(e) => patch({ redeem_ends_at: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+          {isFixedPeriodEnded(value.redeem_ends_at) ? (
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              This period has already ended — no vouchers will be issued.
+            </p>
+          ) : null}
+        </div>
+      )}
       <div className="grid gap-2">
         <Label>Temperature rule</Label>
         <Select

@@ -11,6 +11,8 @@ import {
   type ReturnVoucherPresetWithMenu,
 } from "@/hooks/useReturnVoucherPresets";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -19,18 +21,32 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
-  ReturnVoucherPresetCard,
-  newReturnVoucherPresetDraft,
-  type ReturnVoucherPresetDraft,
-} from "@/components/returnVouchers/ReturnVoucherPresetCard";
+  VoucherDefinitionCard,
+  newVoucherDraft,
+  type VoucherDraft,
+} from "@/components/campaigns/vouchers/VoucherDefinitionCard";
+import {
+  fromDatetimeLocalValue,
+  toDatetimeLocalValue,
+} from "@/components/campaigns/sections/CampaignScheduleSection";
 import { useToast } from "@/hooks/use-toast";
 import { validateVoucherOfferLine } from "@/lib/campaignFormSchema";
 import {
   formatReturnVoucherPeriodLabel,
   returnVoucherRedemptionMode,
+  validateRedemptionPeriod,
 } from "@/lib/returnVoucherPeriod";
 import { CUSTOM_MENU_TEXT, MULTI_MENU_ITEMS, menuItemModeFromDb, menuItemScopeToDb } from "@/lib/voucherOfferType";
 import { voucherItemLabel } from "@/lib/voucherOfferLabels";
+
+type ReturnVoucherPresetDraft = VoucherDraft & { title: string };
+
+function newReturnVoucherPresetDraft(sort: number): ReturnVoucherPresetDraft {
+  return {
+    ...newVoucherDraft(sort),
+    title: "",
+  };
+}
 
 function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnVoucherPresetDraft {
   return {
@@ -43,8 +59,8 @@ function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnV
     offer_type: row.offer_type,
     redemption_mode: returnVoucherRedemptionMode(row),
     redeem_valid_days: row.redeem_valid_days,
-    redeem_starts_on: row.redeem_starts_on ?? "",
-    redeem_ends_on: row.redeem_ends_on ?? "",
+    redeem_starts_at: toDatetimeLocalValue(row.redeem_starts_at),
+    redeem_ends_at: toDatetimeLocalValue(row.redeem_ends_at),
     quantity: row.quantity,
     temperature_rule: row.temperature_rule,
     fulfillment_rule: row.fulfillment_rule,
@@ -66,21 +82,7 @@ function validateDraft(
   const offerErr = validateVoucherOfferLine(draft.offer_type, menuItemScopeToDb(draft), getMenuItem);
   if (offerErr) return offerErr;
   if (!Number.isFinite(draft.quantity) || draft.quantity < 1) return "Pool quantity must be at least 1";
-  if (draft.redemption_mode === "fixed_period") {
-    if (!draft.redeem_starts_on || !draft.redeem_ends_on) {
-      return "Start date and end date are required";
-    }
-    if (draft.redeem_ends_on < draft.redeem_starts_on) {
-      return "End date must be on or after the start date";
-    }
-  } else if (
-    !Number.isFinite(draft.redeem_valid_days) ||
-    draft.redeem_valid_days < 1 ||
-    draft.redeem_valid_days > 90
-  ) {
-    return "Valid days must be between 1 and 90";
-  }
-  return null;
+  return validateRedemptionPeriod(draft);
 }
 
 export default function OrgReturnVouchersPage() {
@@ -122,10 +124,10 @@ export default function OrgReturnVouchersPage() {
         ...menuItemScopeToDb(draft),
         offer_type: draft.offer_type,
         redeem_valid_days: draft.redeem_valid_days,
-        redeem_starts_on:
-          draft.redemption_mode === "fixed_period" ? draft.redeem_starts_on : null,
-        redeem_ends_on:
-          draft.redemption_mode === "fixed_period" ? draft.redeem_ends_on : null,
+        redeem_starts_at:
+          draft.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(draft.redeem_starts_at) : null,
+        redeem_ends_at:
+          draft.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(draft.redeem_ends_at) : null,
         quantity: draft.quantity,
         temperature_rule: draft.temperature_rule,
         fulfillment_rule: draft.fulfillment_rule,
@@ -253,7 +255,7 @@ export default function OrgReturnVouchersPage() {
             <SheetTitle>{draft.id ? "Edit preset" : "New preset"}</SheetTitle>
           </SheetHeader>
           <div className="flex-1 py-4">
-            <ReturnVoucherPresetCard
+            <VoucherDefinitionCard
               index={draft.sort_order}
               value={draft}
               menuItems={menuItems}
@@ -261,6 +263,18 @@ export default function OrgReturnVouchersPage() {
               onRemove={() => setSheetOpen(false)}
               canRemove={false}
               disabled={upsert.isPending}
+              heading="Preset"
+              titleSlot={
+                <div className="grid gap-2">
+                  <Label>Title</Label>
+                  <Input
+                    value={draft.title}
+                    onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                    disabled={upsert.isPending}
+                    placeholder="e.g. Come back free drink"
+                  />
+                </div>
+              }
             />
           </div>
           <SheetFooter className="flex flex-col gap-2 sm:flex-col">

@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import {
   VoucherDefinitionCard,
+  newVoucherDraft,
   type VoucherDraft,
 } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
-import { emptyVoucherItemDraft } from "@/lib/voucherItemDraft";
 
 type Props = {
   rewardMode: "fixed" | "random";
@@ -13,19 +13,6 @@ type Props = {
   onChange: (v: VoucherDraft[]) => void;
   disabled?: boolean;
 };
-
-function newVoucherDraft(sort: number): VoucherDraft {
-  return {
-    clientKey: crypto.randomUUID(),
-    ...emptyVoucherItemDraft(),
-    offer_type: "free",
-    redeem_valid_days: 7,
-    quantity: 10,
-    temperature_rule: "all_supported",
-    fulfillment_rule: "all_supported",
-    sort_order: sort,
-  };
-}
 
 export function CampaignVouchersSection({ rewardMode, vouchers, menuItems, onChange, disabled }: Props) {
   const canAdd = rewardMode === "random" || vouchers.length === 0;
@@ -62,6 +49,7 @@ export function CampaignVouchersSection({ rewardMode, vouchers, menuItems, onCha
             onRemove={() => onChange(vouchers.filter((_, j) => j !== i))}
             canRemove={vouchers.length > 0}
             disabled={disabled}
+            blockB1g1CustomText
           />
         ))}
       </div>

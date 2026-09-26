@@ -34,6 +34,7 @@ import { CampaignReturnVoucherSection } from "@/components/campaigns/sections/Ca
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
+import { returnVoucherRedemptionMode } from "@/lib/returnVoucherPeriod";
 import { menuItemModeFromDb } from "@/lib/voucherOfferType";
 import { useToast } from "@/hooks/use-toast";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
@@ -61,7 +62,10 @@ function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
     menu_item_ids: cv.menu_item_ids ?? [],
     custom_item_text: cv.custom_item_text ?? "",
     offer_type: cv.offer_type,
+    redemption_mode: returnVoucherRedemptionMode(cv),
     redeem_valid_days: cv.redeem_valid_days,
+    redeem_starts_at: toDatetimeLocalValue(cv.redeem_starts_at),
+    redeem_ends_at: toDatetimeLocalValue(cv.redeem_ends_at),
     quantity: cv.quantity,
     temperature_rule: cv.temperature_rule,
     fulfillment_rule: cv.fulfillment_rule,
@@ -311,6 +315,10 @@ export default function OrgCampaignEditorPage() {
         custom_item_text: v.custom_item_text,
         offer_type: v.offer_type,
         redeem_valid_days: v.redeem_valid_days,
+        redeem_starts_at:
+          v.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(v.redeem_starts_at) : null,
+        redeem_ends_at:
+          v.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(v.redeem_ends_at) : null,
         quantity: v.quantity,
         temperature_rule: v.temperature_rule,
         fulfillment_rule: v.fulfillment_rule,
@@ -333,6 +341,8 @@ export default function OrgCampaignEditorPage() {
       custom_item_text: v.custom_item_text,
       offer_type: v.offer_type,
       redeem_valid_days: v.redeem_valid_days,
+      redeem_starts_at: v.redeem_starts_at ?? null,
+      redeem_ends_at: v.redeem_ends_at ?? null,
       quantity: v.quantity,
       temperature_rule: v.temperature_rule,
       fulfillment_rule: v.fulfillment_rule,

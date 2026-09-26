@@ -384,8 +384,8 @@ export type Database = {
           offer_type: string
           org_id: string
           quantity: number
-          redeem_ends_on: string | null
-          redeem_starts_on: string | null
+          redeem_ends_at: string | null
+          redeem_starts_at: string | null
           redeem_valid_days: number
           sort_order: number
           temperature_rule: string
@@ -402,8 +402,8 @@ export type Database = {
           offer_type: string
           org_id: string
           quantity: number
-          redeem_ends_on?: string | null
-          redeem_starts_on?: string | null
+          redeem_ends_at?: string | null
+          redeem_starts_at?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule: string
@@ -420,8 +420,8 @@ export type Database = {
           offer_type?: string
           org_id?: string
           quantity?: number
-          redeem_ends_on?: string | null
-          redeem_starts_on?: string | null
+          redeem_ends_at?: string | null
+          redeem_starts_at?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule?: string
@@ -518,6 +518,8 @@ export type Database = {
           menu_item_ids: string[]
           offer_type: string
           quantity: number
+          redeem_ends_at: string | null
+          redeem_starts_at: string | null
           redeem_valid_days: number
           sort_order: number
           temperature_rule: string
@@ -533,6 +535,8 @@ export type Database = {
           menu_item_ids?: string[]
           offer_type: string
           quantity: number
+          redeem_ends_at?: string | null
+          redeem_starts_at?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule: string
@@ -548,6 +552,8 @@ export type Database = {
           menu_item_ids?: string[]
           offer_type?: string
           quantity?: number
+          redeem_ends_at?: string | null
+          redeem_starts_at?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule?: string

@@ -23,6 +23,7 @@ import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
+import { formatReturnVoucherPeriodLabel } from "@/lib/returnVoucherPeriod";
 import { collectMenuItemIds, fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
 import { voucherNameFromOfferAndItem } from "@/lib/voucherOfferLabels";
 import { fixedCampaignRequiresPayment } from "@/lib/campaignClaimPricing";
@@ -447,8 +448,7 @@ export default function CampaignDetailPage() {
                       <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                         {rulesLine ? <li>{rulesLine}</li> : null}
                         <li className="text-foreground">
-                          Redemption: valid for {cv.redeem_valid_days} day{cv.redeem_valid_days === 1 ? "" : "s"} after you
-                          receive the voucher
+                          Redemption: {formatReturnVoucherPeriodLabel(cv)}
                         </li>
                       </ul>
                     </li>

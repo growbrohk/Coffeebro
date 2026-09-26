@@ -8,6 +8,7 @@ import {
   unionTemperatureRules,
   type MenuItemRuleSource,
 } from "./campaignVoucherRules";
+import { validateRedemptionPeriod } from "./returnVoucherPeriod";
 import {
   BASE_OFFER_TYPES,
   CUSTOM_ITEM_TEXT_MAX,
@@ -40,6 +41,8 @@ export const campaignVoucherLineSchema = z
     custom_item_text: z.string().max(CUSTOM_ITEM_TEXT_MAX).nullable().optional(),
     offer_type: z.string().refine(isValidOfferType, "Invalid offer type"),
     redeem_valid_days: z.coerce.number().int().min(1).max(90),
+    redeem_starts_at: z.string().nullable().optional(),
+    redeem_ends_at: z.string().nullable().optional(),
     quantity: z.coerce.number().int().min(1),
     temperature_rule: z.string().min(1),
     fulfillment_rule: z.string().min(1),
@@ -58,6 +61,18 @@ export const campaignVoucherLineSchema = z
         code: z.ZodIssueCode.custom,
         message: "Enter custom text",
         path: ["custom_item_text"],
+      });
+    }
+    const periodErr = validateRedemptionPeriod({
+      redeem_valid_days: v.redeem_valid_days,
+      redeem_starts_at: v.redeem_starts_at,
+      redeem_ends_at: v.redeem_ends_at,
+    });
+    if (periodErr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: periodErr,
+        path: ["redeem_ends_at"],
       });
     }
   })
@@ -238,6 +253,23 @@ export const campaignFormSchema = z
             path: ["end_at"],
           });
         }
+      }
+    }
+
+    if (data.end_at) {
+      const campaignEnd = Date.parse(data.end_at);
+      if (Number.isFinite(campaignEnd)) {
+        data.vouchers.forEach((v, index) => {
+          if (!v.redeem_ends_at) return;
+          const voucherEnd = Date.parse(v.redeem_ends_at);
+          if (Number.isFinite(voucherEnd) && voucherEnd < campaignEnd) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Fixed redemption period must end on or after the campaign end.",
+              path: ["vouchers", index, "redeem_ends_at"],
+            });
+          }
+        });
       }
     }
   });

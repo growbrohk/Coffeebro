@@ -72,6 +72,18 @@ function formatWalletDate(iso: string, treatAsCalendarDate = false): string | nu
   });
 }
 
+function formatWalletDateTime(iso: string): string | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatVoucherRedemptionPeriod(
   expiresAt: string | null | undefined,
   eventDate: string | null | undefined,
@@ -81,8 +93,8 @@ export function formatVoucherRedemptionPeriod(
     return formatWalletDate(eventDate, true) ?? "—";
   }
   if (options?.redeemableFrom) {
-    const start = formatWalletDate(options.redeemableFrom);
-    const end = expiresAt ? formatWalletDate(expiresAt) : null;
+    const start = formatWalletDateTime(options.redeemableFrom);
+    const end = expiresAt ? formatWalletDateTime(expiresAt) : null;
     if (start && end) return `${start} – ${end}`;
     if (start) return start;
   }
