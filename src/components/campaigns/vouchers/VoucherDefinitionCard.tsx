@@ -25,6 +25,8 @@ import {
 } from "@/lib/voucherOfferType";
 import {
   isFixedPeriodEnded,
+  joinPeriodBound,
+  splitPeriodBound,
   type ReturnVoucherRedemptionMode,
 } from "@/lib/returnVoucherPeriod";
 import { Trash2 } from "lucide-react";
@@ -77,6 +79,99 @@ function handleOfferKindChange(
     offer_type: kind,
     ...(leavingDiscount && value.menu_item_id === ANY_MENU_ITEM ? { menu_item_id: "" } : {}),
   };
+}
+
+function FixedPeriodFields({
+  clientKey,
+  startsAt,
+  endsAt,
+  onStartsAt,
+  onEndsAt,
+  disabled,
+}: {
+  clientKey: string;
+  startsAt: string;
+  endsAt: string;
+  onStartsAt: (next: string) => void;
+  onEndsAt: (next: string) => void;
+  disabled?: boolean;
+}) {
+  const start = splitPeriodBound(startsAt);
+  const end = splitPeriodBound(endsAt);
+
+  return (
+    <div className="grid gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2">
+          <Label htmlFor={`redeem-starts-date-${clientKey}`}>Start date</Label>
+          <Input
+            id={`redeem-starts-date-${clientKey}`}
+            type="date"
+            value={start.date}
+            onChange={(e) => onStartsAt(joinPeriodBound(e.target.value, start.time))}
+            disabled={disabled}
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor={`redeem-ends-date-${clientKey}`}>End date</Label>
+          <Input
+            id={`redeem-ends-date-${clientKey}`}
+            type="date"
+            value={end.date}
+            onChange={(e) => onEndsAt(joinPeriodBound(e.target.value, end.time))}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-2">
+          <Label htmlFor={`redeem-starts-time-${clientKey}`}>Start time (optional)</Label>
+          <Input
+            id={`redeem-starts-time-${clientKey}`}
+            type="time"
+            value={start.time}
+            onChange={(e) => onStartsAt(joinPeriodBound(start.date, e.target.value))}
+            disabled={disabled}
+          />
+          {start.time ? (
+            <button
+              type="button"
+              className="justify-self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+              onClick={() => onStartsAt(joinPeriodBound(start.date, ""))}
+              disabled={disabled}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor={`redeem-ends-time-${clientKey}`}>End time (optional)</Label>
+          <Input
+            id={`redeem-ends-time-${clientKey}`}
+            type="time"
+            value={end.time}
+            onChange={(e) => onEndsAt(joinPeriodBound(end.date, e.target.value))}
+            disabled={disabled}
+          />
+          {end.time ? (
+            <button
+              type="button"
+              className="justify-self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+              onClick={() => onEndsAt(joinPeriodBound(end.date, ""))}
+              disabled={disabled}
+            >
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </div>
+      {isFixedPeriodEnded(endsAt) ? (
+        <p className="text-xs text-muted-foreground">
+          This period has already ended — no vouchers will be issued.
+        </p>
+      ) : null}
+    </div>
+  );
 }
 
 export function newVoucherDraft(sort: number): VoucherDraft {
@@ -241,33 +336,14 @@ export function VoucherDefinitionCard<T extends VoucherDraft>({
           />
         </div>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor={`redeem-starts-${value.clientKey}`}>Start</Label>
-            <Input
-              id={`redeem-starts-${value.clientKey}`}
-              type="datetime-local"
-              value={value.redeem_starts_at}
-              onChange={(e) => patch({ redeem_starts_at: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor={`redeem-ends-${value.clientKey}`}>End</Label>
-            <Input
-              id={`redeem-ends-${value.clientKey}`}
-              type="datetime-local"
-              value={value.redeem_ends_at}
-              onChange={(e) => patch({ redeem_ends_at: e.target.value })}
-              disabled={disabled}
-            />
-          </div>
-          {isFixedPeriodEnded(value.redeem_ends_at) ? (
-            <p className="text-xs text-muted-foreground sm:col-span-2">
-              This period has already ended — no vouchers will be issued.
-            </p>
-          ) : null}
-        </div>
+        <FixedPeriodFields
+          clientKey={value.clientKey}
+          startsAt={value.redeem_starts_at}
+          endsAt={value.redeem_ends_at}
+          onStartsAt={(redeem_starts_at) => patch({ redeem_starts_at })}
+          onEndsAt={(redeem_ends_at) => patch({ redeem_ends_at })}
+          disabled={disabled}
+        />
       )}
       <div className="grid gap-2">
         <Label>Temperature rule</Label>

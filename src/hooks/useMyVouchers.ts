@@ -6,6 +6,7 @@ import { fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
 import { voucherItemLabel, voucherNameFromOfferAndItem, voucherOfferLabel } from "@/lib/voucherOfferLabels";
 import { formatTastingDuoDisplay } from "@/lib/formatTastingDuoDisplay";
 import { dayLineForDate } from "@/lib/openingHours";
+import { formatPeriodBound } from "@/lib/returnVoucherPeriod";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 
 export interface MyVoucherReview {
@@ -72,18 +73,6 @@ function formatWalletDate(iso: string, treatAsCalendarDate = false): string | nu
   });
 }
 
-function formatWalletDateTime(iso: string): string | null {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export function formatVoucherRedemptionPeriod(
   expiresAt: string | null | undefined,
   eventDate: string | null | undefined,
@@ -93,8 +82,8 @@ export function formatVoucherRedemptionPeriod(
     return formatWalletDate(eventDate, true) ?? "—";
   }
   if (options?.redeemableFrom) {
-    const start = formatWalletDateTime(options.redeemableFrom);
-    const end = expiresAt ? formatWalletDateTime(expiresAt) : null;
+    const start = formatPeriodBound(options.redeemableFrom, "start");
+    const end = expiresAt ? formatPeriodBound(expiresAt, "end") : null;
     if (start && end) return `${start} – ${end}`;
     if (start) return start;
   }

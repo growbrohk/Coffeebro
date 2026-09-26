@@ -25,14 +25,12 @@ import {
   newVoucherDraft,
   type VoucherDraft,
 } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
-import {
-  fromDatetimeLocalValue,
-  toDatetimeLocalValue,
-} from "@/components/campaigns/sections/CampaignScheduleSection";
 import { useToast } from "@/hooks/use-toast";
 import { validateVoucherOfferLine } from "@/lib/campaignFormSchema";
 import {
   formatReturnVoucherPeriodLabel,
+  periodBoundFromSaved,
+  periodBoundToInstant,
   returnVoucherRedemptionMode,
   validateRedemptionPeriod,
 } from "@/lib/returnVoucherPeriod";
@@ -59,8 +57,8 @@ function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnV
     offer_type: row.offer_type,
     redemption_mode: returnVoucherRedemptionMode(row),
     redeem_valid_days: row.redeem_valid_days,
-    redeem_starts_at: toDatetimeLocalValue(row.redeem_starts_at),
-    redeem_ends_at: toDatetimeLocalValue(row.redeem_ends_at),
+    redeem_starts_at: periodBoundFromSaved(row.redeem_starts_at, "start"),
+    redeem_ends_at: periodBoundFromSaved(row.redeem_ends_at, "end"),
     quantity: row.quantity,
     temperature_rule: row.temperature_rule,
     fulfillment_rule: row.fulfillment_rule,
@@ -125,9 +123,13 @@ export default function OrgReturnVouchersPage() {
         offer_type: draft.offer_type,
         redeem_valid_days: draft.redeem_valid_days,
         redeem_starts_at:
-          draft.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(draft.redeem_starts_at) : null,
+          draft.redemption_mode === "fixed_period"
+            ? (periodBoundToInstant(draft.redeem_starts_at, "start")?.toISOString() ?? null)
+            : null,
         redeem_ends_at:
-          draft.redemption_mode === "fixed_period" ? fromDatetimeLocalValue(draft.redeem_ends_at) : null,
+          draft.redemption_mode === "fixed_period"
+            ? (periodBoundToInstant(draft.redeem_ends_at, "end")?.toISOString() ?? null)
+            : null,
         quantity: draft.quantity,
         temperature_rule: draft.temperature_rule,
         fulfillment_rule: draft.fulfillment_rule,
