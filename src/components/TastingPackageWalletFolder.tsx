@@ -98,32 +98,47 @@ export function groupTastingPackageFolders(vouchers: MyVoucher[]): {
   return { folders, standalone };
 }
 
+export type WalletRow =
+  | { kind: 'folder'; folder: TastingPackageFolder }
+  | { kind: 'voucher'; voucher: MyVoucher };
+
 export type PartitionedWalletLists = {
-  activeFolders: TastingPackageFolder[];
-  inactiveFolders: TastingPackageFolder[];
-  activeStandalone: MyVoucher[];
-  inactiveStandalone: MyVoucher[];
+  activeRows: WalletRow[];
+  inactiveRows: WalletRow[];
 };
+
+function rowVoucher(row: WalletRow): MyVoucher {
+  return row.kind === 'folder' ? row.folder.vouchers[0] : row.voucher;
+}
 
 export function partitionWalletLists(vouchers: MyVoucher[]): PartitionedWalletLists {
   const { folders, standalone } = groupTastingPackageFolders(vouchers);
 
-  const activeFolders: TastingPackageFolder[] = [];
-  const inactiveFolders: TastingPackageFolder[] = [];
+  const activeRows: WalletRow[] = [];
+  const inactiveRows: WalletRow[] = [];
 
   for (const folder of folders) {
     const sorted = { ...folder, vouchers: [...folder.vouchers].sort(compareFolderVouchers) };
+    const row: WalletRow = { kind: 'folder', folder: sorted };
     if (sorted.vouchers.some(isVoucherWalletActive)) {
-      activeFolders.push(sorted);
+      activeRows.push(row);
     } else {
-      inactiveFolders.push(sorted);
+      inactiveRows.push(row);
     }
   }
 
-  const activeStandalone = standalone.filter(isVoucherWalletActive).sort(compareDeadlineAsc);
-  const inactiveStandalone = standalone.filter((v) => !isVoucherWalletActive(v)).sort(compareDeadlineDesc);
+  for (const voucher of standalone) {
+    if (isVoucherWalletActive(voucher)) {
+      activeRows.push({ kind: 'voucher', voucher });
+    } else {
+      inactiveRows.push({ kind: 'voucher', voucher });
+    }
+  }
 
-  return { activeFolders, inactiveFolders, activeStandalone, inactiveStandalone };
+  activeRows.sort((a, b) => compareDeadlineAsc(rowVoucher(a), rowVoucher(b)));
+  inactiveRows.sort((a, b) => compareDeadlineDesc(rowVoucher(a), rowVoucher(b)));
+
+  return { activeRows, inactiveRows };
 }
 
 interface TastingPackageWalletFolderProps {

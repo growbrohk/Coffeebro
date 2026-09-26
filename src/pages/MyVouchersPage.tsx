@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Ticket } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMyVouchers, type MyVoucher } from '@/hooks/useMyVouchers';
+import { useMyVouchers } from '@/hooks/useMyVouchers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { WalletVoucherCard } from '@/components/WalletVoucherCard';
 import {
   TastingPackageWalletFolder,
   partitionWalletLists,
-  type TastingPackageFolder,
+  type WalletRow,
 } from '@/components/TastingPackageWalletFolder';
 import { ScanNavButton } from '@/components/ScanNavButton';
 import { Button } from '@/components/ui/button';
@@ -19,22 +19,27 @@ export default function MyVouchersPage() {
   const { canHostEvent, isLoading: roleLoading } = useUserRole();
   const { data: vouchers = [], isLoading } = useMyVouchers();
 
-  const { activeFolders, inactiveFolders, activeStandalone, inactiveStandalone } = useMemo(
+  const { activeRows, inactiveRows } = useMemo(
     () => partitionWalletLists(vouchers),
     [vouchers],
   );
 
-  const hasActive = activeFolders.length > 0 || activeStandalone.length > 0;
-  const hasInactive = inactiveFolders.length > 0 || inactiveStandalone.length > 0;
+  const hasActive = activeRows.length > 0;
+  const hasInactive = inactiveRows.length > 0;
 
-  const renderWalletList = (folders: TastingPackageFolder[], standalone: MyVoucher[]) => (
+  const renderWalletList = (rows: WalletRow[], section: 'active' | 'inactive') => (
     <div className="flex flex-col gap-3">
-      {folders.map((folder) => (
-        <TastingPackageWalletFolder key={folder.purchaseId} folder={folder} />
-      ))}
-      {standalone.map((v) => (
-        <WalletVoucherCard key={v.id} voucher={v} />
-      ))}
+      {rows.map((row) =>
+        row.kind === 'folder' ? (
+          <TastingPackageWalletFolder
+            key={`${section}-${row.folder.purchaseId}`}
+            folder={row.folder}
+            defaultOpen={section === 'active'}
+          />
+        ) : (
+          <WalletVoucherCard key={row.voucher.id} voucher={row.voucher} />
+        ),
+      )}
     </div>
   );
 
@@ -111,13 +116,13 @@ export default function MyVouchersPage() {
             {hasActive ? (
               <section>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Active</h2>
-                {renderWalletList(activeFolders, activeStandalone)}
+                {renderWalletList(activeRows, 'active')}
               </section>
             ) : null}
             {hasInactive ? (
               <section className={hasActive ? 'mt-8' : undefined}>
                 <h2 className="mb-3 text-lg font-bold tracking-normal text-foreground">Expired/Used</h2>
-                {renderWalletList(inactiveFolders, inactiveStandalone)}
+                {renderWalletList(inactiveRows, 'inactive')}
               </section>
             ) : null}
           </div>
