@@ -384,6 +384,8 @@ export type Database = {
           offer_type: string
           org_id: string
           quantity: number
+          redeem_ends_on: string | null
+          redeem_starts_on: string | null
           redeem_valid_days: number
           sort_order: number
           temperature_rule: string
@@ -400,6 +402,8 @@ export type Database = {
           offer_type: string
           org_id: string
           quantity: number
+          redeem_ends_on?: string | null
+          redeem_starts_on?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule: string
@@ -416,6 +420,8 @@ export type Database = {
           offer_type?: string
           org_id?: string
           quantity?: number
+          redeem_ends_on?: string | null
+          redeem_starts_on?: string | null
           redeem_valid_days?: number
           sort_order?: number
           temperature_rule?: string
@@ -1197,6 +1203,7 @@ export type Database = {
           minted_from_voucher_id: string | null
           org_id: string
           owner_id: string
+          redeemable_from: string | null
           redeemed_at: string | null
           redeemed_by: string | null
           return_voucher_preset_id: string | null
@@ -1217,6 +1224,7 @@ export type Database = {
           minted_from_voucher_id?: string | null
           org_id: string
           owner_id: string
+          redeemable_from?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           return_voucher_preset_id?: string | null
@@ -1237,6 +1245,7 @@ export type Database = {
           minted_from_voucher_id?: string | null
           org_id?: string
           owner_id?: string
+          redeemable_from?: string | null
           redeemed_at?: string | null
           redeemed_by?: string | null
           return_voucher_preset_id?: string | null

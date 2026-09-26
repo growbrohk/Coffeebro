@@ -24,6 +24,7 @@ export interface MyVoucher {
   created_at: string;
   redeemed_at: string | null;
   expires_at: string | null;
+  redeemable_from: string | null;
   title: string;
   org_name?: string;
   offer_type?: string;
@@ -61,40 +62,35 @@ export interface MyVoucher {
   opening_hours?: unknown;
 }
 
+function formatWalletDate(iso: string, treatAsCalendarDate = false): string | null {
+  const d = treatAsCalendarDate ? new Date(`${iso}T12:00:00`) : new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function formatVoucherRedemptionPeriod(
   expiresAt: string | null | undefined,
   eventDate: string | null | undefined,
-  options?: { preferEventDate?: boolean },
+  options?: { preferEventDate?: boolean; redeemableFrom?: string | null },
 ): string {
   if (options?.preferEventDate && eventDate) {
-    const d = new Date(eventDate + "T12:00:00");
-    if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
+    return formatWalletDate(eventDate, true) ?? "—";
+  }
+  if (options?.redeemableFrom) {
+    const start = formatWalletDate(options.redeemableFrom);
+    const end = expiresAt ? formatWalletDate(expiresAt) : null;
+    if (start && end) return `${start} – ${end}`;
+    if (start) return start;
   }
   if (expiresAt) {
-    const d = new Date(expiresAt);
-    if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
+    return formatWalletDate(expiresAt) ?? "—";
   }
   if (eventDate) {
-    const d = new Date(eventDate + "T12:00:00");
-    if (!Number.isNaN(d.getTime())) {
-      return d.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
+    return formatWalletDate(eventDate, true) ?? "—";
   }
   return "—";
 }
@@ -145,6 +141,13 @@ export function isVoucherWalletExpired(v: MyVoucher): boolean {
   return false;
 }
 
+export function isVoucherNotYetValid(v: MyVoucher): boolean {
+  if (v.status !== "active") return false;
+  if (!v.redeemable_from) return false;
+  const t = new Date(v.redeemable_from).getTime();
+  return !Number.isNaN(t) && t > Date.now();
+}
+
 const MY_VOUCHERS_SELECT = `
           id,
           code,
@@ -152,6 +155,7 @@ const MY_VOUCHERS_SELECT = `
           created_at,
           redeemed_at,
           expires_at,
+          redeemable_from,
           campaign_id,
           loyalty_catalog_id,
           return_voucher_preset_id,
@@ -319,6 +323,7 @@ async function fetchMyVouchers(
             created_at: v.created_at as string,
             redeemed_at: (v.redeemed_at as string | null) ?? null,
             expires_at: (v.expires_at as string | null) ?? null,
+            redeemable_from: (v.redeemable_from as string | null) ?? null,
             title: duoDisplay?.compact ?? (drink1Name || "Tasting drink"),
             org_id: v.org_id as string,
             org_name: orgsRow?.org_name,
@@ -418,6 +423,7 @@ async function fetchMyVouchers(
             created_at: v.created_at as string,
             redeemed_at: (v.redeemed_at as string | null) ?? null,
             expires_at: (v.expires_at as string | null) ?? null,
+            redeemable_from: (v.redeemable_from as string | null) ?? null,
             title,
             org_id: v.org_id as string,
             org_name: orgsRow?.org_name,
@@ -481,6 +487,7 @@ async function fetchMyVouchers(
             created_at: v.created_at as string,
             redeemed_at: (v.redeemed_at as string | null) ?? null,
             expires_at: (v.expires_at as string | null) ?? null,
+            redeemable_from: (v.redeemable_from as string | null) ?? null,
             title: loyaltyRow.title,
             org_id: v.org_id as string,
             org_name: orgsRow?.org_name,
@@ -593,6 +600,7 @@ async function fetchMyVouchers(
           created_at: v.created_at as string,
           redeemed_at: (v.redeemed_at as string | null) ?? null,
           expires_at: (v.expires_at as string | null) ?? null,
+          redeemable_from: (v.redeemable_from as string | null) ?? null,
           title,
           org_id: v.org_id as string,
           org_name: orgsRow?.org_name,

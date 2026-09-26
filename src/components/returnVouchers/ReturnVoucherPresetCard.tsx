@@ -21,6 +21,7 @@ import {
   type DiscountOfferKind,
   type OfferKind,
 } from "@/lib/voucherOfferType";
+import { isFixedPeriodEnded, type ReturnVoucherRedemptionMode } from "@/lib/returnVoucherPeriod";
 import { Trash2 } from "lucide-react";
 
 export type ReturnVoucherPresetDraft = {
@@ -31,7 +32,10 @@ export type ReturnVoucherPresetDraft = {
   menu_item_ids: string[];
   custom_item_text: string;
   offer_type: string;
+  redemption_mode: ReturnVoucherRedemptionMode;
   redeem_valid_days: number;
+  redeem_starts_on: string;
+  redeem_ends_on: string;
   quantity: number;
   temperature_rule: string;
   fulfillment_rule: string;
@@ -188,16 +192,62 @@ export function ReturnVoucherPresetCard({
         />
       </div>
       <div className="grid gap-2">
-        <Label>Valid days after claim</Label>
-        <Input
-          type="number"
-          min={1}
-          max={90}
-          value={value.redeem_valid_days}
-          onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
+        <Label>Redemption Period</Label>
+        <Select
+          value={value.redemption_mode}
+          onValueChange={(mode) => patch({ redemption_mode: mode as ReturnVoucherRedemptionMode })}
           disabled={disabled}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="days_after_claim">Valid days after claim</SelectItem>
+            <SelectItem value="fixed_period">Fixed Period</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+      {value.redemption_mode === "days_after_claim" ? (
+        <div className="grid gap-2">
+          <Label>Valid days after claim</Label>
+          <Input
+            type="number"
+            min={1}
+            max={90}
+            value={value.redeem_valid_days}
+            onChange={(e) => patch({ redeem_valid_days: Number(e.target.value) })}
+            disabled={disabled}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="grid gap-2">
+            <Label htmlFor={`redeem-starts-${value.clientKey}`}>Start date</Label>
+            <Input
+              id={`redeem-starts-${value.clientKey}`}
+              type="date"
+              value={value.redeem_starts_on}
+              onChange={(e) => patch({ redeem_starts_on: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor={`redeem-ends-${value.clientKey}`}>End date</Label>
+            <Input
+              id={`redeem-ends-${value.clientKey}`}
+              type="date"
+              value={value.redeem_ends_on}
+              onChange={(e) => patch({ redeem_ends_on: e.target.value })}
+              disabled={disabled}
+            />
+          </div>
+          {isFixedPeriodEnded(value.redeem_ends_on) ? (
+            <p className="col-span-2 text-xs text-muted-foreground">
+              This period has already ended — no vouchers will be issued.
+            </p>
+          ) : null}
+        </div>
+      )}
       <div className="grid gap-2">
         <Label>Temperature rule</Label>
         <Select
@@ -246,7 +296,10 @@ export function newReturnVoucherPresetDraft(sort: number): ReturnVoucherPresetDr
     title: "",
     ...emptyVoucherItemDraft(),
     offer_type: "free",
+    redemption_mode: "days_after_claim",
     redeem_valid_days: 7,
+    redeem_starts_on: "",
+    redeem_ends_on: "",
     quantity: 10,
     temperature_rule: "all_supported",
     fulfillment_rule: "all_supported",

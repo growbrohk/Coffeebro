@@ -25,6 +25,10 @@ import {
 } from "@/components/returnVouchers/ReturnVoucherPresetCard";
 import { useToast } from "@/hooks/use-toast";
 import { validateVoucherOfferLine } from "@/lib/campaignFormSchema";
+import {
+  formatReturnVoucherPeriodLabel,
+  returnVoucherRedemptionMode,
+} from "@/lib/returnVoucherPeriod";
 import { CUSTOM_MENU_TEXT, MULTI_MENU_ITEMS, menuItemModeFromDb, menuItemScopeToDb } from "@/lib/voucherOfferType";
 import { voucherItemLabel } from "@/lib/voucherOfferLabels";
 
@@ -37,7 +41,10 @@ function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnV
     menu_item_ids: row.menu_item_ids ?? [],
     custom_item_text: row.custom_item_text ?? "",
     offer_type: row.offer_type,
+    redemption_mode: returnVoucherRedemptionMode(row),
     redeem_valid_days: row.redeem_valid_days,
+    redeem_starts_on: row.redeem_starts_on ?? "",
+    redeem_ends_on: row.redeem_ends_on ?? "",
     quantity: row.quantity,
     temperature_rule: row.temperature_rule,
     fulfillment_rule: row.fulfillment_rule,
@@ -59,7 +66,18 @@ function validateDraft(
   const offerErr = validateVoucherOfferLine(draft.offer_type, menuItemScopeToDb(draft), getMenuItem);
   if (offerErr) return offerErr;
   if (!Number.isFinite(draft.quantity) || draft.quantity < 1) return "Pool quantity must be at least 1";
-  if (!Number.isFinite(draft.redeem_valid_days) || draft.redeem_valid_days < 1 || draft.redeem_valid_days > 90) {
+  if (draft.redemption_mode === "fixed_period") {
+    if (!draft.redeem_starts_on || !draft.redeem_ends_on) {
+      return "Start date and end date are required";
+    }
+    if (draft.redeem_ends_on < draft.redeem_starts_on) {
+      return "End date must be on or after the start date";
+    }
+  } else if (
+    !Number.isFinite(draft.redeem_valid_days) ||
+    draft.redeem_valid_days < 1 ||
+    draft.redeem_valid_days > 90
+  ) {
     return "Valid days must be between 1 and 90";
   }
   return null;
@@ -104,6 +122,10 @@ export default function OrgReturnVouchersPage() {
         ...menuItemScopeToDb(draft),
         offer_type: draft.offer_type,
         redeem_valid_days: draft.redeem_valid_days,
+        redeem_starts_on:
+          draft.redemption_mode === "fixed_period" ? draft.redeem_starts_on : null,
+        redeem_ends_on:
+          draft.redemption_mode === "fixed_period" ? draft.redeem_ends_on : null,
         quantity: draft.quantity,
         temperature_rule: draft.temperature_rule,
         fulfillment_rule: draft.fulfillment_rule,
@@ -217,7 +239,7 @@ export default function OrgReturnVouchersPage() {
                     },
                     Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
                   )}{" "}
-                  · pool {preset.quantity} · {preset.redeem_valid_days} days
+                  · pool {preset.quantity} · {formatReturnVoucherPeriodLabel(preset)}
                 </p>
               </button>
             ))}

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReturnVoucherPresetWithMenu } from "@/hooks/useReturnVoucherPresets";
 import { fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
+import { formatReturnVoucherPeriodLabel } from "@/lib/returnVoucherPeriod";
 import { voucherOfferLabel, voucherItemLabel } from "@/lib/voucherOfferLabels";
 
 type Props = {
@@ -42,8 +43,8 @@ export function ReturnVoucherPresetPreview({ preset, menuNamesById }: Props) {
           <dd>{preset.quantity}</dd>
         </div>
         <div className="flex flex-wrap gap-x-2">
-          <dt className="font-medium text-foreground">Valid days after claim</dt>
-          <dd>{preset.redeem_valid_days}</dd>
+          <dt className="font-medium text-foreground">Redemption Period</dt>
+          <dd>{formatReturnVoucherPeriodLabel(preset)}</dd>
         </div>
         <div className="flex flex-wrap gap-x-2">
           <dt className="font-medium text-foreground">Temperature rule</dt>

@@ -144,6 +144,7 @@ export default function ScanPage() {
       if (res.status === 'ALREADY_REDEEMED') msg = 'Already used';
       if (res.status === 'NOT_AUTHORIZED') msg = 'Host only';
       if (res.status === 'EXPIRED') msg = 'Expired';
+      if (res.status === 'NOT_YET_VALID') msg = 'Redemption period has not started';
       if (res.status === 'NOT_REDEMPTION_DAY') msg = 'Wrong redemption day';
       if (res.status === 'SHOP_CLOSED') msg = 'Shop is closed';
       

@@ -15,6 +15,7 @@ function tastingVoucher(
     created_at: '2026-01-01T00:00:00Z',
     redeemed_at: status === 'redeemed' ? '2026-06-01T00:00:00Z' : null,
     expires_at: '2027-01-01T00:00:00Z',
+    redeemable_from: null,
     title: `Drink ${id}`,
     tasting_package_purchase_id: purchaseId,
     tasting_package_id: 'pkg-1',
@@ -36,6 +37,7 @@ function standaloneVoucher(
     created_at: '2026-01-01T00:00:00Z',
     redeemed_at: status === 'redeemed' ? '2026-06-01T00:00:00Z' : null,
     expires_at: '2027-01-01T00:00:00Z',
+    redeemable_from: null,
     title: `Drink ${id}`,
     ...overrides,
   };

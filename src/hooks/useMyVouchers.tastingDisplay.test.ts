@@ -3,6 +3,8 @@ import type { MyVoucher } from '@/hooks/useMyVouchers';
 import {
   formatTastingFolderRedemptionDate,
   formatTastingVoucherShopHours,
+  formatVoucherRedemptionPeriod,
+  isVoucherNotYetValid,
 } from '@/hooks/useMyVouchers';
 
 function tastingVoucher(overrides: Partial<MyVoucher> = {}): MyVoucher {
@@ -13,6 +15,7 @@ function tastingVoucher(overrides: Partial<MyVoucher> = {}): MyVoucher {
     created_at: '2026-01-01T00:00:00Z',
     redeemed_at: null,
     expires_at: '2026-06-28T15:59:59Z',
+    redeemable_from: null,
     title: 'Latte',
     tasting_package_purchase_id: 'purchase-1',
     event_date: '2026-06-28',
@@ -69,5 +72,34 @@ describe('formatTastingVoucherShopHours', () => {
   it('returns em dash for non-tasting or missing date', () => {
     expect(formatTastingVoucherShopHours(tastingVoucher({ tasting_package_purchase_id: null }))).toBe('—');
     expect(formatTastingVoucherShopHours(tastingVoucher({ event_date: null }))).toBe('—');
+  });
+});
+
+describe('formatVoucherRedemptionPeriod', () => {
+  it('renders a start–end range when redeemableFrom is set', () => {
+    const label = formatVoucherRedemptionPeriod('2026-10-31T16:00:00Z', null, {
+      redeemableFrom: '2026-09-30T16:00:00Z',
+    });
+    expect(label).toContain('–');
+    expect(label).toContain('2026');
+  });
+});
+
+describe('isVoucherNotYetValid', () => {
+  it('is true before redeemable_from', () => {
+    expect(
+      isVoucherNotYetValid(
+        tastingVoucher({ redeemable_from: '2099-01-01T00:00:00Z' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('is false when redeemable_from is missing or already started', () => {
+    expect(isVoucherNotYetValid(tastingVoucher({ redeemable_from: null }))).toBe(false);
+    expect(
+      isVoucherNotYetValid(
+        tastingVoucher({ redeemable_from: '2020-01-01T00:00:00Z' }),
+      ),
+    ).toBe(false);
   });
 });

@@ -12,6 +12,7 @@ import type { MyVoucher } from '@/hooks/useMyVouchers';
 import {
   formatTastingVoucherShopHours,
   formatVoucherRedemptionPeriod,
+  isVoucherNotYetValid,
 } from '@/hooks/useMyVouchers';
 import { isOrgOpenAt } from '@/lib/openingHours';
 import QRCode from 'react-qr-code';
@@ -21,9 +22,12 @@ function VoucherDetailFields({ voucher }: { voucher: MyVoucher }) {
   const redemption = formatVoucherRedemptionPeriod(
     voucher.expires_at,
     voucher.event_date ?? null,
-    { preferEventDate: isTasting },
+    { preferEventDate: isTasting, redeemableFrom: voucher.redeemable_from },
   );
-  const showQr = voucher.status === 'active' && Boolean(voucher.code?.trim());
+  const showQr =
+    voucher.status === 'active' &&
+    Boolean(voucher.code?.trim()) &&
+    !isVoucherNotYetValid(voucher);
   const redeemDate = voucher.event_date ?? null;
   const shopHours = isTasting ? formatTastingVoucherShopHours(voucher) : null;
   const openNow =

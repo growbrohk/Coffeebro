@@ -10,6 +10,7 @@ import type { MyVoucher } from '@/hooks/useMyVouchers';
 import {
   formatTastingVoucherShopHours,
   formatVoucherRedemptionPeriod,
+  isVoucherNotYetValid,
   isVoucherWalletActive,
   isVoucherWalletExpired,
 } from '@/hooks/useMyVouchers';
@@ -65,14 +66,18 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
 
   const isActive = isVoucherWalletActive(voucher);
   const isExpired = isVoucherWalletExpired(voucher);
+  const notYetValid = isVoucherNotYetValid(voucher);
   const isRedeemed = voucher.status === 'redeemed';
   const hasReview = Boolean(voucher.review);
   const isTasting = Boolean(voucher.tasting_package_purchase_id);
   const redemption = formatVoucherRedemptionPeriod(
     voucher.expires_at,
     voucher.event_date ?? null,
-    { preferEventDate: isTasting },
+    { preferEventDate: isTasting, redeemableFrom: voucher.redeemable_from },
   );
+  const startsLabel = formatVoucherRedemptionPeriod(null, null, {
+    redeemableFrom: voucher.redeemable_from,
+  });
   const shopHours = isTasting ? formatTastingVoucherShopHours(voucher) : null;
 
   const handleReviewClick = () => {
@@ -138,14 +143,20 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
               >
                 details
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="min-w-[4.5rem] bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={() => setQrOpen(true)}
-              >
-                show QR
-              </Button>
+              {notYetValid ? (
+                <span className="text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Starts {startsLabel}
+                </span>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="min-w-[4.5rem] bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => setQrOpen(true)}
+                >
+                  show QR
+                </Button>
+              )}
             </>
           ) : isExpired ? (
             <span className="text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
