@@ -50,3 +50,48 @@ export function voucherNameFromOfferAndMenu(
 export function menuItemDisplayName(itemName: string | null | undefined): string {
   return itemName?.trim() || ANY_ITEM_LABEL;
 }
+
+export type VoucherItemLabelSource = {
+  item_name?: string | null;
+  menu_item_id?: string | null;
+  menu_item_ids?: string[] | null;
+  custom_item_text?: string | null;
+  menu_items?: { item_name?: string | null } | null;
+};
+
+function nameFromMap(
+  id: string,
+  menuNamesById?: Record<string, string> | Map<string, string>,
+): string | undefined {
+  if (!menuNamesById) return undefined;
+  return menuNamesById instanceof Map ? menuNamesById.get(id) : menuNamesById[id];
+}
+
+/** Same order as SQL voucher_item_label: custom text, multi names, single name, Any item. */
+export function voucherItemLabel(
+  source: VoucherItemLabelSource | null | undefined,
+  menuNamesById?: Record<string, string> | Map<string, string>,
+): string {
+  const custom = source?.custom_item_text?.trim();
+  if (custom) return custom;
+
+  const ids = source?.menu_item_ids ?? [];
+  if (ids.length > 0) {
+    const names = ids
+      .map((id) => nameFromMap(id, menuNamesById)?.trim())
+      .filter((name): name is string => Boolean(name));
+    if (names.length > 0) return names.join(", ");
+  }
+
+  return menuItemDisplayName(source?.item_name ?? source?.menu_items?.item_name);
+}
+
+export function voucherNameFromOfferAndItem(
+  offerType: string | null | undefined,
+  source: VoucherItemLabelSource | null | undefined,
+  menuNamesById?: Record<string, string> | Map<string, string>,
+): string | null {
+  const raw = offerType?.trim();
+  if (!raw) return null;
+  return `${voucherOfferLabel(raw)} · ${voucherItemLabel(source, menuNamesById)}`;
+}

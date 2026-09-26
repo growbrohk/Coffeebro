@@ -4,6 +4,7 @@ import {
   type VoucherDraft,
 } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
+import { emptyVoucherItemDraft } from "@/lib/voucherItemDraft";
 
 type Props = {
   rewardMode: "fixed" | "random";
@@ -16,7 +17,7 @@ type Props = {
 function newVoucherDraft(sort: number): VoucherDraft {
   return {
     clientKey: crypto.randomUUID(),
-    menu_item_id: "",
+    ...emptyVoucherItemDraft(),
     offer_type: "free",
     redeem_valid_days: 7,
     quantity: 10,

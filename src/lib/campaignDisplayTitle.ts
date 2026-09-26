@@ -1,22 +1,22 @@
-import { voucherOfferLabel, menuItemDisplayName } from "./voucherOfferLabels";
+import { voucherOfferLabel, voucherItemLabel, type VoucherItemLabelSource } from "./voucherOfferLabels";
 
-export type CampaignDisplayTitleVoucher = {
+export type CampaignDisplayTitleVoucher = VoucherItemLabelSource & {
   offer_type: string;
-  item_name?: string | null;
 };
 
 export function buildCampaignDisplayTitle(opts: {
   campaignType: "grab" | "hunt";
   rewardMode: "fixed" | "random";
   vouchers: CampaignDisplayTitleVoucher[];
+  menuNamesById?: Record<string, string>;
 }): string {
-  const { campaignType, rewardMode, vouchers } = opts;
+  const { campaignType, rewardMode, vouchers, menuNamesById } = opts;
   const modeWord = campaignType === "hunt" ? "Hunt" : "Grab";
 
   if (rewardMode === "fixed" && vouchers.length >= 1) {
     const v = vouchers[0];
     const offer = voucherOfferLabel(v.offer_type);
-    const name = menuItemDisplayName(v.item_name);
+    const name = voucherItemLabel(v, menuNamesById);
     return `${modeWord} · ${offer} · ${name}`;
   }
 

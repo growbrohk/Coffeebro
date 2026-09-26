@@ -1,15 +1,22 @@
 import { z } from "zod";
 import {
+  ALL_FULFILLMENT_RULES,
+  ALL_TEMPERATURE_RULES,
   allowedFulfillmentRules,
   allowedTemperatureRules,
+  unionFulfillmentRules,
+  unionTemperatureRules,
   type MenuItemRuleSource,
 } from "./campaignVoucherRules";
 import {
   BASE_OFFER_TYPES,
+  CUSTOM_ITEM_TEXT_MAX,
+  CUSTOM_MENU_TEXT,
+  MULTI_MENU_ITEMS,
   isDiscountOffer,
   isRandomPoolAllowedOffer,
   isValidOfferType,
-  menuItemIdToDb,
+  menuItemScopeToDb,
   parseDiscountOffer,
 } from "./voucherOfferType";
 
@@ -19,26 +26,77 @@ export const CAMPAIGN_STATUSES = ["draft", "published", "ended"] as const;
 export const TREASURE_LOCATION_TYPES = ["shop", "custom"] as const;
 export const OFFER_TYPES = [...BASE_OFFER_TYPES] as const;
 
-export const campaignVoucherLineSchema = z.object({
-  id: z.string().uuid().optional(),
-  menu_item_id: z
-    .union([z.string().uuid(), z.literal(""), z.literal("__any__")])
-    .transform((v) => menuItemIdToDb(v))
-    .pipe(z.string().uuid().nullable()),
-  offer_type: z.string().refine(isValidOfferType, "Invalid offer type"),
-  redeem_valid_days: z.coerce.number().int().min(1).max(90),
-  quantity: z.coerce.number().int().min(1),
-  temperature_rule: z.string().min(1),
-  fulfillment_rule: z.string().min(1),
-  sort_order: z.coerce.number().int().min(0).default(0),
-});
+export const campaignVoucherLineSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    menu_item_id: z.union([
+      z.string().uuid(),
+      z.literal(""),
+      z.literal("__any__"),
+      z.literal(MULTI_MENU_ITEMS),
+      z.literal(CUSTOM_MENU_TEXT),
+    ]),
+    menu_item_ids: z.array(z.string().uuid()).default([]),
+    custom_item_text: z.string().max(CUSTOM_ITEM_TEXT_MAX).nullable().optional(),
+    offer_type: z.string().refine(isValidOfferType, "Invalid offer type"),
+    redeem_valid_days: z.coerce.number().int().min(1).max(90),
+    quantity: z.coerce.number().int().min(1),
+    temperature_rule: z.string().min(1),
+    fulfillment_rule: z.string().min(1),
+    sort_order: z.coerce.number().int().min(0).default(0),
+  })
+  .superRefine((v, ctx) => {
+    if (v.menu_item_id === MULTI_MENU_ITEMS && v.menu_item_ids.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Select at least one menu item",
+        path: ["menu_item_ids"],
+      });
+    }
+    if (v.menu_item_id === CUSTOM_MENU_TEXT && !v.custom_item_text?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter custom text",
+        path: ["custom_item_text"],
+      });
+    }
+  })
+  .transform((v) => ({
+    ...v,
+    ...menuItemScopeToDb(v),
+  }));
+
+export type VoucherOfferScope = {
+  menu_item_id: string | null;
+  menu_item_ids?: string[];
+  custom_item_text?: string | null;
+};
 
 export function validateVoucherOfferLine(
   offerType: string,
-  menuItemId: string | null,
-  getMenuItem?: (menuItemId: string) => MenuItemRuleSource | undefined,
+  scope: string | null | VoucherOfferScope,
+  getMenuItem?: (menuItemId: string) => (MenuItemRuleSource & { base_price?: number }) | undefined,
+  options?: { blockB1g1CustomText?: boolean },
 ): string | null {
   if (!isValidOfferType(offerType)) return "Invalid offer type";
+
+  const resolved: VoucherOfferScope =
+    scope == null || typeof scope === "string"
+      ? { menu_item_id: scope, menu_item_ids: [], custom_item_text: null }
+      : scope;
+  const menuItemId = resolved.menu_item_id;
+  const menuItemIds = resolved.menu_item_ids ?? [];
+  const customText = resolved.custom_item_text?.trim() || null;
+
+  if (options?.blockB1g1CustomText && offerType === "b1g1" && customText) {
+    return "Buy 1 get 1 campaigns cannot use custom text";
+  }
+  if (customText && customText.length > CUSTOM_ITEM_TEXT_MAX) {
+    return `Custom text must be ${CUSTOM_ITEM_TEXT_MAX} characters or fewer`;
+  }
+
+  const hasItem = Boolean(menuItemId) || menuItemIds.length > 0 || Boolean(customText);
+  if (!hasItem && !isDiscountOffer(offerType)) return "Pick a menu item";
 
   const discount = parseDiscountOffer(offerType);
   if (discount) {
@@ -48,20 +106,19 @@ export function validateVoucherOfferLine(
     if (discount.kind === "dollar_discount" && discount.amount < 1) {
       return "Dollar discount must be at least $1";
     }
-    if (!menuItemId) return null;
-    if (discount.kind === "dollar_discount" && getMenuItem) {
-      const menu = getMenuItem(menuItemId);
-      if (!menu) return "Unknown menu item";
-      const max = Math.ceil(Number(menu.base_price)) - 1;
+    const priceIds = menuItemId ? [menuItemId] : menuItemIds;
+    if (discount.kind === "dollar_discount" && getMenuItem && priceIds.length > 0) {
+      const menus = priceIds.map((id) => getMenuItem(id));
+      if (menus.some((menu) => !menu)) return "Unknown menu item";
+      const cheapest = Math.min(...menus.map((menu) => Number(menu?.base_price)));
+      const max = Math.ceil(cheapest) - 1;
       if (max < 1) return "Item price is too low for a dollar discount";
-      if (discount.amount >= Math.ceil(Number(menu.base_price))) {
-        return `Dollar discount must be less than item price ($${Number(menu.base_price).toFixed(0)})`;
+      if (discount.amount >= Math.ceil(cheapest)) {
+        return `Dollar discount must be less than item price ($${cheapest.toFixed(0)})`;
       }
     }
-    return null;
   }
 
-  if (!menuItemId) return "Pick a menu item";
   return null;
 }
 
@@ -152,11 +209,13 @@ export const campaignFormSchema = z
     }
 
     data.vouchers.forEach((v, index) => {
-      if (isDiscountOffer(v.offer_type) && v.menu_item_id != null) return;
-      if (!isDiscountOffer(v.offer_type) && v.menu_item_id == null) {
+      const offerErr = validateVoucherOfferLine(v.offer_type, v, undefined, {
+        blockB1g1CustomText: true,
+      });
+      if (offerErr) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Pick a menu item",
+          message: offerErr,
           path: ["vouchers", index, "menu_item_id"],
         });
       }
@@ -186,26 +245,49 @@ export const campaignFormSchema = z
 export type CampaignFormValues = z.infer<typeof campaignFormSchema>;
 
 /** Extra checks that need menu item rows (category + temp/fulfillment options). */
+type MenuLookup = (menuItemId: string) => (MenuItemRuleSource & { base_price?: number }) | undefined;
+
 export function refineCampaignVouchersWithMenuItems(
   data: CampaignFormValues,
-  getMenuItem: (menuItemId: string) => MenuItemRuleSource | undefined,
+  getMenuItem: MenuLookup,
   ctx: z.RefinementCtx,
 ): void {
   data.vouchers.forEach((v, index) => {
-    const offerErr = validateVoucherOfferLine(v.offer_type, v.menu_item_id, getMenuItem);
+    const offerErr = validateVoucherOfferLine(v.offer_type, v, getMenuItem, {
+      blockB1g1CustomText: true,
+    });
     if (offerErr) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: offerErr,
         path: ["vouchers", index, v.menu_item_id ? "offer_type" : "menu_item_id"],
       });
-      if (v.menu_item_id == null) return;
     }
 
-    if (v.menu_item_id == null) return;
+    const customText = v.custom_item_text?.trim() || null;
+    if (customText) {
+      if (!(ALL_TEMPERATURE_RULES as readonly string[]).includes(v.temperature_rule)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Temperature rule is not compatible with this menu item.",
+          path: ["vouchers", index, "temperature_rule"],
+        });
+      }
+      if (!(ALL_FULFILLMENT_RULES as readonly string[]).includes(v.fulfillment_rule)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Fulfillment rule is not compatible with this menu item.",
+          path: ["vouchers", index, "fulfillment_rule"],
+        });
+      }
+      return;
+    }
 
-    const menu = getMenuItem(v.menu_item_id);
-    if (!menu) {
+    const ids = v.menu_item_id ? [v.menu_item_id] : (v.menu_item_ids ?? []);
+    if (ids.length === 0) return;
+
+    const menus = ids.map((id) => getMenuItem(id));
+    if (menus.some((menu) => !menu)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Unknown menu item.",
@@ -214,7 +296,10 @@ export function refineCampaignVouchersWithMenuItems(
       return;
     }
 
-    const tempAllowed = allowedTemperatureRules(menu) as readonly string[];
+    const selected = menus.filter((menu): menu is MenuItemRuleSource => Boolean(menu));
+    const tempAllowed = (
+      v.menu_item_id ? allowedTemperatureRules(selected[0]) : unionTemperatureRules(selected)
+    ) as readonly string[];
     if (!tempAllowed.includes(v.temperature_rule)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -223,7 +308,9 @@ export function refineCampaignVouchersWithMenuItems(
       });
     }
 
-    const fulfillAllowed = allowedFulfillmentRules(menu) as readonly string[];
+    const fulfillAllowed = (
+      v.menu_item_id ? allowedFulfillmentRules(selected[0]) : unionFulfillmentRules(selected)
+    ) as readonly string[];
     if (!fulfillAllowed.includes(v.fulfillment_rule)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -237,7 +324,7 @@ export function refineCampaignVouchersWithMenuItems(
 /** Full parse: base schema + menu-aware voucher rules. */
 export function safeParseCampaignForm(
   values: unknown,
-  getMenuItem: (menuItemId: string) => MenuItemRuleSource | undefined,
+  getMenuItem: MenuLookup,
 ): z.SafeParseReturnType<CampaignFormValues, CampaignFormValues> {
   const base = campaignFormSchema.safeParse(values);
   if (!base.success) return base;

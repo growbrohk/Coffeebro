@@ -1,7 +1,7 @@
 import type { CampaignMapItem } from "@/types/campaignMapItem";
 import { pinKindFromCampaignType } from "@/lib/huntMapPinKind";
 import type { Tables } from "@/integrations/supabase/types";
-import { voucherOfferLabel, menuItemDisplayName } from "@/lib/voucherOfferLabels";
+import { voucherOfferLabel, voucherItemLabel } from "@/lib/voucherOfferLabels";
 
 export type PublishedCampaignClaimSpot = Pick<
   Tables<"org_claim_spots">,
@@ -9,6 +9,8 @@ export type PublishedCampaignClaimSpot = Pick<
 >;
 
 export type PublishedCampaignRow = Tables<"campaigns"> & {
+  menu_item_names?: Record<string, string>;
+  menu_item_prices?: Record<string, number>;
   orgs:
     | (Pick<
         Tables<"orgs">,
@@ -83,8 +85,14 @@ export function publishedCampaignToMapItem(
     (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
   );
   const primary = sortedVouchers[0];
-  const menu = primary?.menu_items;
-  const offerTypeLabel = primary ? voucherOfferLabel(primary.offer_type) : null;
+  const itemLabel = voucherItemLabel(
+    {
+      item_name: primary?.menu_items?.item_name,
+      menu_item_ids: primary?.menu_item_ids,
+      custom_item_text: primary?.custom_item_text,
+    },
+    row.menu_item_names,
+  );
 
   const title = row.display_title?.trim() || row.campaign_type || "Campaign";
 
@@ -101,7 +109,7 @@ export function publishedCampaignToMapItem(
     clue_image: row.hint_image_url ?? org?.preview_photo_url ?? org?.logo_url ?? null,
     scanned: claimedCampaignIds.has(row.id),
     pinKind: pinKindFromCampaignType(row.campaign_type),
-    offerTitle: menuItemDisplayName(menu?.item_name) === "Any item" ? title : (menu?.item_name ?? title),
+    offerTitle: itemLabel === "Any item" ? title : itemLabel,
     offerDescription: row.hint_text,
     offerType: primary ? voucherOfferLabel(primary.offer_type) : null,
     orgName: org?.org_name ?? null,

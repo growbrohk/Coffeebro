@@ -14,7 +14,8 @@ import {
   fixedCampaignRequiresPayment,
   formatHkdFromCents,
 } from "@/lib/campaignClaimPricing";
-import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
+import { collectMenuItemIds, fetchMenuItemDetails } from "@/lib/fetchMenuItemNames";
+import { voucherNameFromOfferAndItem } from "@/lib/voucherOfferLabels";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -74,7 +75,10 @@ export default function CampaignCheckoutPage() {
         .eq("status", "published")
         .maybeSingle();
       if (error) throw error;
-      return data as PublishedCampaignRow | null;
+      const row = data as PublishedCampaignRow | null;
+      if (!row) return null;
+      const details = await fetchMenuItemDetails(collectMenuItemIds(row.campaign_vouchers ?? []));
+      return { ...row, menu_item_names: details.names, menu_item_prices: details.prices };
     },
   });
 
@@ -83,10 +87,22 @@ export default function CampaignCheckoutPage() {
   const title = campaign?.display_title?.trim() || "Campaign";
   const displayCents = useMemo(() => {
     if (!primary) return null;
-    const base = primary.menu_items?.base_price != null ? Number(primary.menu_items.base_price) : null;
+    const prices = [
+      primary.menu_items?.base_price != null ? Number(primary.menu_items.base_price) : null,
+      ...(primary.menu_item_ids ?? []).map((id) => campaign?.menu_item_prices?.[id] ?? null),
+    ].filter((n): n is number => n != null && Number.isFinite(n));
+    const base = prices.length ? Math.max(...prices) : null;
     return displayAmountCentsForVoucherLine(primary.offer_type, base);
-  }, [primary]);
-  const lineName = voucherNameFromOfferAndMenu(primary?.offer_type, primary?.menu_items?.item_name);
+  }, [primary, campaign?.menu_item_prices]);
+  const lineName = voucherNameFromOfferAndItem(
+    primary?.offer_type,
+    {
+      item_name: primary?.menu_items?.item_name,
+      menu_item_ids: primary?.menu_item_ids,
+      custom_item_text: primary?.custom_item_text,
+    },
+    campaign?.menu_item_names,
+  );
   const needsPay = campaign
     ? fixedCampaignRequiresPayment(campaign.reward_mode, primary?.offer_type)
     : false;

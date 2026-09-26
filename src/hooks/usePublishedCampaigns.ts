@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { PublishedCampaignRow } from "@/lib/campaignToMapItem";
+import { collectMenuItemIds, fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
 
 export const publishedCampaignsQueryKey = ["campaigns", "published"] as const;
 
@@ -28,6 +29,8 @@ const MAP_CAMPAIGN_SELECT = `
     sort_order,
     created_at,
     offer_type,
+    custom_item_text,
+    menu_item_ids,
     menu_items ( id, item_name )
   )
 `;
@@ -42,7 +45,9 @@ export function usePublishedCampaigns() {
         .eq("status", "published")
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as PublishedCampaignRow[];
+      const rows = (data ?? []) as PublishedCampaignRow[];
+      const names = await fetchMenuItemNames(collectMenuItemIds(rows.flatMap((row) => row.campaign_vouchers ?? [])));
+      return rows.map((row) => ({ ...row, menu_item_names: names }));
     },
     staleTime: 15_000,
   });

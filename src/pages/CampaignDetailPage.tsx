@@ -23,7 +23,8 @@ import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
 import { campaignDetailReturnState } from "@/lib/campaignDetailReturnNav";
 import { temperatureAndFulfillmentCustomerLine } from "@/lib/campaignVoucherRulesDisplay";
 import { formatCampaignInstantCompact } from "@/lib/formatCampaignInstant";
-import { voucherNameFromOfferAndMenu } from "@/lib/voucherOfferLabels";
+import { collectMenuItemIds, fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
+import { voucherNameFromOfferAndItem } from "@/lib/voucherOfferLabels";
 import { fixedCampaignRequiresPayment } from "@/lib/campaignClaimPricing";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
 import type { Tables } from "@/integrations/supabase/types";
@@ -163,7 +164,10 @@ export default function CampaignDetailPage() {
         .eq("status", "published")
         .maybeSingle();
       if (error) throw error;
-      return data as PublishedCampaignRow | null;
+      const row = data as PublishedCampaignRow | null;
+      if (!row) return null;
+      const names = await fetchMenuItemNames(collectMenuItemIds(row.campaign_vouchers ?? []));
+      return { ...row, menu_item_names: names };
     },
   });
 
@@ -413,7 +417,15 @@ export default function CampaignDetailPage() {
             ) : (
               <ul className="mt-3 space-y-4">
                 {sortedVouchers.map((cv) => {
-                  const name = voucherNameFromOfferAndMenu(cv.offer_type, cv.menu_items?.item_name);
+                  const name = voucherNameFromOfferAndItem(
+                    cv.offer_type,
+                    {
+                      item_name: cv.menu_items?.item_name,
+                      menu_item_ids: cv.menu_item_ids,
+                      custom_item_text: cv.custom_item_text,
+                    },
+                    campaign.menu_item_names,
+                  );
                   const pool = poolByCvId.get(cv.id);
                   const rulesLine = temperatureAndFulfillmentCustomerLine(cv.temperature_rule, cv.fulfillment_rule);
                   const stockCorner = poolQuery.isLoading ? (

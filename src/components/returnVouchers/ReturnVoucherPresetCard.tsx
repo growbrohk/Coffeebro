@@ -8,15 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MenuItemPicker } from "@/components/campaigns/vouchers/MenuItemPicker";
-import { allowedFulfillmentRules, allowedTemperatureRules } from "@/components/campaigns/vouchers/voucherRules";
+import { VoucherItemScopeFields } from "@/components/campaigns/vouchers/VoucherItemScopeFields";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
+import { dollarMaxForDraft, emptyVoucherItemDraft, resolveVoucherItemRules } from "@/lib/voucherItemDraft";
 import {
   ANY_MENU_ITEM,
   composeDiscountOffer,
   fixedTierFromOfferType,
   isDiscountOffer,
-  maxDollarDiscountForPrice,
   offerKindOf,
   parseDiscountOffer,
   type DiscountOfferKind,
@@ -29,6 +28,8 @@ export type ReturnVoucherPresetDraft = {
   id?: string;
   title: string;
   menu_item_id: string;
+  menu_item_ids: string[];
+  custom_item_text: string;
   offer_type: string;
   redeem_valid_days: number;
   quantity: number;
@@ -46,11 +47,6 @@ type Props = {
   canRemove: boolean;
   disabled?: boolean;
 };
-
-function resolveMenu(value: ReturnVoucherPresetDraft, menuItems: MenuItemRow[]): MenuItemRow | undefined {
-  if (!value.menu_item_id || value.menu_item_id === ANY_MENU_ITEM) return undefined;
-  return menuItems.find((m) => m.id === value.menu_item_id);
-}
 
 function handleOfferKindChange(
   value: ReturnVoucherPresetDraft,
@@ -81,14 +77,17 @@ export function ReturnVoucherPresetCard({
   canRemove,
   disabled,
 }: Props) {
-  const menu = resolveMenu(value, menuItems);
-  const tempOpts = menu ? allowedTemperatureRules(menu) : [];
-  const fulfillOpts = menu ? allowedFulfillmentRules(menu) : [];
+  const { tempOpts, fulfillOpts, rulesEnabled } = resolveVoucherItemRules(value, menuItems);
   const patch = (p: Partial<ReturnVoucherPresetDraft>) => onChange({ ...value, ...p });
   const offerKindValue = offerKindOf(value.offer_type);
   const discount = parseDiscountOffer(value.offer_type);
-  const allowAnyItem = isDiscountOffer(value.offer_type);
-  const dollarMax = discount?.kind === "dollar_discount" ? maxDollarDiscountForPrice(menu?.base_price) : null;
+  const dollarMax = discount?.kind === "dollar_discount" ? dollarMaxForDraft(value, menuItems) : null;
+  const cheapest = dollarMax != null
+    ? Math.min(...menuItems.filter((m) => {
+        if (value.menu_item_id === m.id) return true;
+        return value.menu_item_ids.includes(m.id);
+      }).map((m) => Number(m.base_price)))
+    : null;
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -165,36 +164,19 @@ export function ReturnVoucherPresetCard({
             }}
             disabled={disabled}
           />
-          {discount.kind === "dollar_discount" && menu && dollarMax != null && (
+          {discount.kind === "dollar_discount" && dollarMax != null && cheapest != null && (
             <p className="text-xs text-muted-foreground">
-              Max ${dollarMax} for this item (price ${Number(menu.base_price).toFixed(0)})
+              Max ${dollarMax} for this item (price ${cheapest.toFixed(0)})
             </p>
           )}
         </div>
       )}
-      <div className="grid gap-2">
-        <Label>Menu item</Label>
-        <MenuItemPicker
-          items={menuItems}
-          value={value.menu_item_id}
-          allowAnyItem={allowAnyItem}
-          onChange={(menu_item_id) => {
-            if (menu_item_id === ANY_MENU_ITEM) {
-              patch({
-                menu_item_id,
-                temperature_rule: "all_supported",
-                fulfillment_rule: "all_supported",
-              });
-              return;
-            }
-            const m = menuItems.find((x) => x.id === menu_item_id);
-            const nextTemp = m ? allowedTemperatureRules(m)[0] : "n_a";
-            const nextFul = m ? allowedFulfillmentRules(m)[0] : "all_supported";
-            patch({ menu_item_id, temperature_rule: nextTemp, fulfillment_rule: nextFul });
-          }}
-          disabled={disabled}
-        />
-      </div>
+      <VoucherItemScopeFields
+        value={value}
+        menuItems={menuItems}
+        onChange={patch}
+        disabled={disabled}
+      />
       <div className="grid gap-2">
         <Label>Pool quantity</Label>
         <Input
@@ -221,7 +203,7 @@ export function ReturnVoucherPresetCard({
         <Select
           value={value.temperature_rule}
           onValueChange={(temperature_rule) => patch({ temperature_rule })}
-          disabled={disabled || !menu}
+          disabled={disabled || !rulesEnabled}
         >
           <SelectTrigger>
             <SelectValue />
@@ -240,7 +222,7 @@ export function ReturnVoucherPresetCard({
         <Select
           value={value.fulfillment_rule}
           onValueChange={(fulfillment_rule) => patch({ fulfillment_rule })}
-          disabled={disabled || !menu}
+          disabled={disabled || !rulesEnabled}
         >
           <SelectTrigger>
             <SelectValue />
@@ -262,7 +244,7 @@ export function newReturnVoucherPresetDraft(sort: number): ReturnVoucherPresetDr
   return {
     clientKey: crypto.randomUUID(),
     title: "",
-    menu_item_id: "",
+    ...emptyVoucherItemDraft(),
     offer_type: "free",
     redeem_valid_days: 7,
     quantity: 10,

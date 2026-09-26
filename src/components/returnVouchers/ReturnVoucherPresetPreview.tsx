@@ -1,12 +1,28 @@
+import { useQuery } from "@tanstack/react-query";
 import type { ReturnVoucherPresetWithMenu } from "@/hooks/useReturnVoucherPresets";
-import { voucherOfferLabel, menuItemDisplayName } from "@/lib/voucherOfferLabels";
+import { fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
+import { voucherOfferLabel, voucherItemLabel } from "@/lib/voucherOfferLabels";
 
 type Props = {
   preset: ReturnVoucherPresetWithMenu;
+  menuNamesById?: Record<string, string>;
 };
 
-export function ReturnVoucherPresetPreview({ preset }: Props) {
-  const menuName = menuItemDisplayName(preset.menu_items?.item_name);
+export function ReturnVoucherPresetPreview({ preset, menuNamesById }: Props) {
+  const ids = preset.menu_item_ids ?? [];
+  const { data: fetchedNames } = useQuery({
+    queryKey: ["menu_item_names", ids],
+    enabled: ids.length > 0 && !menuNamesById,
+    queryFn: () => fetchMenuItemNames(ids),
+  });
+  const menuName = voucherItemLabel(
+    {
+      item_name: preset.menu_items?.item_name,
+      menu_item_ids: preset.menu_item_ids,
+      custom_item_text: preset.custom_item_text,
+    },
+    menuNamesById ?? fetchedNames,
+  );
   const offerLabel = voucherOfferLabel(preset.offer_type);
 
   return (

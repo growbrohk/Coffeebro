@@ -376,9 +376,11 @@ export type Database = {
       return_voucher_presets: {
         Row: {
           created_at: string
+          custom_item_text: string | null
           fulfillment_rule: string
           id: string
           menu_item_id: string | null
+          menu_item_ids: string[]
           offer_type: string
           org_id: string
           quantity: number
@@ -390,9 +392,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          custom_item_text?: string | null
           fulfillment_rule: string
           id?: string
           menu_item_id?: string | null
+          menu_item_ids?: string[]
           offer_type: string
           org_id: string
           quantity: number
@@ -404,9 +408,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          custom_item_text?: string | null
           fulfillment_rule?: string
           id?: string
           menu_item_id?: string | null
+          menu_item_ids?: string[]
           offer_type?: string
           org_id?: string
           quantity?: number
@@ -499,9 +505,11 @@ export type Database = {
         Row: {
           campaign_id: string
           created_at: string
+          custom_item_text: string | null
           fulfillment_rule: string
           id: string
           menu_item_id: string | null
+          menu_item_ids: string[]
           offer_type: string
           quantity: number
           redeem_valid_days: number
@@ -512,9 +520,11 @@ export type Database = {
         Insert: {
           campaign_id: string
           created_at?: string
+          custom_item_text?: string | null
           fulfillment_rule: string
           id?: string
           menu_item_id?: string | null
+          menu_item_ids?: string[]
           offer_type: string
           quantity: number
           redeem_valid_days?: number
@@ -525,9 +535,11 @@ export type Database = {
         Update: {
           campaign_id?: string
           created_at?: string
+          custom_item_text?: string | null
           fulfillment_rule?: string
           id?: string
           menu_item_id?: string | null
+          menu_item_ids?: string[]
           offer_type?: string
           quantity?: number
           redeem_valid_days?: number
@@ -1673,6 +1685,14 @@ export type Database = {
           voucher_code: string | null
           voucher_id: string | null
         }[]
+      }
+      voucher_item_label: {
+        Args: {
+          p_custom_item_text: string | null
+          p_menu_item_id: string | null
+          p_menu_item_ids: string[]
+        }
+        Returns: string
       }
       claim_campaign_voucher: {
         Args: { p_campaign_id: string }

@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { MenuItemRow } from "@/hooks/useOrgMenuItems";
-import { ANY_MENU_ITEM } from "@/lib/voucherOfferType";
+import { ANY_MENU_ITEM, CUSTOM_MENU_TEXT, MULTI_MENU_ITEMS } from "@/lib/voucherOfferType";
 
 type Props = {
   items: MenuItemRow[];
@@ -30,6 +30,8 @@ export function MenuItemPicker({ items, value, onChange, disabled, allowAnyItem 
       </SelectTrigger>
       <SelectContent>
         {allowAnyItem && <SelectItem value={ANY_MENU_ITEM}>Any item</SelectItem>}
+        <SelectItem value={MULTI_MENU_ITEMS}>Multi item</SelectItem>
+        <SelectItem value={CUSTOM_MENU_TEXT}>Custom text</SelectItem>
         {items.map((m) => (
           <SelectItem key={m.id} value={m.id}>
             {m.item_name} · {m.category} · ${Number(m.base_price).toFixed(0)}

@@ -34,7 +34,7 @@ import { CampaignReturnVoucherSection } from "@/components/campaigns/sections/Ca
 import type { VoucherDraft } from "@/components/campaigns/vouchers/VoucherDefinitionCard";
 import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 import { safeParseCampaignForm } from "@/lib/campaignFormSchema";
-import { ANY_MENU_ITEM, menuItemIdFromDb } from "@/lib/voucherOfferType";
+import { menuItemModeFromDb } from "@/lib/voucherOfferType";
 import { useToast } from "@/hooks/use-toast";
 import { readCampaignDetailReturnTo } from "@/lib/campaignDetailReturnNav";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -57,7 +57,9 @@ function vouchersFromCampaign(c: CampaignWithVouchers): VoucherDraft[] {
   return (c.campaign_vouchers ?? []).map((cv, i) => ({
     clientKey: cv.id,
     id: cv.id,
-    menu_item_id: menuItemIdFromDb(cv.menu_item_id),
+    menu_item_id: menuItemModeFromDb(cv),
+    menu_item_ids: cv.menu_item_ids ?? [],
+    custom_item_text: cv.custom_item_text ?? "",
     offer_type: cv.offer_type,
     redeem_valid_days: cv.redeem_valid_days,
     quantity: cv.quantity,
@@ -166,12 +168,16 @@ export default function OrgCampaignEditorPage() {
     () =>
       vouchers.map((v) => ({
         offer_type: v.offer_type,
-        item_name:
-          v.menu_item_id && v.menu_item_id !== ANY_MENU_ITEM
-            ? menuItems.find((m) => m.id === v.menu_item_id)?.item_name ?? null
-            : null,
+        item_name: menuItems.find((m) => m.id === v.menu_item_id)?.item_name ?? null,
+        menu_item_ids: v.menu_item_ids,
+        custom_item_text: v.custom_item_text,
       })),
     [vouchers, menuItems],
+  );
+
+  const menuNamesById = useMemo(
+    () => Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
+    [menuItems],
   );
 
   const treasureQrFlyerTitle = useMemo(() => {
@@ -179,9 +185,10 @@ export default function OrgCampaignEditorPage() {
       campaignType,
       rewardMode,
       vouchers: previewVouchers,
+      menuNamesById,
     });
     return displayTitle.trim() || autoTitle;
-  }, [displayTitle, campaignType, rewardMode, previewVouchers]);
+  }, [displayTitle, campaignType, rewardMode, previewVouchers, menuNamesById]);
 
   const handleHintImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -226,6 +233,7 @@ export default function OrgCampaignEditorPage() {
       campaignType,
       rewardMode,
       vouchers: previewVouchers,
+      menuNamesById,
     });
     const finalTitle = displayTitle.trim() || autoTitle;
 
@@ -299,6 +307,8 @@ export default function OrgCampaignEditorPage() {
       vouchers: vouchers.map((v, i) => ({
         ...(v.id ? { id: v.id } : {}),
         menu_item_id: v.menu_item_id,
+        menu_item_ids: v.menu_item_ids,
+        custom_item_text: v.custom_item_text,
         offer_type: v.offer_type,
         redeem_valid_days: v.redeem_valid_days,
         quantity: v.quantity,
@@ -319,6 +329,8 @@ export default function OrgCampaignEditorPage() {
     const voucherRows = d.vouchers.map((v, i) => ({
       id: v.id,
       menu_item_id: v.menu_item_id,
+      menu_item_ids: v.menu_item_ids,
+      custom_item_text: v.custom_item_text,
       offer_type: v.offer_type,
       redeem_valid_days: v.redeem_valid_days,
       quantity: v.quantity,

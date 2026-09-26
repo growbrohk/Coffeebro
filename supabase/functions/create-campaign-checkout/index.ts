@@ -234,14 +234,24 @@ Deno.serve(async (req) => {
 
   const { data: voucherRow } = await admin
     .from('campaign_vouchers')
-    .select('offer_type, menu_item_id')
+    .select('offer_type, menu_item_id, menu_item_ids, custom_item_text')
     .eq('campaign_id', campaignId)
     .order('sort_order', { ascending: true })
     .limit(1)
     .maybeSingle();
 
-  let menuItemName = 'Reward';
-  if (voucherRow?.menu_item_id) {
+  let menuItemName = 'Any item';
+  const customText = voucherRow?.custom_item_text?.trim();
+  if (customText) {
+    menuItemName = customText;
+  } else if (voucherRow?.menu_item_ids && voucherRow.menu_item_ids.length > 0) {
+    const { data: items } = await admin
+      .from('menu_items')
+      .select('item_name')
+      .in('id', voucherRow.menu_item_ids);
+    const names = (items ?? []).map((item) => item.item_name?.trim()).filter(Boolean);
+    if (names.length) menuItemName = names.join(', ');
+  } else if (voucherRow?.menu_item_id) {
     const { data: mi } = await admin
       .from('menu_items')
       .select('item_name')

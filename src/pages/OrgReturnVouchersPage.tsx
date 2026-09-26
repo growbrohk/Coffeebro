@@ -25,14 +25,17 @@ import {
 } from "@/components/returnVouchers/ReturnVoucherPresetCard";
 import { useToast } from "@/hooks/use-toast";
 import { validateVoucherOfferLine } from "@/lib/campaignFormSchema";
-import { menuItemIdFromDb, menuItemIdToDb } from "@/lib/voucherOfferType";
+import { CUSTOM_MENU_TEXT, MULTI_MENU_ITEMS, menuItemModeFromDb, menuItemScopeToDb } from "@/lib/voucherOfferType";
+import { voucherItemLabel } from "@/lib/voucherOfferLabels";
 
 function presetToDraft(row: ReturnVoucherPresetWithMenu, index: number): ReturnVoucherPresetDraft {
   return {
     clientKey: row.id,
     id: row.id,
     title: row.title,
-    menu_item_id: menuItemIdFromDb(row.menu_item_id),
+    menu_item_id: menuItemModeFromDb(row),
+    menu_item_ids: row.menu_item_ids ?? [],
+    custom_item_text: row.custom_item_text ?? "",
     offer_type: row.offer_type,
     redeem_valid_days: row.redeem_valid_days,
     quantity: row.quantity,
@@ -47,8 +50,13 @@ function validateDraft(
   getMenuItem: (id: string) => { base_price: number } | undefined,
 ): string | null {
   if (!draft.title.trim()) return "Title is required";
-  const menuItemId = menuItemIdToDb(draft.menu_item_id);
-  const offerErr = validateVoucherOfferLine(draft.offer_type, menuItemId, getMenuItem);
+  if (draft.menu_item_id === MULTI_MENU_ITEMS && draft.menu_item_ids.length === 0) {
+    return "Select at least one menu item";
+  }
+  if (draft.menu_item_id === CUSTOM_MENU_TEXT && !draft.custom_item_text.trim()) {
+    return "Enter custom text";
+  }
+  const offerErr = validateVoucherOfferLine(draft.offer_type, menuItemScopeToDb(draft), getMenuItem);
   if (offerErr) return offerErr;
   if (!Number.isFinite(draft.quantity) || draft.quantity < 1) return "Pool quantity must be at least 1";
   if (!Number.isFinite(draft.redeem_valid_days) || draft.redeem_valid_days < 1 || draft.redeem_valid_days > 90) {
@@ -93,7 +101,7 @@ export default function OrgReturnVouchersPage() {
       await upsert.mutateAsync({
         id: draft.id,
         title: draft.title.trim(),
-        menu_item_id: menuItemIdToDb(draft.menu_item_id),
+        ...menuItemScopeToDb(draft),
         offer_type: draft.offer_type,
         redeem_valid_days: draft.redeem_valid_days,
         quantity: draft.quantity,
@@ -201,7 +209,15 @@ export default function OrgReturnVouchersPage() {
               >
                 <p className="font-semibold">{preset.title}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {preset.menu_items?.item_name ?? "Menu item"} · pool {preset.quantity} · {preset.redeem_valid_days} days
+                  {voucherItemLabel(
+                    {
+                      item_name: preset.menu_items?.item_name,
+                      menu_item_ids: preset.menu_item_ids,
+                      custom_item_text: preset.custom_item_text,
+                    },
+                    Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
+                  )}{" "}
+                  · pool {preset.quantity} · {preset.redeem_valid_days} days
                 </p>
               </button>
             ))}

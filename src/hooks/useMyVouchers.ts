@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { normalizeClaimSpot } from "@/lib/campaignToMapItem";
-import { voucherNameFromOfferAndMenu, voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { fetchMenuItemNames } from "@/lib/fetchMenuItemNames";
+import { voucherItemLabel, voucherNameFromOfferAndItem, voucherOfferLabel } from "@/lib/voucherOfferLabels";
 import { formatTastingDuoDisplay } from "@/lib/formatTastingDuoDisplay";
 import { dayLineForDate } from "@/lib/openingHours";
 import { walletRedeemLocation } from "@/lib/walletRedeemLocation";
@@ -165,6 +166,8 @@ const MY_VOUCHERS_SELECT = `
           return_voucher_presets (
             title,
             offer_type,
+            custom_item_text,
+            menu_item_ids,
             menu_items ( id, item_name )
           ),
           tasting_package_items (
@@ -182,6 +185,8 @@ const MY_VOUCHERS_SELECT = `
           vouchers_catalog ( title, menu_item_id, menu_items ( id, item_name ) ),
           campaign_vouchers (
             offer_type,
+            custom_item_text,
+            menu_item_ids,
             menu_items ( id, item_name ),
             campaigns (
               display_title,
@@ -218,6 +223,18 @@ async function fetchMyVouchers(
   const { data: vouchers, error } = await query.order("created_at", { ascending: false });
 
   if (error) throw error;
+
+  const menuNameIds = new Set<string>();
+  for (const raw of vouchers ?? []) {
+    const v = raw as Record<string, unknown>;
+    const rvpRaw = v.return_voucher_presets;
+    const rvp = (Array.isArray(rvpRaw) ? rvpRaw[0] : rvpRaw) as { menu_item_ids?: string[] } | null;
+    const cvRaw = v.campaign_vouchers;
+    const cv = (Array.isArray(cvRaw) ? cvRaw[0] : cvRaw) as { menu_item_ids?: string[] } | null;
+    for (const id of rvp?.menu_item_ids ?? []) menuNameIds.add(id);
+    for (const id of cv?.menu_item_ids ?? []) menuNameIds.add(id);
+  }
+  const menuNamesById = await fetchMenuItemNames([...menuNameIds]);
 
   const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
         const tastingPurchaseRaw = v.tasting_package_purchases;
@@ -335,6 +352,8 @@ async function fetchMyVouchers(
           | {
               title: string;
               offer_type: string;
+              custom_item_text?: string | null;
+              menu_item_ids?: string[] | null;
               menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null;
             }
           | null
@@ -356,7 +375,14 @@ async function fetchMyVouchers(
           const rawPresetMenu = returnPreset.menu_items;
           const presetMenu = Array.isArray(rawPresetMenu) ? rawPresetMenu[0] : rawPresetMenu;
           const menu = menuDirect ?? presetMenu;
-          const menuName = menu?.item_name?.trim() ?? null;
+          const menuName = voucherItemLabel(
+            {
+              item_name: menu?.item_name,
+              menu_item_ids: returnPreset.menu_item_ids,
+              custom_item_text: returnPreset.custom_item_text,
+            },
+            menuNamesById,
+          );
 
           const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
             walletRedeemLocation(
@@ -373,7 +399,15 @@ async function fetchMyVouchers(
             );
 
           const title =
-            voucherNameFromOfferAndMenu(returnPreset.offer_type, menuName) ??
+            voucherNameFromOfferAndItem(
+              returnPreset.offer_type,
+              {
+                item_name: menu?.item_name,
+                menu_item_ids: returnPreset.menu_item_ids,
+                custom_item_text: returnPreset.custom_item_text,
+              },
+              menuNamesById,
+            ) ??
             returnPreset.title?.trim() ??
             "Return voucher";
 
@@ -471,6 +505,8 @@ async function fetchMyVouchers(
         const cv = (Array.isArray(rawCv) ? rawCv[0] : rawCv) as
           | {
               offer_type: string;
+              custom_item_text?: string | null;
+              menu_item_ids?: string[] | null;
               menu_items: { id: string; item_name: string } | null;
               campaigns: {
                 display_title: string | null;
@@ -507,7 +543,15 @@ async function fetchMyVouchers(
         const menu = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
         const voucherName =
           cv?.offer_type != null && String(cv.offer_type).trim() !== ""
-            ? voucherNameFromOfferAndMenu(cv.offer_type, menu?.item_name)
+            ? voucherNameFromOfferAndItem(
+                cv.offer_type,
+                {
+                  item_name: menu?.item_name,
+                  menu_item_ids: cv.menu_item_ids,
+                  custom_item_text: cv.custom_item_text,
+                },
+                menuNamesById,
+              )
             : null;
         const title =
           voucherName ??
@@ -560,7 +604,14 @@ async function fetchMyVouchers(
           thumbnail_url: thumb,
           campaign_id: (v.campaign_id as string | null) ?? undefined,
           menu_item_id: menu?.id ?? null,
-          menu_item_name: menu?.item_name?.trim() ?? null,
+          menu_item_name: voucherItemLabel(
+            {
+              item_name: menu?.item_name,
+              menu_item_ids: cv?.menu_item_ids,
+              custom_item_text: cv?.custom_item_text,
+            },
+            menuNamesById,
+          ),
           campaign_details: campaignDetails,
           redeem_directions_url: redeemDirectionsUrl,
           pickup_spot_label: pickup_spot_label ?? null,

@@ -1,4 +1,7 @@
 export const ANY_MENU_ITEM = "__any__";
+export const MULTI_MENU_ITEMS = "__multi__";
+export const CUSTOM_MENU_TEXT = "__custom__";
+export const CUSTOM_ITEM_TEXT_MAX = 80;
 
 export const FIXED_PRICE_TIERS = [
   "fixed_price_7",
@@ -75,9 +78,18 @@ export function offerKindOf(offerType: string): OfferKind {
   return "free";
 }
 
+export function isMenuItemSentinel(menuItemId: string | null | undefined): boolean {
+  return (
+    !menuItemId ||
+    menuItemId === ANY_MENU_ITEM ||
+    menuItemId === MULTI_MENU_ITEMS ||
+    menuItemId === CUSTOM_MENU_TEXT
+  );
+}
+
 /** UI sentinel / empty string → DB null */
 export function menuItemIdToDb(menuItemId: string | null | undefined): string | null {
-  if (!menuItemId || menuItemId === ANY_MENU_ITEM) return null;
+  if (isMenuItemSentinel(menuItemId)) return null;
   return menuItemId;
 }
 
@@ -85,6 +97,45 @@ export function menuItemIdToDb(menuItemId: string | null | undefined): string | 
 export function menuItemIdFromDb(menuItemId: string | null | undefined): string {
   if (!menuItemId) return ANY_MENU_ITEM;
   return menuItemId;
+}
+
+export type VoucherItemScopeRow = {
+  menu_item_id?: string | null;
+  menu_item_ids?: string[] | null;
+  custom_item_text?: string | null;
+};
+
+/** Restore the editor mode from stored columns. */
+export function menuItemModeFromDb(row: VoucherItemScopeRow): string {
+  const text = row.custom_item_text?.trim();
+  if (text) return CUSTOM_MENU_TEXT;
+  if (row.menu_item_ids && row.menu_item_ids.length > 0) return MULTI_MENU_ITEMS;
+  return menuItemIdFromDb(row.menu_item_id);
+}
+
+export type VoucherItemScopeDb = {
+  menu_item_id: string | null;
+  menu_item_ids: string[];
+  custom_item_text: string | null;
+};
+
+export function menuItemScopeToDb(draft: {
+  menu_item_id: string;
+  menu_item_ids?: string[];
+  custom_item_text?: string;
+}): VoucherItemScopeDb {
+  if (draft.menu_item_id === CUSTOM_MENU_TEXT) {
+    const text = draft.custom_item_text?.trim() ?? "";
+    return { menu_item_id: null, menu_item_ids: [], custom_item_text: text || null };
+  }
+  if (draft.menu_item_id === MULTI_MENU_ITEMS) {
+    return { menu_item_id: null, menu_item_ids: draft.menu_item_ids ?? [], custom_item_text: null };
+  }
+  return {
+    menu_item_id: menuItemIdToDb(draft.menu_item_id),
+    menu_item_ids: [],
+    custom_item_text: null,
+  };
 }
 
 /** Whether this offer can be used without a specific menu item */
