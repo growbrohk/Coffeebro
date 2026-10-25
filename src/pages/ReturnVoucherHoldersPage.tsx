@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Filter, Search } from "lucide-react";
+import { ArrowLeft, Download, Filter, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgStaff } from "@/hooks/useOrgStaff";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { canViewCampaignParticipants } from "@/lib/canViewCampaignParticipants";
+import { downloadCsv, rowsToCsv } from "@/lib/exportCsv";
 import { returnVoucherHolderStatus } from "@/lib/returnVoucherState";
 
 const ALL_STATUSES_VALUE = "all";
@@ -62,6 +63,21 @@ function holderStatus(row: ReturnVoucherHolderRow): string {
     expiresAt: row.expires_at,
     redeemableFrom: row.redeemable_from,
   });
+}
+
+function isoOrEmpty(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString();
+}
+
+function holdersCsvFilename(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${slug || "holders"}.csv`;
 }
 
 function holderSearchHaystack(row: ReturnVoucherHolderRow): string {
@@ -124,6 +140,24 @@ export default function ReturnVoucherHoldersPage() {
     if (!query) return out;
     return out.filter((row) => holderSearchHaystack(row).includes(query));
   }, [rows, effectiveStatus, searchQuery]);
+
+  const downloadList = () => {
+    if (!preset || filteredRows.length === 0) return;
+    const csvRows = filteredRows.map((row) => ({
+      user: row.owner_name || row.owner_id,
+      code: row.code,
+      status: holderStatus(row),
+      issued: isoOrEmpty(row.created_at),
+      redeemed: isoOrEmpty(row.redeemed_at),
+      expires: isoOrEmpty(row.expires_at),
+    }));
+    const csv = rowsToCsv(
+      ["User", "Code", "Status", "Issued", "Redeemed", "Expires"],
+      csvRows,
+      ["user", "code", "status", "issued", "redeemed", "expires"],
+    );
+    downloadCsv(holdersCsvFilename(preset.title), `\uFEFF${csv}`);
+  };
 
   const summary = useMemo(() => {
     let redeemed = 0;
@@ -271,6 +305,17 @@ export default function ReturnVoucherHoldersPage() {
               autoComplete="off"
               aria-label="Search holders"
             />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-full"
+              aria-label="Download list"
+              disabled={rowsLoading || filteredRows.length === 0}
+              onClick={downloadList}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
             <Popover open={filterOpen} onOpenChange={setFilterOpen}>
               <PopoverTrigger asChild>
                 <Button
