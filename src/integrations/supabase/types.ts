@@ -1402,6 +1402,10 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: undefined
       }
+      delete_return_voucher_holders: {
+        Args: { p_preset_id: string; p_voucher_ids: string[] }
+        Returns: number
+      }
       finalize_receipt_scan: {
         Args: {
           p_org_id: string

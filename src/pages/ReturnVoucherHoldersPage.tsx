@@ -1,16 +1,29 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Filter, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOrgStaff } from "@/hooks/useOrgStaff";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
+import { useToast } from "@/hooks/use-toast";
 import { useReturnVoucherPresets } from "@/hooks/useReturnVoucherPresets";
 import {
+  useDeleteReturnVoucherHolders,
   useReturnVoucherHolders,
   type ReturnVoucherHolderRow,
 } from "@/hooks/useReturnVoucherHolders";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
@@ -33,6 +46,8 @@ import { returnVoucherHolderStatus } from "@/lib/returnVoucherState";
 const ALL_STATUSES_VALUE = "all";
 
 const HOLDER_STATUS_ORDER = ["not yet valid", "active", "expired", "redeemed", "refunded"];
+
+const DELETE_ROLES = new Set(["owner", "host", "manager"]);
 
 function formatWhen(iso: string | null): string {
   if (!iso) return "—";
@@ -69,10 +84,23 @@ export default function ReturnVoucherHoldersPage() {
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: presets = [], isLoading: presetsLoading } = useReturnVoucherPresets(orgId);
   const { data: rows = [], isLoading: rowsLoading, error } = useReturnVoucherHolders(presetId);
+  const removeHolders = useDeleteReturnVoucherHolders(presetId);
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL_STATUSES_VALUE);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const live = new Set(rows.map((row) => row.voucher_id));
+      const next = new Set([...prev].filter((id) => live.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [rows]);
 
   const preset = presets.find((row) => row.id === presetId) ?? null;
 
@@ -117,6 +145,71 @@ export default function ReturnVoucherHoldersPage() {
       orgOwnerUserId: org?.owner_user_id ?? null,
       staffAssignments,
     });
+
+  const canDelete =
+    isSuperAdmin ||
+    org?.owner_user_id === user?.id ||
+    staffAssignments.some((assignment) => assignment.org_id === orgId && DELETE_ROLES.has(assignment.role));
+
+  const selectedRows = useMemo(
+    () => rows.filter((row) => selectedIds.has(row.voucher_id)),
+    [rows, selectedIds],
+  );
+  const selectedRedeemed = selectedRows.filter((row) => holderStatus(row) === "redeemed").length;
+  const visibleSelectedCount = filteredRows.filter((row) => selectedIds.has(row.voucher_id)).length;
+  const headerChecked: boolean | "indeterminate" =
+    filteredRows.length > 0 && visibleSelectedCount === filteredRows.length
+      ? true
+      : visibleSelectedCount > 0
+        ? "indeterminate"
+        : false;
+
+  const toggleFiltered = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allVisibleSelected = filteredRows.every((row) => next.has(row.voucher_id));
+      if (allVisibleSelected) {
+        for (const row of filteredRows) next.delete(row.voucher_id);
+      } else {
+        for (const row of filteredRows) next.add(row.voucher_id);
+      }
+      return next;
+    });
+  };
+
+  const toggleRow = (voucherId: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(voucherId);
+      else next.delete(voucherId);
+      return next;
+    });
+  };
+
+  const handleDelete = async () => {
+    const requested = selectedIds.size;
+    try {
+      const deleted = await removeHolders.mutateAsync([...selectedIds]);
+      setSelectedIds(new Set());
+      setConfirmOpen(false);
+      if (deleted < requested) {
+        toast({
+          title: `Removed ${deleted} of ${requested}`,
+          description: "The rest were already gone.",
+        });
+      } else {
+        toast({
+          title: deleted === 1 ? "Removed 1 voucher" : `Removed ${deleted} vouchers`,
+        });
+      }
+    } catch (e) {
+      toast({
+        title: "Delete failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (authLoading || roleLoading || staffLoading || orgLoading || presetsLoading) {
     return (
@@ -229,10 +322,17 @@ export default function ReturnVoucherHoldersPage() {
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
-              {summary.issued} issued of pool {preset.quantity} · {summary.redeemed} redeemed · {summary.active}{" "}
-              active
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                {summary.issued} issued of pool {preset.quantity} · {summary.redeemed} redeemed · {summary.active}{" "}
+                active
+              </p>
+              {canDelete && selectedRows.length > 0 ? (
+                <Button type="button" variant="destructive" size="sm" onClick={() => setConfirmOpen(true)}>
+                  Delete from wallets ({selectedRows.length})
+                </Button>
+              ) : null}
+            </div>
             {rows.length === 0 ? (
               <p className="text-sm text-muted-foreground">No vouchers issued yet.</p>
             ) : filteredRows.length === 0 ? (
@@ -241,6 +341,15 @@ export default function ReturnVoucherHoldersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canDelete ? (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={headerChecked}
+                          onCheckedChange={() => toggleFiltered()}
+                          aria-label="Select shown holders"
+                        />
+                      </TableHead>
+                    ) : null}
                     <TableHead>User</TableHead>
                     <TableHead>Code</TableHead>
                     <TableHead>Status</TableHead>
@@ -252,6 +361,15 @@ export default function ReturnVoucherHoldersPage() {
                 <TableBody>
                   {filteredRows.map((row) => (
                     <TableRow key={row.voucher_id}>
+                      {canDelete ? (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(row.voucher_id)}
+                            onCheckedChange={(checked) => toggleRow(row.voucher_id, checked === true)}
+                            aria-label={`Select ${row.owner_name || row.code}`}
+                          />
+                        </TableCell>
+                      ) : null}
                       <TableCell>{row.owner_name || row.owner_id}</TableCell>
                       <TableCell className="font-mono text-xs">{row.code}</TableCell>
                       <TableCell>{holderStatus(row)}</TableCell>
@@ -266,6 +384,37 @@ export default function ReturnVoucherHoldersPage() {
           </>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedRows.length} {selectedRows.length === 1 ? "voucher" : "vouchers"} from wallets?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedRows.length === 1 ? "This voucher leaves" : "These vouchers leave"} the holder
+              {selectedRows.length === 1 ? "" : "s"}&apos; wallet
+              {selectedRows.length === 1 ? "" : "s"}. This cannot be undone.
+              {selectedRedeemed > 0
+                ? ` ${selectedRedeemed} redeemed ${selectedRedeemed === 1 ? "voucher" : "vouchers"} will also lose ${selectedRedeemed === 1 ? "its" : "their"} visit log and review.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removeHolders.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeHolders.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDelete();
+              }}
+            >
+              {removeHolders.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
