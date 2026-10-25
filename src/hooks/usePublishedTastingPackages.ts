@@ -192,6 +192,9 @@ export function useTastingPackagePurchaseBySession(sessionId: string | null | un
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       if (status === "minted" || status === "failed") return false;
+      // ~60s at 1.5s. Failures count too, so a stuck request cannot poll forever.
+      const updates = query.state.dataUpdateCount + query.state.errorUpdateCount;
+      if (updates >= 40) return false;
       return 1500;
     },
   });

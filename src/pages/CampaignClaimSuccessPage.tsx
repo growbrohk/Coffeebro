@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Gift, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RedeemCodeCard } from "@/components/RedeemCodeCard";
-import { useMyCampaignVouchers } from "@/hooks/useMyVouchers";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { publishedCampaignsQueryKey } from "@/hooks/usePublishedCampaigns";
 import { campaignVoucherPoolsQueryKey } from "@/hooks/usePublishedCampaignVoucherPools";
+
+const CLAIM_POLL_MS = 1500;
+const CLAIM_POLL_LIMIT_MS = 12_000;
 
 export default function CampaignClaimSuccessPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
@@ -21,10 +25,35 @@ export default function CampaignClaimSuccessPage() {
   const sessionId = searchParams.get("session_id");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: forCampaign = [], isLoading, refetch, isFetching } =
-    useMyCampaignVouchers(campaignId);
-
+  const { user } = useAuth();
+  const pollStartedAtRef = useRef<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+
+  const polling = Boolean(user?.id && campaignId && sessionId);
+  if (polling && pollStartedAtRef.current == null) {
+    pollStartedAtRef.current = Date.now();
+  }
+
+  const { data: forCampaign = [], isLoading, isFetching } = useQuery({
+    queryKey: ["campaign-claim-success", user?.id, campaignId],
+    queryFn: async () => {
+      if (!user || !campaignId) return [];
+      const { data, error } = await supabase
+        .from("vouchers")
+        .select("id, code")
+        .eq("owner_id", user.id)
+        .eq("campaign_id", campaignId);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: polling,
+    refetchInterval: (query) => {
+      if ((query.state.data?.length ?? 0) > 0) return false;
+      const started = pollStartedAtRef.current;
+      if (started != null && Date.now() - started >= CLAIM_POLL_LIMIT_MS) return false;
+      return CLAIM_POLL_MS;
+    },
+  });
 
   useEffect(() => {
     void queryClient.invalidateQueries({ queryKey: ["vouchers", "my"] });
@@ -33,19 +62,12 @@ export default function CampaignClaimSuccessPage() {
   }, [queryClient]);
 
   useEffect(() => {
-    if (!sessionId || !campaignId) return;
-
-    const started = Date.now();
-    const iv = window.setInterval(() => {
-      void refetch();
-      if (Date.now() - started > 12_000) {
-        setTimedOut(true);
-        window.clearInterval(iv);
-      }
-    }, 1500);
-
-    return () => window.clearInterval(iv);
-  }, [sessionId, campaignId, refetch]);
+    if (!polling || forCampaign.length > 0) return;
+    const started = pollStartedAtRef.current ?? Date.now();
+    const remaining = Math.max(0, CLAIM_POLL_LIMIT_MS - (Date.now() - started));
+    const timeoutId = window.setTimeout(() => setTimedOut(true), remaining);
+    return () => window.clearTimeout(timeoutId);
+  }, [polling, forCampaign.length]);
 
   const successOpen = forCampaign.length > 0;
 
