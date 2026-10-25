@@ -23,14 +23,46 @@ export const RETURN_VOUCHER_FILTER_ORDER: ReturnVoucherState[] = [
   "not_applicable",
 ];
 
+export type ReturnVoucherHolderStatus =
+  | "active"
+  | "not yet valid"
+  | "expired"
+  | "redeemed"
+  | "refunded";
+
+const STORED_HOLDER_STATUSES = new Set<ReturnVoucherHolderStatus>(["expired", "redeemed", "refunded"]);
+
+/** Wallet-aligned status for an issued voucher. `active` past `expiresAt` is expired. */
+export function returnVoucherHolderStatus(input: {
+  status: string | null;
+  expiresAt: string | null;
+  redeemableFrom?: string | null;
+  now?: number;
+}): ReturnVoucherHolderStatus | string {
+  const status = input.status ?? "";
+  if (STORED_HOLDER_STATUSES.has(status as ReturnVoucherHolderStatus)) {
+    return status;
+  }
+  const now = input.now ?? Date.now();
+  if (status === "active") {
+    if (input.expiresAt) {
+      const deadline = new Date(input.expiresAt).getTime();
+      if (!Number.isNaN(deadline) && deadline < now) return "expired";
+    }
+    if (input.redeemableFrom) {
+      const start = new Date(input.redeemableFrom).getTime();
+      if (!Number.isNaN(start) && start > now) return "not yet valid";
+    }
+    return "active";
+  }
+  return status;
+}
+
 function isReturnVoucherExpired(
   status: string | null,
   expiresAt: string | null,
 ): boolean {
-  if (status === "expired") return true;
-  if (status !== "active" || !expiresAt) return false;
-  const deadline = new Date(expiresAt).getTime();
-  return !Number.isNaN(deadline) && deadline < Date.now();
+  return returnVoucherHolderStatus({ status, expiresAt, redeemableFrom: null }) === "expired";
 }
 
 export function returnVoucherState(r: CampaignParticipantRow): ReturnVoucherState {

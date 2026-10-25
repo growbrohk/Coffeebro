@@ -27,6 +27,7 @@ import OrgMenuPage from "./pages/OrgMenuPage";
 import OrgCampaignsPage from "./pages/OrgCampaignsPage";
 import OrgCampaignEditorPage from "./pages/OrgCampaignEditorPage";
 import OrgReturnVouchersPage from "./pages/OrgReturnVouchersPage";
+import ReturnVoucherHoldersPage from "./pages/ReturnVoucherHoldersPage";
 import CampaignParticipantsPage from "./pages/CampaignParticipantsPage";
 import CampaignDetailPage from "./pages/CampaignDetailPage";
 import CampaignCheckoutPage from "./pages/CampaignCheckoutPage";
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/host/org/:orgId" element={<HostOrgEditPage />} />
               <Route path="/org/:orgId/menu" element={<OrgMenuPage />} />
               <Route path="/org/:orgId/vouchers" element={<OrgReturnVouchersPage />} />
+              <Route path="/org/:orgId/vouchers/:presetId/holders" element={<ReturnVoucherHoldersPage />} />
               <Route path="/org/:orgId/campaigns" element={<OrgCampaignsPage />} />
               <Route path="/org/:orgId/campaigns/:campaignId" element={<OrgCampaignEditorPage />} />
               <Route

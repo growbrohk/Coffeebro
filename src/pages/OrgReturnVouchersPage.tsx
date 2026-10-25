@@ -227,25 +227,38 @@ export default function OrgReturnVouchersPage() {
         ) : (
           <div className="space-y-3">
             {presets.map((preset, index) => (
-              <button
+              <div
                 key={preset.id}
-                type="button"
-                className="w-full rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30"
-                onClick={() => openEdit(preset, index)}
+                className="w-full rounded-xl border border-border bg-card p-4 text-left"
               >
-                <p className="font-semibold">{preset.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {voucherItemLabel(
-                    {
-                      item_name: preset.menu_items?.item_name,
-                      menu_item_ids: preset.menu_item_ids,
-                      custom_item_text: preset.custom_item_text,
-                    },
-                    Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
-                  )}{" "}
-                  · pool {preset.quantity} · {formatReturnVoucherPeriodLabel(preset)}
-                </p>
-              </button>
+                <button
+                  type="button"
+                  className="w-full text-left transition-colors hover:opacity-80"
+                  onClick={() => openEdit(preset, index)}
+                >
+                  <p className="font-semibold">{preset.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {voucherItemLabel(
+                      {
+                        item_name: preset.menu_items?.item_name,
+                        menu_item_ids: preset.menu_item_ids,
+                        custom_item_text: preset.custom_item_text,
+                      },
+                      Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
+                    )}{" "}
+                    · pool {preset.quantity} · {formatReturnVoucherPeriodLabel(preset)}
+                  </p>
+                </button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => navigate(`/org/${orgId}/vouchers/${preset.id}/holders`)}
+                >
+                  View holders
+                </Button>
+              </div>
             ))}
           </div>
         )}

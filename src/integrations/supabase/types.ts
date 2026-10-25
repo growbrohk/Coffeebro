@@ -1768,6 +1768,20 @@ export type Database = {
           voucher_id: string
         }[]
       }
+      list_return_voucher_holders: {
+        Args: { p_preset_id: string }
+        Returns: {
+          code: string
+          created_at: string
+          expires_at: string | null
+          owner_id: string
+          owner_name: string
+          redeemable_from: string | null
+          redeemed_at: string | null
+          status: string
+          voucher_id: string
+        }[]
+      }
       list_tasting_package_sales: {
         Args: { p_package_id?: string | null }
         Returns: {
