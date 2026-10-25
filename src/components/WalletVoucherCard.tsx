@@ -15,6 +15,7 @@ import {
   isVoucherWalletExpired,
 } from '@/hooks/useMyVouchers';
 import { useLogCoffeeEntry } from '@/hooks/useLogCoffeeEntry';
+import { supabase } from '@/integrations/supabase/client';
 
 function inactiveLabel(status: MyVoucher['status']): string {
   if (status === 'redeemed') return 'redeemed';
@@ -53,16 +54,41 @@ export function WalletVoucherCard({ voucher }: WalletVoucherCardProps) {
   useEffect(() => {
     if (!qrOpen || !user?.id) return;
 
-    const walletKey = ['vouchers', 'my', user.id] as const;
-    const tick = () => {
-      void queryClient.invalidateQueries({ queryKey: walletKey });
-      void queryClient.refetchQueries({ queryKey: walletKey, type: 'active' });
+    const ownerId = user.id;
+    const walletKey = ['vouchers', 'my', ownerId] as const;
+    let cancelled = false;
+    let inFlight = false;
+    let stopped = false;
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+
+    const tick = async () => {
+      if (cancelled || stopped || inFlight) return;
+      inFlight = true;
+      try {
+        const { data, error } = await supabase
+          .from('vouchers')
+          .select('status')
+          .eq('id', voucher.id)
+          .eq('owner_id', ownerId)
+          .maybeSingle();
+        if (cancelled || stopped || error || data?.status !== 'redeemed') return;
+        stopped = true;
+        if (intervalId) clearInterval(intervalId);
+        void queryClient.invalidateQueries({ queryKey: walletKey });
+      } finally {
+        inFlight = false;
+      }
     };
 
-    tick();
-    const id = setInterval(tick, QR_POLL_MS);
-    return () => clearInterval(id);
-  }, [qrOpen, user?.id, queryClient]);
+    void tick();
+    intervalId = setInterval(() => {
+      void tick();
+    }, QR_POLL_MS);
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [qrOpen, user?.id, queryClient, voucher.id]);
 
   const isActive = isVoucherWalletActive(voucher);
   const isExpired = isVoucherWalletExpired(voucher);

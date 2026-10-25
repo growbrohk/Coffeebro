@@ -11,16 +11,21 @@ export function collectMenuItemIds(
   return [...ids];
 }
 
-export async function fetchMenuItemDetails(ids: string[]): Promise<{
+export async function fetchMenuItemDetails(
+  ids: string[],
+  signal?: AbortSignal,
+): Promise<{
   names: Record<string, string>;
   prices: Record<string, number>;
 }> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return { names: {}, prices: {} };
-  const { data, error } = await supabase
+  let query = supabase
     .from("menu_items")
     .select("id, item_name, base_price")
     .in("id", unique);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query;
   if (error) throw error;
   const names: Record<string, string> = {};
   const prices: Record<string, number> = {};
@@ -31,7 +36,10 @@ export async function fetchMenuItemDetails(ids: string[]): Promise<{
   return { names, prices };
 }
 
-export async function fetchMenuItemNames(ids: string[]): Promise<Record<string, string>> {
-  const { names } = await fetchMenuItemDetails(ids);
+export async function fetchMenuItemNames(
+  ids: string[],
+  signal?: AbortSignal,
+): Promise<Record<string, string>> {
+  const { names } = await fetchMenuItemDetails(ids, signal);
   return names;
 }

@@ -172,8 +172,8 @@ const MY_VOUCHERS_SELECT = `
             title,
             offer_type,
             custom_item_text,
-            menu_item_ids,
-            menu_items ( id, item_name )
+            menu_item_id,
+            menu_item_ids
           ),
           tasting_package_items (
             id,
@@ -187,12 +187,12 @@ const MY_VOUCHERS_SELECT = `
             redeem_date,
             tasting_packages ( id, title )
           ),
-          vouchers_catalog ( title, menu_item_id, menu_items ( id, item_name ) ),
+          vouchers_catalog ( title, menu_item_id ),
           campaign_vouchers (
             offer_type,
             custom_item_text,
+            menu_item_id,
             menu_item_ids,
-            menu_items ( id, item_name ),
             campaigns (
               display_title,
               campaign_type,
@@ -206,15 +206,15 @@ const MY_VOUCHERS_SELECT = `
         `;
 
 const myVouchersQueryOptions = {
-  refetchOnWindowFocus: true,
-  staleTime: 5_000,
+  refetchOnWindowFocus: false,
+  staleTime: 30_000,
   retry: 1,
   retryDelay: (attempt: number) => 3000 * attempt,
 } as const;
 
 async function fetchMyVouchers(
   userId: string,
-  opts?: { campaignId?: string },
+  opts?: { campaignId?: string; signal?: AbortSignal },
 ): Promise<MyVoucher[]> {
   let query = supabase
     .from("vouchers")
@@ -223,6 +223,9 @@ async function fetchMyVouchers(
 
   if (opts?.campaignId) {
     query = query.eq("campaign_id", opts.campaignId);
+  }
+  if (opts?.signal) {
+    query = query.abortSignal(opts.signal);
   }
 
   const { data: vouchers, error } = await query.order("created_at", { ascending: false });
@@ -233,13 +236,26 @@ async function fetchMyVouchers(
   for (const raw of vouchers ?? []) {
     const v = raw as Record<string, unknown>;
     const rvpRaw = v.return_voucher_presets;
-    const rvp = (Array.isArray(rvpRaw) ? rvpRaw[0] : rvpRaw) as { menu_item_ids?: string[] } | null;
+    const rvp = (Array.isArray(rvpRaw) ? rvpRaw[0] : rvpRaw) as {
+      menu_item_id?: string | null;
+      menu_item_ids?: string[];
+    } | null;
     const cvRaw = v.campaign_vouchers;
-    const cv = (Array.isArray(cvRaw) ? cvRaw[0] : cvRaw) as { menu_item_ids?: string[] } | null;
+    const cv = (Array.isArray(cvRaw) ? cvRaw[0] : cvRaw) as {
+      menu_item_id?: string | null;
+      menu_item_ids?: string[];
+    } | null;
+    const catalogRaw = v.vouchers_catalog;
+    const catalog = (Array.isArray(catalogRaw) ? catalogRaw[0] : catalogRaw) as {
+      menu_item_id?: string | null;
+    } | null;
+    if (rvp?.menu_item_id) menuNameIds.add(rvp.menu_item_id);
     for (const id of rvp?.menu_item_ids ?? []) menuNameIds.add(id);
+    if (cv?.menu_item_id) menuNameIds.add(cv.menu_item_id);
     for (const id of cv?.menu_item_ids ?? []) menuNameIds.add(id);
+    if (catalog?.menu_item_id) menuNameIds.add(catalog.menu_item_id);
   }
-  const menuNamesById = await fetchMenuItemNames([...menuNameIds]);
+  const menuNamesById = await fetchMenuItemNames([...menuNameIds], opts?.signal);
 
   const result: MyVoucher[] = (vouchers ?? []).map((v: Record<string, unknown>) => {
         const tastingPurchaseRaw = v.tasting_package_purchases;
@@ -359,8 +375,8 @@ async function fetchMyVouchers(
               title: string;
               offer_type: string;
               custom_item_text?: string | null;
+              menu_item_id?: string | null;
               menu_item_ids?: string[] | null;
-              menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null;
             }
           | null
           | undefined;
@@ -378,9 +394,11 @@ async function fetchMyVouchers(
 
           const rawMenuDirect = v.menu_items;
           const menuDirect = Array.isArray(rawMenuDirect) ? rawMenuDirect[0] : rawMenuDirect;
-          const rawPresetMenu = returnPreset.menu_items;
-          const presetMenu = Array.isArray(rawPresetMenu) ? rawPresetMenu[0] : rawPresetMenu;
-          const menu = menuDirect ?? presetMenu;
+          const presetMenuId = returnPreset.menu_item_id ?? returnPreset.menu_item_ids?.[0] ?? null;
+          const presetMenuName = presetMenuId ? menuNamesById[presetMenuId] : undefined;
+          const menu = menuDirect ?? (presetMenuId
+            ? { id: presetMenuId, item_name: presetMenuName ?? "" }
+            : null);
           const menuName = voucherItemLabel(
             {
               item_name: menu?.item_name,
@@ -448,7 +466,7 @@ async function fetchMyVouchers(
         const loyaltyRow = (Array.isArray(rawLoyalty) ? rawLoyalty[0] : rawLoyalty) as
           | {
               title: string;
-              menu_items: { id: string; item_name: string } | { id: string; item_name: string }[] | null;
+              menu_item_id?: string | null;
             }
           | null
           | undefined;
@@ -464,8 +482,9 @@ async function fetchMyVouchers(
             shop_type?: string | null;
           } | null;
 
-          const rawLm = loyaltyRow.menu_items;
-          const lmenu = Array.isArray(rawLm) ? rawLm[0] : rawLm;
+          const lmenuName = loyaltyRow.menu_item_id
+            ? menuNamesById[loyaltyRow.menu_item_id]
+            : undefined;
 
           const { location: locationTrimmed, redeem_directions_url: redeemDirectionsUrl, pickup_spot_label } =
             walletRedeemLocation(
@@ -499,8 +518,8 @@ async function fetchMyVouchers(
             event_date: null,
             thumbnail_url: null,
             campaign_id: (v.campaign_id as string | undefined) ?? undefined,
-            menu_item_id: lmenu?.id ?? null,
-            menu_item_name: lmenu?.item_name?.trim() ?? null,
+            menu_item_id: loyaltyRow.menu_item_id ?? null,
+            menu_item_name: lmenuName?.trim() ?? null,
             campaign_details: loyaltyRow.title,
             redeem_directions_url: redeemDirectionsUrl,
             pickup_spot_label: pickup_spot_label ?? null,
@@ -514,8 +533,8 @@ async function fetchMyVouchers(
           | {
               offer_type: string;
               custom_item_text?: string | null;
+              menu_item_id?: string | null;
               menu_item_ids?: string[] | null;
-              menu_items: { id: string; item_name: string } | null;
               campaigns: {
                 display_title: string | null;
                 campaign_type: string;
@@ -547,8 +566,15 @@ async function fetchMyVouchers(
           | undefined;
         const rawCamp = cv?.campaigns;
         const camp = Array.isArray(rawCamp) ? rawCamp[0] : rawCamp;
-        const rawMenu = cv?.menu_items;
-        const menu = Array.isArray(rawMenu) ? rawMenu[0] : rawMenu;
+        const campaignMenuId =
+          (typeof v.menu_item_id === "string" ? v.menu_item_id : null) ??
+          cv?.menu_item_id ??
+          cv?.menu_item_ids?.[0] ??
+          null;
+        const campaignMenuName = campaignMenuId ? menuNamesById[campaignMenuId] : undefined;
+        const menu = campaignMenuId
+          ? { id: campaignMenuId, item_name: campaignMenuName ?? "" }
+          : null;
         const voucherName =
           cv?.offer_type != null && String(cv.offer_type).trim() !== ""
             ? voucherNameFromOfferAndItem(
@@ -634,13 +660,15 @@ async function fetchMyVouchers(
         .map((v) => v.id);
 
       if (redeemedIds.length > 0) {
-        const { data: reviewRows } = await supabase
+        let reviewQuery = supabase
           .from("daily_coffees")
           .select(
             "id, voucher_id, log_item, log_item_other, tasting_notes, share_publicly, coffee_date",
           )
           .eq("user_id", userId)
           .in("voucher_id", redeemedIds);
+        if (opts?.signal) reviewQuery = reviewQuery.abortSignal(opts.signal);
+        const { data: reviewRows } = await reviewQuery;
 
         const byVoucher = new Map<string, MyVoucherReview>();
         for (const r of reviewRows ?? []) {
@@ -670,9 +698,9 @@ export function useMyVouchers() {
 
   return useQuery({
     queryKey: ["vouchers", "my", user?.id],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       if (!user) return [];
-      return fetchMyVouchers(user.id);
+      return fetchMyVouchers(user.id, { signal });
     },
     enabled: !!user,
     ...myVouchersQueryOptions,
@@ -684,9 +712,9 @@ export function useMyCampaignVouchers(campaignId: string | undefined) {
 
   return useQuery({
     queryKey: ["vouchers", "my", "campaign", user?.id, campaignId],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       if (!user || !campaignId) return [];
-      return fetchMyVouchers(user.id, { campaignId });
+      return fetchMyVouchers(user.id, { campaignId, signal });
     },
     enabled: !!user && !!campaignId,
     ...myVouchersQueryOptions,

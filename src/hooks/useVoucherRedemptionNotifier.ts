@@ -10,7 +10,6 @@ type Props = {
 
 const PROMPTED_CAP = 500;
 const PROMPT_DEBOUNCE_MS = 2500;
-const POLL_INTERVAL_MS = 3000;
 
 /**
  * Subscribes to voucher rows for the current user; when status becomes redeemed,
@@ -22,7 +21,6 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemedDetected }: Prop
 
   const promptedRef = useRef<Set<string>>(new Set());
   const lastPromptRef = useRef<{ id: string; at: number } | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -35,7 +33,6 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemedDetected }: Prop
 
     const refreshWallet = () => {
       void queryClient.invalidateQueries({ queryKey: walletKey });
-      void queryClient.refetchQueries({ queryKey: walletKey, type: 'active' });
     };
 
     const optimisticFlipToRedeemed = (voucherId: string) => {
@@ -88,20 +85,6 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemedDetected }: Prop
       void maybeShowPrompt(voucherId);
     };
 
-    const startPollFallback = () => {
-      if (pollTimerRef.current) return;
-      pollTimerRef.current = setInterval(() => {
-        refreshWallet();
-      }, POLL_INTERVAL_MS);
-    };
-
-    const stopPollFallback = () => {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
-    };
-
     const channel = supabase
       .channel(`vouchers_owner_${userId}`)
       .on(
@@ -118,16 +101,9 @@ export function useVoucherRedemptionNotifier({ onVoucherRedeemedDetected }: Prop
           handleRedeemed(row.id);
         },
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          stopPollFallback();
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          startPollFallback();
-        }
-      });
+      .subscribe();
 
     return () => {
-      stopPollFallback();
       promptedRef.current = new Set();
       lastPromptRef.current = null;
       void supabase.removeChannel(channel);
