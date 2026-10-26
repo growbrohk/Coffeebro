@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrgLoyaltyCatalog, type LoyaltyCatalogRow } from "@/hooks/useOrgLoyaltyCatalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,17 +17,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useOrgMenuItems } from "@/hooks/useOrgMenuItems";
 
-type CatalogRow = {
-  id: string;
-  title: string;
-  points_cost: number;
-  active: boolean;
-  menu_item_id: string | null;
-  quantity_cap: number | null;
-  max_redemptions_per_user: number | null;
-  sort_order: number;
-};
-
 export default function VoucherStudioPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
@@ -34,27 +24,14 @@ export default function VoucherStudioPage() {
   const qc = useQueryClient();
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [editing, setEditing] = useState<CatalogRow | null>(null);
+  const [editing, setEditing] = useState<LoyaltyCatalogRow | null>(null);
   const [title, setTitle] = useState("");
   const [pointsCost, setPointsCost] = useState("50");
   const [quantityCap, setQuantityCap] = useState("");
   const [maxPerCustomer, setMaxPerCustomer] = useState("");
   const [menuItemId, setMenuItemId] = useState<string | null>(null);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["vouchers-catalog-all", orgId],
-    queryFn: async () => {
-      if (!orgId) return [];
-      const { data, error } = await supabase
-        .from("vouchers_catalog")
-        .select("*")
-        .eq("org_id", orgId)
-        .order("sort_order", { ascending: true });
-      if (error) throw error;
-      return data as CatalogRow[];
-    },
-    enabled: !!orgId,
-  });
+  const { data: rows = [], isLoading } = useOrgLoyaltyCatalog(orgId);
 
   const { data: menuItems = [] } = useOrgMenuItems(orgId);
 
@@ -68,7 +45,7 @@ export default function VoucherStudioPage() {
     setSheetOpen(true);
   };
 
-  const openEdit = (row: CatalogRow) => {
+  const openEdit = (row: LoyaltyCatalogRow) => {
     setEditing(row);
     setTitle(row.title);
     setPointsCost(String(row.points_cost));

@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOrg } from "@/hooks/useOrgs";
 import { useOrgMenuItems } from "@/hooks/useOrgMenuItems";
+import { useOrgCampaigns, type CampaignWithVouchers } from "@/hooks/useOrgCampaigns";
+import { useOrgLoyaltyCatalog } from "@/hooks/useOrgLoyaltyCatalog";
 import {
   useReturnVoucherPresetMutations,
   useReturnVoucherPresets,
   type ReturnVoucherPresetWithMenu,
 } from "@/hooks/useReturnVoucherPresets";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,7 +38,8 @@ import {
   validateRedemptionPeriod,
 } from "@/lib/returnVoucherPeriod";
 import { CUSTOM_MENU_TEXT, MULTI_MENU_ITEMS, menuItemModeFromDb, menuItemScopeToDb } from "@/lib/voucherOfferType";
-import { voucherItemLabel } from "@/lib/voucherOfferLabels";
+import { voucherItemLabel, voucherOfferLabel } from "@/lib/voucherOfferLabels";
+import { buildCampaignDisplayTitle } from "@/lib/campaignDisplayTitle";
 
 type ReturnVoucherPresetDraft = VoucherDraft & { title: string };
 
@@ -83,6 +87,23 @@ function validateDraft(
   return validateRedemptionPeriod(draft);
 }
 
+function campaignName(campaign: CampaignWithVouchers, menuNames: Record<string, string>): string {
+  const titled = campaign.display_title?.trim();
+  if (titled) return titled;
+  return buildCampaignDisplayTitle({
+    campaignType: campaign.campaign_type as "grab" | "hunt",
+    rewardMode: campaign.reward_mode as "fixed" | "random",
+    vouchers: (campaign.campaign_vouchers ?? []).map((voucher) => ({
+      offer_type: voucher.offer_type,
+      item_name: voucher.menu_items?.item_name ?? null,
+      menu_item_id: voucher.menu_item_id,
+      menu_item_ids: voucher.menu_item_ids,
+      custom_item_text: voucher.custom_item_text,
+    })),
+    menuNamesById: menuNames,
+  });
+}
+
 export default function OrgReturnVouchersPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
@@ -90,12 +111,42 @@ export default function OrgReturnVouchersPage() {
   const { isSuperAdmin, isStaffUser, isLoading: roleLoading } = useUserRole();
   const { data: org, isLoading: orgLoading } = useOrg(orgId);
   const { data: menuItems = [] } = useOrgMenuItems(orgId);
-  const { data: presets = [], isLoading: presetsLoading } = useReturnVoucherPresets(orgId);
+  const { data: presets = [], isLoading: presetsLoading, error: presetsError } = useReturnVoucherPresets(orgId);
+  const { data: campaigns = [], isLoading: campaignsLoading, error: campaignsError } = useOrgCampaigns(orgId);
+  const { data: loyaltyRewards = [], isLoading: loyaltyLoading, error: loyaltyError } = useOrgLoyaltyCatalog(orgId);
   const { upsert, remove } = useReturnVoucherPresetMutations(orgId);
   const { toast } = useToast();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draft, setDraft] = useState<ReturnVoucherPresetDraft>(newReturnVoucherPresetDraft(0));
+
+  const menuNames = useMemo(
+    () => Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
+    [menuItems],
+  );
+
+  const campaignLines = useMemo(
+    () =>
+      campaigns.flatMap((campaign) => {
+        const name = campaignName(campaign, menuNames);
+        return (campaign.campaign_vouchers ?? []).map((voucher) => ({ campaign, voucher, name }));
+      }),
+    [campaigns, menuNames],
+  );
+
+  const campaignNamesByPreset = useMemo(() => {
+    const byPreset = new Map<string, string[]>();
+    for (const campaign of campaigns) {
+      if (!campaign.return_voucher_preset_id) continue;
+      const names = byPreset.get(campaign.return_voucher_preset_id) ?? [];
+      names.push(campaignName(campaign, menuNames));
+      byPreset.set(campaign.return_voucher_preset_id, names);
+    }
+    return byPreset;
+  }, [campaigns, menuNames]);
+
+  const listLoading = presetsLoading || campaignsLoading || loyaltyLoading;
+  const listError = presetsError ?? campaignsError ?? loyaltyError;
 
   const canAccess = Boolean(user && (isSuperAdmin || isStaffUser));
 
@@ -204,8 +255,13 @@ export default function OrgReturnVouchersPage() {
 
       <div className="container max-w-3xl space-y-4 px-4 py-6">
         <p className="text-sm text-muted-foreground">{org.org_name}</p>
-        <p className="text-sm text-muted-foreground">
-          Return voucher presets are minted to customers when staff redeems a linked campaign or tasting voucher.
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          <Badge variant="secondary">Campaign name</Badge>
+          is where the voucher is defined.
+          <Badge variant="outline">Return</Badge>
+          is minted when a linked campaign voucher is redeemed.
+          <Badge variant="outline">Loyalty</Badge>
+          is bought with points.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/menu`)}>
@@ -214,52 +270,138 @@ export default function OrgReturnVouchersPage() {
           <Button type="button" variant="outline" onClick={() => navigate(`/org/${orgId}/campaigns`)}>
             Campaigns
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(`/host/org/${orgId}/loyalty/vouchers`)}
+          >
+            Loyalty
+          </Button>
           <Button type="button" className="gap-1" onClick={openCreate}>
             <Plus className="h-4 w-4" />
             Add preset
           </Button>
         </div>
 
-        {presetsLoading ? (
-          <p className="text-sm text-muted-foreground">Loading presets…</p>
-        ) : presets.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No return voucher presets yet.</p>
+        {listLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : listError ? (
+          <p className="text-sm text-destructive">{(listError as Error).message}</p>
+        ) : campaignLines.length === 0 && presets.length === 0 && loyaltyRewards.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No vouchers yet.</p>
         ) : (
-          <div className="space-y-3">
-            {presets.map((preset, index) => (
-              <div
-                key={preset.id}
-                className="w-full rounded-xl border border-border bg-card p-4 text-left"
-              >
-                <button
-                  type="button"
-                  className="w-full text-left transition-colors hover:opacity-80"
-                  onClick={() => openEdit(preset, index)}
-                >
-                  <p className="font-semibold">{preset.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {voucherItemLabel(
-                      {
-                        item_name: preset.menu_items?.item_name,
-                        menu_item_ids: preset.menu_item_ids,
-                        custom_item_text: preset.custom_item_text,
-                      },
-                      Object.fromEntries(menuItems.map((item) => [item.id, item.item_name])),
-                    )}{" "}
-                    · pool {preset.quantity} · {formatReturnVoucherPeriodLabel(preset)}
-                  </p>
-                </button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => navigate(`/org/${orgId}/vouchers/${preset.id}/holders`)}
-                >
-                  View holders
-                </Button>
-              </div>
-            ))}
+          <div className="space-y-6">
+            {campaignLines.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold">Campaign vouchers</h2>
+                {campaignLines.map(({ campaign, voucher, name }) => (
+                  <div
+                    key={voucher.id}
+                    className="w-full rounded-xl border border-border bg-card p-4 text-left"
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-left transition-colors hover:opacity-80"
+                      onClick={() => navigate(`/org/${orgId}/campaigns/${campaign.id}`)}
+                    >
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">{name}</Badge>
+                        {campaign.status !== "published" ? (
+                          <Badge variant="outline">{campaign.status}</Badge>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 font-semibold">{voucherOfferLabel(voucher.offer_type)}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {voucherItemLabel(voucher, menuNames)} · pool {voucher.quantity} ·{" "}
+                        {formatReturnVoucherPeriodLabel(voucher)}
+                      </p>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => navigate(`/org/${orgId}/campaigns/${campaign.id}/participants`)}
+                    >
+                      View participants
+                    </Button>
+                  </div>
+                ))}
+              </section>
+            ) : null}
+
+            {presets.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold">Return vouchers</h2>
+                {presets.map((preset, index) => (
+                  <div
+                    key={preset.id}
+                    className="w-full rounded-xl border border-border bg-card p-4 text-left"
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-left transition-colors hover:opacity-80"
+                      onClick={() => openEdit(preset, index)}
+                    >
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline">Return</Badge>
+                        {(campaignNamesByPreset.get(preset.id) ?? []).map((linkedName, linkedIndex) => (
+                          <Badge key={`${preset.id}-${linkedIndex}`} variant="secondary">
+                            {linkedName}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="mt-2 font-semibold">{preset.title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {voucherItemLabel(
+                          {
+                            item_name: preset.menu_items?.item_name,
+                            menu_item_ids: preset.menu_item_ids,
+                            custom_item_text: preset.custom_item_text,
+                          },
+                          menuNames,
+                        )}{" "}
+                        · pool {preset.quantity} · {formatReturnVoucherPeriodLabel(preset)}
+                      </p>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => navigate(`/org/${orgId}/vouchers/${preset.id}/holders`)}
+                    >
+                      View holders
+                    </Button>
+                  </div>
+                ))}
+              </section>
+            ) : null}
+
+            {loyaltyRewards.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold">Loyalty rewards</h2>
+                {loyaltyRewards.map((reward) => (
+                  <button
+                    key={reward.id}
+                    type="button"
+                    className="w-full rounded-xl border border-border bg-card p-4 text-left transition-colors hover:opacity-80"
+                    onClick={() => navigate(`/host/org/${orgId}/loyalty/vouchers`)}
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline">Loyalty</Badge>
+                      {!reward.active ? <Badge variant="outline">Inactive</Badge> : null}
+                    </div>
+                    <p className="mt-2 font-semibold">{reward.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {reward.points_cost} pts
+                      {reward.menu_item_id ? ` · ${menuNames[reward.menu_item_id] ?? "Menu item"}` : ""}
+                      {reward.quantity_cap != null ? ` · cap ${reward.quantity_cap}` : ""}
+                    </p>
+                  </button>
+                ))}
+              </section>
+            ) : null}
           </div>
         )}
       </div>
