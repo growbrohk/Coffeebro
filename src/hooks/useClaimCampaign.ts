@@ -30,6 +30,7 @@ export function describeClaimCampaignError(error: unknown): string {
   if (u.includes("CAMPAIGN_NOT_FOUND")) return "Campaign not found.";
   if (u.includes("CAMPAIGN_NOT_PUBLISHED")) return "This campaign is not live yet.";
   if (u.includes("PAYMENT_REQUIRED")) return "This offer requires payment.";
+  if (u.includes("INVALID_B1G1_PRICE")) return "This offer's item has no price set yet.";
   if (u.includes("PAYMENT_PENDING")) return "Payment is still processing.";
   if (u.includes("PAYMENT_FAILED")) return "Payment did not complete.";
   if (u.includes("HUNT_NOT_FOUND")) return "That hunt code was not found.";
