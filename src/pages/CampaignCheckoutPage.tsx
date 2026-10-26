@@ -106,6 +106,7 @@ export default function CampaignCheckoutPage() {
   const needsPay = campaign
     ? fixedCampaignRequiresPayment(campaign.reward_mode, primary?.offer_type)
     : false;
+  const isFreeAmount = displayCents === 0;
 
   const cancelHref =
     channel === "hunt" ? "/hunts/scan" : campaignId ? `/campaigns/${campaignId}` : "/hunts";
@@ -233,7 +234,7 @@ export default function CampaignCheckoutPage() {
             {(submitting || claim.isPending || claimHunt.isPending) && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Claim to wallet
+            Grab now
           </Button>
         </div>
       </div>
@@ -265,15 +266,17 @@ export default function CampaignCheckoutPage() {
           <p className="text-2xl font-bold tracking-tight">
             {displayCents != null ? formatHkdFromCents(displayCents) : "—"}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Final amount is confirmed on the payment screen.
-          </p>
+          {!isFreeAmount ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Final amount is confirmed on the payment screen.
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-2">
           <Button className="w-full" onClick={() => void startCheckout()} disabled={submitting}>
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Pay with Stripe
+            {isFreeAmount ? "Grab now" : "Pay with Stripe"}
           </Button>
           <Button variant="outline" className="w-full" asChild>
             <Link to={cancelHref}>Cancel</Link>
